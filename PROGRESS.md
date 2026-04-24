@@ -191,6 +191,22 @@ Se inicializó el proyecto frontend con React y Vite, integrando el SDK de Clerk
 ### 💡 Contexto Importante
 - Sólo usuarios definidos como Admin en el Clerk Application portal pueden interactuar con los status, protegiendo totalmente la lógica de devoluciones (Fraudes).
 
+## ✅ [Issue 81] Redirección post-login basada en rol
+**Sprint:** 4 | **Estado:** Completado
+
+### 📂 Archivos Creados/Modificados
+- *[frontend/src/pages/Login.tsx]*: Configurado `afterSignInUrl="/auth/callback"` para manejar redirección post-login.
+- *[frontend/src/pages/Register.tsx]*: Nueva página para registro de usuarios con Clerk.
+- *[frontend/src/pages/AuthCallback.tsx]*: Componente de callback que verifica el rol del usuario via `/api/auth/me` y redirige a `/admin` si es admin o `/home` si es usuario normal.
+- *[frontend/src/App.tsx]*: Agregadas rutas para `/register` y `/auth/callback`.
+
+### 💡 Contexto Importante
+- El flujo funciona así: Usuario inicia sesión → Clerk redirige a `/auth/callback` → Se verifica rol via API → Redirección basada en rol.
+- No se modificó el backend ya que el endpoint `/api/auth/me` ya devolvía `{ isAdmin, role }`.
+- Los usuarios no-admin van a `/home`, los admins van a `/admin`.
+
+---
+
 ## ⏳ Template para futuros issues (Copiar y pegar)
 <!--
 ## [Issue X] Nombre del Issue

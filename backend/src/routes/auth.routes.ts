@@ -10,8 +10,34 @@ authRoutes.get('/me', clerkAuthMiddleware, async (c) => {
 
   try {
     let userDoc = await User.findOne({ clerk_id: userId });
+    let role: string;
 
-    let role = userDoc?.role as string | undefined;
+    // Always check Clerk first for the authoritative role
+    try {
+      const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+      const clerkUser = await clerk.users.getUser(userId).catch(() => null);
+      const publicMetadata = clerkUser?.publicMetadata as any;
+      const clerkRole = publicMetadata?.role as string | undefined;
+      
+      console.log('[Auth] Clerk role:', clerkRole);
+      
+      if (clerkRole) {
+        role = clerkRole;
+      } else if (userDoc?.role) {
+        role = userDoc.role;
+      } else {
+        role = 'user';
+      }
+    } catch (err) {
+      console.error('[Auth] Clerk API error:', err);
+      role = userDoc?.role || 'user';
+    }
+
+    // Sync role to MongoDB if needed
+    if (userDoc && userDoc.role !== role) {
+      await User.updateOne({ clerk_id: userId }, { role });
+      console.log('[Auth] Updated user role to:', role);
+    }
 
     // If user doesn't exist in MongoDB, create them
     if (!userDoc) {
@@ -20,13 +46,7 @@ authRoutes.get('/me', clerkAuthMiddleware, async (c) => {
         const clerkUser = await clerk.users.getUser(userId).catch(() => null);
         
         const email = clerkUser?.emailAddresses?.[0]?.emailAddress;
-        const publicMetadata = clerkUser?.publicMetadata as any;
         
-        console.log('[Auth] Clerk user data:', JSON.stringify(clerkUser, null, 2));
-        console.log('[Auth] Public metadata:', JSON.stringify(publicMetadata, null, 2));
-        
-        role = publicMetadata?.role as string | undefined || 'user';
-
         if (email) {
           await User.create({
             clerk_id: userId,
@@ -37,7 +57,6 @@ authRoutes.get('/me', clerkAuthMiddleware, async (c) => {
         }
       } catch (err) {
         console.error('[Auth] Error creating user:', err);
-        role = 'user';
       }
     }
 

@@ -3,6 +3,7 @@ import { SignedIn } from '@clerk/clerk-react';
 import Header from './components/Header';
 import Home from './pages/Home';
 import Login from './pages/Login';
+import Register from './pages/Register';
 import Landing from './pages/Landing';
 import Orders from './pages/Orders';
 import NewWarranty from './pages/NewWarranty';
@@ -20,6 +21,7 @@ function App() {
           <Route path="/" element={<Landing />} />
           <Route path="/home" element={<Home />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
           <Route path="/success" element={<Success />} />
           <Route
             path="/orders"
