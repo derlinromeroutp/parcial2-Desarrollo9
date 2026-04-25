@@ -178,6 +178,10 @@ export const HeroSection: React.FC = () => {
                   (e.currentTarget as HTMLButtonElement).style.transform = '';
                   (e.currentTarget as HTMLButtonElement).style.boxShadow = '';
                 }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLButtonElement).style.transform = '';
+                  (e.currentTarget as HTMLButtonElement).style.boxShadow = '';
+                }}
               >
                 Ver catálogo
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">

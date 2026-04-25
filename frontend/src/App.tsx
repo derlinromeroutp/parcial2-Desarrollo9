@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom';
 import { SignedIn } from '@clerk/clerk-react';
 import Header from './components/Header';
+import NavMenu from './components/ui/menu-hover-effects';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Landing from './pages/Landing';
@@ -9,7 +10,20 @@ import NewWarranty from './pages/NewWarranty';
 import WarrantySuccess from './pages/WarrantySuccess';
 import AdminDashboard from './pages/AdminDashboard';
 import Success from './pages/Success';
+import ProductPage from './pages/ProductPage';
+import Nosotros from './pages/Nosotros';
+import Contacto from './pages/Contacto';
 import { ProtectedAdminRoute } from './components/AdminRoute';
+
+// Layout with NavMenu for all public pages
+function WithNav({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="page-main">
+      <NavMenu />
+      {children}
+    </div>
+  );
+}
 
 function App() {
   return (
@@ -17,15 +31,19 @@ function App() {
       <Header />
       <main>
         <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/home" element={<div className="page-main"><Home /></div>} />
-          <Route path="/login" element={<div className="page-main"><Login /></div>} />
-          <Route path="/success" element={<Success />} />
+          <Route path="/"              element={<Landing />} />
+          <Route path="/home"          element={<WithNav><Home /></WithNav>} />
+          <Route path="/nosotros"      element={<WithNav><Nosotros /></WithNav>} />
+          <Route path="/contacto"      element={<WithNav><Contacto /></WithNav>} />
+          <Route path="/product/:id"   element={<WithNav><ProductPage /></WithNav>} />
+          <Route path="/product"       element={<WithNav><ProductPage /></WithNav>} />
+          <Route path="/login"         element={<div className="page-main"><Login /></div>} />
+          <Route path="/success"       element={<Success />} />
           <Route
             path="/orders"
             element={
               <SignedIn>
-                <div className="page-main"><Orders /></div>
+                <WithNav><Orders /></WithNav>
               </SignedIn>
             }
           />
@@ -33,7 +51,7 @@ function App() {
             path="/warranties/new"
             element={
               <SignedIn>
-                <div className="page-main"><NewWarranty /></div>
+                <WithNav><NewWarranty /></WithNav>
               </SignedIn>
             }
           />
