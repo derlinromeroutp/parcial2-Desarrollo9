@@ -32,13 +32,6 @@ function App() {
       <Header />
       <main>
         <Routes>
-<<<<<<< HEAD
-          <Route path="/" element={<Landing />} />
-          <Route path="/home" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/success" element={<Success />} />
-=======
           <Route path="/"              element={<Landing />} />
           <Route path="/home"          element={<WithNav><Home /></WithNav>} />
           <Route path="/nosotros"      element={<WithNav><Nosotros /></WithNav>} />
@@ -47,7 +40,6 @@ function App() {
           <Route path="/product"       element={<WithNav><ProductPage /></WithNav>} />
           <Route path="/login"         element={<div className="page-main"><Login /></div>} />
           <Route path="/success"       element={<Success />} />
->>>>>>> origin/main
           <Route
             path="/orders"
             element={
