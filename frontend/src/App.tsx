@@ -4,6 +4,7 @@ import Header from './components/Header';
 import NavMenu from './components/ui/menu-hover-effects';
 import Home from './pages/Home';
 import Login from './pages/Login';
+import Register from './pages/Register';
 import Landing from './pages/Landing';
 import Orders from './pages/Orders';
 import NewWarranty from './pages/NewWarranty';
