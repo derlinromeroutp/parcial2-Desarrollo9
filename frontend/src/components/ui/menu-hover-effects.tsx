@@ -5,7 +5,6 @@ const menuItems = [
   { label: 'Inicio',    href: '/' },
   { label: 'Catálogo',  href: '/home' },
   { label: 'Pedidos',   href: '/orders' },
-  { label: 'Garantías', href: '/warranties/new' },
   { label: 'Nosotros',  href: '/nosotros' },
   { label: 'Contacto',  href: '/contacto' },
 ];

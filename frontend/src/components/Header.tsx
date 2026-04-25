@@ -37,11 +37,6 @@ export default function Header() {
             </Link>
           )}
 
-          {!isAdmin && (
-            <Link to="/orders" className="nav-link">
-              Mis Pedidos
-            </Link>
-          )}
         </SignedIn>
 
         <SignedOut>

@@ -325,7 +325,7 @@ const FilterBar: React.FC<FilterBarProps> = ({ condition, setCondition, category
       {/* Categorías */}
       <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
         {CATEGORIES.map((cat) => (
-          <button key={cat.value} onClick={() => setCategory(cat.value)} disabled={disabled} style={{ padding: '8px 16px', borderRadius: 'var(--radius-sm)', border: '1px solid', borderColor: category === cat.value ? 'var(--ink)' : 'var(--line)', background: category === cat.value ? 'var(--ink)' : 'transparent', color: category === cat.value ? 'var(--white)' : 'var(--ink2)', fontFamily: 'var(--font-sans)', fontSize: '0.75rem', fontWeight: 500, cursor: 'pointer', transition: 'all 0.2s ease' }}>
+          <button key={cat.value} onClick={() => setCategory(cat.value)} disabled={disabled} style={{ padding: '8px 16px', borderRadius: 0, border: '1px solid', borderColor: category === cat.value ? 'var(--ink)' : 'var(--line)', background: category === cat.value ? 'var(--ink)' : 'transparent', color: category === cat.value ? 'var(--white)' : 'var(--ink2)', fontFamily: 'var(--font-sans)', fontSize: '0.75rem', fontWeight: 500, cursor: 'pointer', transition: 'all 0.2s ease' }}>
             {cat.label}
           </button>
         ))}
@@ -334,14 +334,14 @@ const FilterBar: React.FC<FilterBarProps> = ({ condition, setCondition, category
       {/* Condición */}
       <div style={{ display: 'flex', gap: '0.375rem' }}>
         {CONDITIONS.map((cond) => (
-          <button key={cond.value} onClick={() => setCondition(cond.value)} disabled={disabled} style={{ padding: '6px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', background: condition === cond.value ? 'var(--ink)' : 'transparent', color: condition === cond.value ? 'var(--white)' : 'var(--ink2)', fontFamily: 'var(--font-sans)', fontSize: '0.7rem', cursor: 'pointer' }}>
+          <button key={cond.value} onClick={() => setCondition(cond.value)} disabled={disabled} style={{ padding: '6px 12px', borderRadius: 0, border: '1px solid var(--line)', background: condition === cond.value ? 'var(--ink)' : 'transparent', color: condition === cond.value ? 'var(--white)' : 'var(--ink2)', fontFamily: 'var(--font-sans)', fontSize: '0.7rem', cursor: 'pointer' }}>
             {cond.label}
           </button>
         ))}
       </div>
 
       {/* Precio */}
-      <select value={priceIdx} onChange={(e) => setPriceIdx(Number(e.target.value))} disabled={disabled} style={{ padding: '8px 12px', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', fontFamily: 'var(--font-sans)', fontSize: '0.75rem', background: 'var(--white)', color: 'var(--ink)', cursor: 'pointer', outline: 'none', minWidth: 160 }}>
+      <select value={priceIdx} onChange={(e) => setPriceIdx(Number(e.target.value))} disabled={disabled} style={{ padding: '8px 12px', border: '1px solid var(--line)', borderRadius: 0, fontFamily: 'var(--font-sans)', fontSize: '0.75rem', background: 'var(--white)', color: 'var(--ink)', cursor: 'pointer', outline: 'none', minWidth: 160 }}>
         {PRICE_RANGES.map((r, i) => <option key={i} value={i}>{r.label}</option>)}
       </select>
     </div>

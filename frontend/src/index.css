@@ -618,7 +618,7 @@ select.input    { cursor: pointer; }
 .cart-icon-btn {
   background: transparent;
   border: 1.5px solid var(--line);
-  border-radius: var(--radius-ui);
+  border-radius: 0;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -645,7 +645,7 @@ select.input    { cursor: pointer; }
   color: var(--ink2);
   padding: 7px 13px;
   border: 1.5px solid var(--line);
-  border-radius: var(--radius-ui);
+  border-radius: 0;
   transition: var(--transition);
 }
 .cart-icon-wrapper:hover { border-color: var(--ink); color: var(--ink); }
@@ -658,7 +658,7 @@ select.input    { cursor: pointer; }
   color: var(--white);
   min-width: 18px;
   height: 18px;
-  border-radius: 9px;
+  border-radius: 2px;
   display: flex;
   align-items: center;
   justify-content: center;
