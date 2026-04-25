@@ -9,6 +9,7 @@ import NewWarranty from './pages/NewWarranty';
 import WarrantySuccess from './pages/WarrantySuccess';
 import AdminDashboard from './pages/AdminDashboard';
 import Success from './pages/Success';
+import ProductPage from './pages/ProductPage';
 import { ProtectedAdminRoute } from './components/AdminRoute';
 
 function App() {
@@ -19,6 +20,8 @@ function App() {
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/home" element={<div className="page-main"><Home /></div>} />
+          <Route path="/product/:id" element={<ProductPage />} />
+          <Route path="/product" element={<ProductPage />} />
           <Route path="/login" element={<div className="page-main"><Login /></div>} />
           <Route path="/success" element={<Success />} />
           <Route

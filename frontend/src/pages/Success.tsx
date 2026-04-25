@@ -66,6 +66,15 @@ export default function Success() {
       justifyContent: 'center',
       padding: '4rem 1.5rem',
     }}>
+      {/* Barra superior de acento */}
+      <div style={{
+        position: 'fixed',
+        top: 0, left: 0, right: 0,
+        height: 3,
+        background: 'var(--ink)',
+        zIndex: 10,
+      }} />
+
       <div style={{ width: '100%', maxWidth: 540 }}>
 
         {/* Check animado */}
@@ -74,14 +83,15 @@ export default function Success() {
             width: 72,
             height: 72,
             borderRadius: '50%',
-            border: `0.5px solid ${drawn ? 'var(--ink)' : 'var(--line)'}`,
+            background: drawn ? 'var(--ink)' : 'transparent',
+            border: `1.5px solid ${drawn ? 'var(--ink)' : 'var(--line)'}`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             marginBottom: '1.5rem',
-            transition: 'border-color 0.4s ease',
+            transition: 'background 0.4s ease, border-color 0.4s ease',
           }}>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--ink)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={drawn ? '#F5F4F2' : 'var(--ink)'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path
                 d="M5 13l4 4L19 7"
                 style={{
