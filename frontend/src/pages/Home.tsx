@@ -1,10 +1,8 @@
 import { ProductList } from '../components/ProductList';
-import NavMenu from '../components/ui/menu-hover-effects';
 
 export default function Home() {
   return (
     <div>
-      <NavMenu />
 
       {/* Hero small del catálogo */}
       <section style={{
