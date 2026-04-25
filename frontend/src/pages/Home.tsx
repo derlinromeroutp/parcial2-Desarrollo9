@@ -1,8 +1,11 @@
 import { ProductList } from '../components/ProductList';
+import NavMenu from '../components/ui/menu-hover-effects';
 
 export default function Home() {
   return (
     <div>
+      <NavMenu />
+
       {/* Hero small del catálogo */}
       <section style={{
         padding: '4rem 0 3rem',
@@ -31,6 +34,9 @@ export default function Home() {
           }}>
             Catálogo
           </h1>
+          <p style={{ fontSize: '0.9rem', color: 'var(--ink2)', marginTop: '1rem', fontFamily: 'var(--font-sans)', maxWidth: 500, lineHeight: 1.6 }}>
+            Cada dispositivo verifica 40+ puntos. Incluye garantía de 90 días.
+          </p>
         </div>
       </section>
 

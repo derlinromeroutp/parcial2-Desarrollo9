@@ -22,6 +22,16 @@ const CATEGORIES = [
   { label: 'Tablets', value: 'tablet' },
 ];
 
+const BRANDS = [
+  { label: 'Todas', value: '' },
+  { label: 'Apple', value: 'apple' },
+  { label: 'Samsung', value: 'samsung' },
+  { label: 'Sony', value: 'sony' },
+  { label: 'Bose', value: 'bose' },
+  { label: 'Lenovo', value: 'lenovo' },
+  { label: 'Dell', value: 'dell' },
+];
+
 const PRICE_RANGES = [
   { label: 'Cualquier precio', min: 0, max: Infinity },
   { label: 'Menos de $200', min: 0, max: 200 },
@@ -37,6 +47,7 @@ export const ProductList: React.FC = () => {
 
   const [condition, setCondition] = useState('');
   const [category, setCategory] = useState('');
+  const [brand, setBrand] = useState('');
   const [priceIdx, setPriceIdx] = useState(0);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
@@ -45,18 +56,20 @@ export const ProductList: React.FC = () => {
     if (!products) return [];
     const range = PRICE_RANGES[priceIdx];
     const searchLower = search.toLowerCase().trim();
+    const brandLower = brand.toLowerCase().trim();
     return products.filter((p) => {
       const condOk = !condition || p.condition === condition;
       const catOk = !category || p.category === category;
+      const brandOk = !brandLower || p.name.toLowerCase().includes(brandLower);
       const priceOk = p.price >= range.min && p.price < range.max;
       const searchOk = !searchLower || 
         p.name.toLowerCase().includes(searchLower) || 
         p.description?.toLowerCase().includes(searchLower);
-      return condOk && catOk && priceOk && searchOk;
+      return condOk && catOk && brandOk && priceOk && searchOk;
     });
-  }, [products, condition, category, priceIdx, search]);
+  }, [products, condition, category, brand, priceIdx, search]);
 
-  useEffect(() => setPage(1), [condition, category, priceIdx, search]);
+  useEffect(() => setPage(1), [condition, category, brand, priceIdx, search]);
 
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
   const paginatedProducts = useMemo(() => {
@@ -74,7 +87,7 @@ export const ProductList: React.FC = () => {
   if (isLoading) {
     return (
       <div>
-        <FilterBar condition={condition} setCondition={setCondition} category={category} setCategory={setCategory} priceIdx={priceIdx} setPriceIdx={setPriceIdx} search={search} setSearch={setSearch} disabled />
+        <FilterBar condition={condition} setCondition={setCondition} category={category} setCategory={setCategory} brand={brand} setBrand={setBrand} priceIdx={priceIdx} setPriceIdx={setPriceIdx} search={search} setSearch={setSearch} disabled />
         <div className="products-grid">
           {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
         </div>
@@ -94,7 +107,22 @@ export const ProductList: React.FC = () => {
 
   return (
     <div>
-      <FilterBar condition={condition} setCondition={setCondition} category={category} setCategory={setCategory} priceIdx={priceIdx} setPriceIdx={setPriceIdx} search={search} setSearch={setSearch} />
+      <FilterBar condition={condition} setCondition={setCondition} category={category} setCategory={setCategory} brand={brand} setBrand={setBrand} priceIdx={priceIdx} setPriceIdx={setPriceIdx} search={search} setSearch={setSearch} />
+
+      {/* Productos destacados (solo si no hay filtros activos) */}
+      {!search && !category && !brand && condition === '' && priceIdx === 0 && (
+        <div style={{ marginBottom: '3rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 400, color: 'var(--ink)', fontFamily: 'var(--font-display)', letterSpacing: '-0.01em' }}>Productos destacados</h2>
+            <div style={{ flex: 1, height: '1px', background: 'var(--line)' }} />
+          </div>
+          <div className="products-grid">
+            {filtered.filter(p => p.condition === 'A').slice(0, 4).map((product) => (
+              <ProductCard key={product._id} product={product} onAdd={() => { addItem(product); toggleDrawer(); }} featured />
+            ))}
+          </div>
+        </div>
+      )}
 
       {filtered.length === 0 ? (
         <EmptyState
@@ -185,9 +213,10 @@ export const ProductList: React.FC = () => {
 interface ProductCardProps {
   product: { _id: string; name: string; price: number; description?: string; condition: string; category?: string; stock: number; image_urls?: string[] };
   onAdd: () => void;
+  featured?: boolean;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product, onAdd }) => {
+const ProductCard: React.FC<ProductCardProps> = ({ product, onAdd, featured }) => {
   const [hovered, setHovered] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
 
@@ -195,6 +224,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAdd }) => {
   const badgeText = product.condition === 'A' ? 'var(--white)' : product.condition === 'B' ? 'var(--white)' : 'var(--ink2)';
   
   const categoryLabel = { celular: 'Celular', laptop: 'Laptop', pc: 'PC', auriculares: 'Audio', tablet: 'Tablet' }[product.category || ''] || product.category;
+
+  const isNew = product.stock >= 10;
+  const isLast = product.stock > 0 && product.stock <= 3;
+  const isLowStock = product.stock <= 3;
 
   return (
     <article
@@ -218,9 +251,29 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAdd }) => {
           onLoad={() => setImgLoaded(true)}
           style={{ width: '100%', aspectRatio: '4/3', objectFit: 'cover', transition: 'transform 0.5s ease', transform: hovered ? 'scale(1.05)' : 'scale(1)', opacity: imgLoaded ? 1 : 0 }}
         />
-        <span style={{ position: 'absolute', top: 10, left: 10, padding: '4px 10px', background: badgeColor, color: badgeText, fontSize: '0.6rem', fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase', fontFamily: 'var(--font-sans)', borderRadius: '2px' }}>
-          Cond. {product.condition}
-        </span>
+        
+        {/* Badges superiores */}
+        <div style={{ position: 'absolute', top: 10, left: 10, display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {featured && (
+            <span style={{ padding: '4px 10px', background: '#7C3AED', color: 'var(--white)', fontSize: '0.6rem', fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase', fontFamily: 'var(--font-sans)', borderRadius: '2px' }}>
+              Destacado
+            </span>
+          )}
+          <span style={{ padding: '4px 10px', background: badgeColor, color: badgeText, fontSize: '0.6rem', fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase', fontFamily: 'var(--font-sans)', borderRadius: '2px' }}>
+            Cond. {product.condition}
+          </span>
+          {isNew && (
+            <span style={{ padding: '4px 10px', background: '#22c55e', color: 'var(--white)', fontSize: '0.6rem', fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase', fontFamily: 'var(--font-sans)', borderRadius: '2px' }}>
+              Nuevo
+            </span>
+          )}
+          {isLast && (
+            <span style={{ padding: '4px 10px', background: '#DC2626', color: 'var(--white)', fontSize: '0.6rem', fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase', fontFamily: 'var(--font-sans)', borderRadius: '2px' }}>
+              Último
+            </span>
+          )}
+        </div>
+
         {product.category && (
           <span style={{ position: 'absolute', top: 10, right: 10, padding: '4px 10px', background: 'rgba(255,255,255,0.95)', color: 'var(--ink)', fontSize: '0.6rem', fontWeight: 500, letterSpacing: '0.3px', fontFamily: 'var(--font-sans)', borderRadius: '2px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
             {categoryLabel}
@@ -235,9 +288,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAdd }) => {
         <p style={{ fontSize: '1.1rem', fontWeight: 300, color: 'var(--ink)', marginBottom: '0.75rem', fontFamily: 'var(--font-display)' }}>
           ${product.price.toFixed(2)}
         </p>
-        <p style={{ fontSize: '0.75rem', color: product.stock <= 3 ? '#DC2626' : 'var(--gray)', marginBottom: '1rem', fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: product.stock <= 3 ? '#DC2626' : 'var(--gray)' }} />
-          {product.stock <= 3 ? `Solo ${product.stock} disponibles` : `${product.stock} en stock`}
+        <p style={{ fontSize: '0.75rem', color: isLowStock ? '#DC2626' : 'var(--gray)', marginBottom: '1rem', fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: isLowStock ? '#DC2626' : 'var(--gray)' }} />
+          {isLowStock ? `Solo ${product.stock} disponibles` : `${product.stock} en stock`}
         </p>
         <button
           onClick={onAdd}
@@ -256,6 +309,8 @@ interface FilterBarProps {
   setCondition: (v: string) => void;
   category: string;
   setCategory: (v: string) => void;
+  brand: string;
+  setBrand: (v: string) => void;
   priceIdx: number;
   setPriceIdx: (v: number) => void;
   search: string;
@@ -263,88 +318,58 @@ interface FilterBarProps {
   disabled?: boolean;
 }
 
-const FilterBar: React.FC<FilterBarProps> = ({ condition, setCondition, category, setCategory, priceIdx, setPriceIdx, search, setSearch, disabled }) => (
-  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
-    {/* Search */}
-    <div style={{ position: 'relative' }}>
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ink2)" strokeWidth="2" style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }}>
-        <circle cx="11" cy="11" r="8" />
-        <path strokeLinecap="round" d="M21 21l-4.35-4.35" />
+const FilterBar: React.FC<FilterBarProps> = ({ condition, setCondition, category, setCategory, brand, setBrand, priceIdx, setPriceIdx, search, setSearch, disabled }) => (
+  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem', marginBottom: '2rem', justifyContent: 'space-between', alignItems: 'center' }}>
+    {/* Filtros compactos */}
+    <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+      {/* Categorías */}
+      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+        {CATEGORIES.map((cat) => (
+          <button key={cat.value} onClick={() => setCategory(cat.value)} disabled={disabled} style={{ padding: '8px 16px', borderRadius: 'var(--radius-sm)', border: '1px solid', borderColor: category === cat.value ? 'var(--ink)' : 'var(--line)', background: category === cat.value ? 'var(--ink)' : 'transparent', color: category === cat.value ? 'var(--white)' : 'var(--ink2)', fontFamily: 'var(--font-sans)', fontSize: '0.75rem', fontWeight: 500, cursor: 'pointer', transition: 'all 0.2s ease' }}>
+            {cat.label}
+          </button>
+        ))}
+      </div>
+      
+      {/* Condición */}
+      <div style={{ display: 'flex', gap: '0.375rem' }}>
+        {CONDITIONS.map((cond) => (
+          <button key={cond.value} onClick={() => setCondition(cond.value)} disabled={disabled} style={{ padding: '6px 12px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--line)', background: condition === cond.value ? 'var(--ink)' : 'transparent', color: condition === cond.value ? 'var(--white)' : 'var(--ink2)', fontFamily: 'var(--font-sans)', fontSize: '0.7rem', cursor: 'pointer' }}>
+            {cond.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Precio */}
+      <select value={priceIdx} onChange={(e) => setPriceIdx(Number(e.target.value))} disabled={disabled} style={{ padding: '8px 12px', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', fontFamily: 'var(--font-sans)', fontSize: '0.75rem', background: 'var(--white)', color: 'var(--ink)', cursor: 'pointer', outline: 'none', minWidth: 160 }}>
+        {PRICE_RANGES.map((r, i) => <option key={i} value={i}>{r.label}</option>)}
+      </select>
+    </div>
+
+    {/* Buscador */}
+    <div style={{ position: 'relative', width: 280 }}>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" strokeWidth="2" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }}>
+        <circle cx="11" cy="11" r="7" />
+        <path d="M21 21l-3.5-3.5" />
       </svg>
       <input
         type="text"
-        placeholder="Buscar productos..."
+        placeholder="Buscar..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         disabled={disabled}
         style={{
           width: '100%',
-          padding: '14px 16px 14px 46px',
+          padding: '10px 12px 10px 40px',
           border: '1px solid var(--line)',
           borderRadius: 'var(--radius-sm)',
-          fontFamily: 'var(--font-display)',
-          fontSize: '0.9rem',
+          fontFamily: 'var(--font-sans)',
+          fontSize: '0.8rem',
           background: 'var(--white)',
           color: 'var(--ink)',
           outline: 'none',
-          opacity: disabled ? 0.5 : 1,
-          transition: 'all 0.2s ease',
-          boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-        }}
-        onFocus={(e) => {
-          e.target.style.borderColor = 'var(--ink)';
-          e.target.style.boxShadow = '0 0 0 3px rgba(0,0,0,0.05)';
-        }}
-        onBlur={(e) => {
-          e.target.style.borderColor = 'var(--line)';
-          e.target.style.boxShadow = '0 1px 2px rgba(0,0,0,0.04)';
         }}
       />
-      {search && (
-        <button
-          onClick={() => setSearch('')}
-          disabled={disabled}
-          style={{
-            position: 'absolute',
-            right: 10,
-            top: '50%',
-            transform: 'translateY(-50%)',
-            background: 'none',
-            border: 'none',
-            padding: 4,
-            cursor: disabled ? 'not-allowed' : 'pointer',
-            color: 'var(--ink3)',
-            display: 'flex',
-            alignItems: 'center',
-          }}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      )}
-    </div>
-    {/* Category filters */}
-    <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap' }}>
-      {CATEGORIES.map((cat) => (
-        <button key={cat.value} onClick={() => setCategory(cat.value)} disabled={disabled} style={{ padding: '6px 14px', borderRadius: '2px', border: 'none', background: category === cat.value ? 'var(--ink)' : 'transparent', color: category === cat.value ? 'var(--white)' : 'var(--ink2)', fontFamily: 'var(--font-sans)', fontSize: '0.65rem', fontWeight: category === cat.value ? 600 : 400, letterSpacing: '0.5px', cursor: disabled ? 'not-allowed' : 'pointer', transition: 'all 0.2s ease', opacity: disabled ? 0.5 : 1 }}>
-          {cat.label}
-        </button>
-      ))}
-    </div>
-    {/* Condition & Price filters */}
-    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-      <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap' }}>
-        {CONDITIONS.map((cond) => (
-          <button key={cond.value} onClick={() => setCondition(cond.value)} disabled={disabled} style={{ padding: '6px 12px', borderRadius: '2px', border: '1px solid var(--line)', background: condition === cond.value ? 'var(--ink)' : 'transparent', color: condition === cond.value ? 'var(--white)' : 'var(--ink2)', fontFamily: 'var(--font-sans)', fontSize: '0.65rem', fontWeight: condition === cond.value ? 600 : 400, cursor: disabled ? 'not-allowed' : 'pointer', transition: 'all 0.2s ease', opacity: disabled ? 0.5 : 1 }}>
-            {cond.label}
-          </button>
-        ))}
-      </div>
-      <div style={{ width: 1, height: 20, background: 'var(--line)' }} />
-      <select value={priceIdx} onChange={(e) => setPriceIdx(Number(e.target.value))} disabled={disabled} style={{ padding: '6px 12px', border: '1px solid var(--line)', borderRadius: '2px', fontFamily: 'var(--font-sans)', fontSize: '0.7rem', background: 'var(--white)', color: 'var(--ink)', cursor: disabled ? 'not-allowed' : 'pointer', outline: 'none' }}>
-        {PRICE_RANGES.map((r, i) => <option key={i} value={i}>{r.label}</option>)}
-      </select>
     </div>
   </div>
 );
