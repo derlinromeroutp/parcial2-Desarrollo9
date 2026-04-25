@@ -8,6 +8,7 @@ export interface CreateProductDTO {
   price: number;
   stock: number;
   condition: 'A' | 'B' | 'C';
+  category: 'celular' | 'laptop' | 'pc' | 'auriculares' | 'tablet';
   image_urls: string[];
 }
 
@@ -17,6 +18,7 @@ export interface UpdateProductDTO {
   price?: number;
   stock?: number;
   condition?: 'A' | 'B' | 'C';
+  category?: 'celular' | 'laptop' | 'pc' | 'auriculares' | 'tablet';
   image_urls?: string[];
 }
 

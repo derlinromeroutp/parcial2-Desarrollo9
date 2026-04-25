@@ -8,6 +8,9 @@ export const createProductSchema = z.object({
   condition: z.enum(['A', 'B', 'C'], {
     errorMap: () => ({ message: 'La condición debe ser A, B o C' }),
   }),
+  category: z.enum(['celular', 'laptop', 'pc', 'auriculares', 'tablet'], {
+    errorMap: () => ({ message: 'Categoría inválida' }),
+  }),
   image_urls: z.array(z.string().url('Debe ser una URL válida')).optional(),
 });
 

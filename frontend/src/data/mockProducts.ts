@@ -8,6 +8,7 @@ export const mockProducts: Product[] = [
     price: 1199.99,
     stock: 5,
     condition: 'A',
+    category: 'celular',
     image_urls: ['https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&w=400&q=80'],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
@@ -19,6 +20,7 @@ export const mockProducts: Product[] = [
     price: 2499.00,
     stock: 2,
     condition: 'A',
+    category: 'laptop',
     image_urls: ['https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=400&q=80'],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
@@ -30,6 +32,7 @@ export const mockProducts: Product[] = [
     price: 249.00,
     stock: 12,
     condition: 'A',
+    category: 'auriculares',
     image_urls: ['https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?auto=format&fit=crop&w=400&q=80'],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
@@ -41,6 +44,7 @@ export const mockProducts: Product[] = [
     price: 599.50,
     stock: 8,
     condition: 'A',
+    category: 'tablet',
     image_urls: ['https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&w=400&q=80'],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()

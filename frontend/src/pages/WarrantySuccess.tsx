@@ -1,48 +1,152 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 const WarrantySuccess: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const [drawn, setDrawn] = useState(false);
+
+  const ticketId = searchParams.get('ticketId') || searchParams.get('id');
+
+  useEffect(() => {
+    const t = setTimeout(() => setDrawn(true), 120);
+    return () => clearTimeout(t);
+  }, []);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f0f0f0] p-6">
-      <div className="bg-white border-4 border-black shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] p-12 max-w-lg w-full text-center">
-        <div className="mb-6 inline-block bg-yellow-400 border-4 border-black p-4 rotate-3 animate-pulse">
-           <svg 
-            xmlns="http://www.w3.org/2000/svg" 
-            className="h-20 w-20 text-black border-4 border-black p-2" 
-            fill="none" 
-            viewBox="0 0 24 24" 
-            stroke="currentColor" 
-            strokeWidth={4}
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-          </svg>
+    <div style={{
+      minHeight: '100vh',
+      background: 'var(--cream)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '2rem',
+    }}>
+      <div style={{
+        background: 'var(--white)',
+        border: '0.5px solid var(--line)',
+        borderRadius: 8,
+        padding: '3.5rem 3rem',
+        width: '100%',
+        maxWidth: 440,
+        textAlign: 'center',
+        animation: 'slideUpFade 0.5s cubic-bezier(0.16, 1, 0.3, 1) both',
+      }}>
+
+        {/* Check animado */}
+        <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'center' }}>
+          <div style={{
+            width: 72,
+            height: 72,
+            borderRadius: '50%',
+            border: `0.5px solid ${drawn ? 'var(--ink)' : 'var(--line)'}`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'border-color 0.4s ease',
+          }}>
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="var(--ink)"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path
+                d="M5 13l4 4L19 7"
+                style={{
+                  strokeDasharray: 100,
+                  strokeDashoffset: drawn ? 0 : 100,
+                  transition: 'stroke-dashoffset 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.15s',
+                }}
+              />
+            </svg>
+          </div>
         </div>
-        
-        <h1 className="text-5xl font-black mb-4 uppercase italic tracking-tighter">
-          Ticket Creado
+
+        {/* Título */}
+        <h1 style={{
+          fontFamily: 'var(--font-serif)',
+          fontStyle: 'italic',
+          fontWeight: 400,
+          fontSize: 'clamp(2rem, 5vw, 2.75rem)',
+          color: 'var(--ink)',
+          lineHeight: 1.05,
+          marginBottom: '0.75rem',
+        }}>
+          Ticket creado
         </h1>
-        
-        <p className="text-xl font-bold mb-8 leading-tight">
-          Tu reporte de garantía ha sido enviado con éxito. Revisaremos las evidencias y te contactaremos pronto.
+
+        {/* Subtítulo */}
+        <p style={{
+          fontFamily: 'var(--font-display)',
+          fontSize: '0.875rem',
+          fontWeight: 400,
+          color: 'var(--ink2)',
+          lineHeight: 1.65,
+          marginBottom: ticketId ? '1.75rem' : '2.5rem',
+        }}>
+          Tu reporte de garantía fue enviado con éxito.
+          Revisaremos las evidencias y te contactaremos pronto.
         </p>
 
-        <div className="space-y-4">
+        {/* Ticket ID */}
+        {ticketId && (
+          <div style={{
+            background: 'var(--cream)',
+            border: '0.5px solid var(--line)',
+            borderRadius: 6,
+            padding: '1rem 1.5rem',
+            marginBottom: '2.5rem',
+          }}>
+            <p style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: '0.62rem',
+              fontWeight: 500,
+              textTransform: 'uppercase',
+              letterSpacing: '1.5px',
+              color: 'var(--ink3)',
+              marginBottom: '0.375rem',
+            }}>
+              Número de ticket
+            </p>
+            <p style={{
+              fontFamily: 'var(--font-serif)',
+              fontStyle: 'italic',
+              fontSize: '1.75rem',
+              fontWeight: 400,
+              color: 'var(--ink)',
+              lineHeight: 1,
+            }}>
+              #{ticketId}
+            </p>
+          </div>
+        )}
+
+        {/* Divider */}
+        <div style={{ height: '0.5px', background: 'var(--line)', marginBottom: '1.5rem' }} />
+
+        {/* CTAs */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
           <button
             onClick={() => navigate('/orders')}
-            className="w-full bg-black text-white font-black py-4 px-8 border-4 border-black hover:bg-white hover:text-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:shadow-none transition-all uppercase italic text-xl"
+            className="btn-primary"
+            style={{ width: '100%', padding: '13px', fontSize: '0.825rem' }}
           >
-            Mis pedidos
+            Ver mis pedidos
           </button>
-          
           <button
             onClick={() => navigate('/home')}
-            className="w-full bg-white text-black font-black py-4 px-8 border-4 border-black hover:bg-black hover:text-white transition-all uppercase italic text-xl underline decoration-4 decoration-yellow-400"
+            className="btn-ghost"
+            style={{ width: '100%', fontSize: '0.8rem' }}
           >
-            Ir a la tienda
+            Seguir comprando
           </button>
         </div>
+
       </div>
     </div>
   );

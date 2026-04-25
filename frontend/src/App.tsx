@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom';
 import { SignedIn } from '@clerk/clerk-react';
 import Header from './components/Header';
+import NavMenu from './components/ui/menu-hover-effects';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -10,7 +11,20 @@ import NewWarranty from './pages/NewWarranty';
 import WarrantySuccess from './pages/WarrantySuccess';
 import AdminDashboard from './pages/AdminDashboard';
 import Success from './pages/Success';
+import ProductPage from './pages/ProductPage';
+import Nosotros from './pages/Nosotros';
+import Contacto from './pages/Contacto';
 import { ProtectedAdminRoute } from './components/AdminRoute';
+
+// Layout with NavMenu for all public pages
+function WithNav({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="page-main">
+      <NavMenu />
+      {children}
+    </div>
+  );
+}
 
 function App() {
   return (
@@ -18,16 +32,27 @@ function App() {
       <Header />
       <main>
         <Routes>
+<<<<<<< HEAD
           <Route path="/" element={<Landing />} />
           <Route path="/home" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/success" element={<Success />} />
+=======
+          <Route path="/"              element={<Landing />} />
+          <Route path="/home"          element={<WithNav><Home /></WithNav>} />
+          <Route path="/nosotros"      element={<WithNav><Nosotros /></WithNav>} />
+          <Route path="/contacto"      element={<WithNav><Contacto /></WithNav>} />
+          <Route path="/product/:id"   element={<WithNav><ProductPage /></WithNav>} />
+          <Route path="/product"       element={<WithNav><ProductPage /></WithNav>} />
+          <Route path="/login"         element={<div className="page-main"><Login /></div>} />
+          <Route path="/success"       element={<Success />} />
+>>>>>>> origin/main
           <Route
             path="/orders"
             element={
               <SignedIn>
-                <Orders />
+                <WithNav><Orders /></WithNav>
               </SignedIn>
             }
           />
@@ -35,7 +60,7 @@ function App() {
             path="/warranties/new"
             element={
               <SignedIn>
-                <NewWarranty />
+                <WithNav><NewWarranty /></WithNav>
               </SignedIn>
             }
           />
