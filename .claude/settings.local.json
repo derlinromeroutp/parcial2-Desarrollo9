@@ -3,7 +3,8 @@
     "allow": [
       "Bash(npx tsc *)",
       "PowerShell(python \".claude/skills/ui-ux-pro-max/scripts/search.py\" \"premium ecommerce refurbished electronics warm minimalist editorial filter chips\" --design-system -p \"SafeTech\")",
-      "PowerShell(cd frontend; npx tsc --noEmit; \"ExitCode=$LASTEXITCODE\")"
+      "PowerShell(cd frontend; npx tsc --noEmit; \"ExitCode=$LASTEXITCODE\")",
+      "WebFetch(domain:api.anthropic.com)"
     ]
   }
 }
