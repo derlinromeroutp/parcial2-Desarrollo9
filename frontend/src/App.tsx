@@ -4,9 +4,9 @@ import Header from './components/Header';
 import NavMenu from './components/ui/menu-hover-effects';
 import Home from './pages/Home';
 import Login from './pages/Login';
-import Register from './pages/Register';
 import Landing from './pages/Landing';
 import Orders from './pages/Orders';
+import Checkout from './pages/Checkout';
 import NewWarranty from './pages/NewWarranty';
 import WarrantySuccess from './pages/WarrantySuccess';
 import AdminDashboard from './pages/AdminDashboard';
@@ -41,12 +41,11 @@ function App() {
           <Route path="/product"       element={<WithNav><ProductPage /></WithNav>} />
           <Route path="/login"         element={<div className="page-main"><Login /></div>} />
           <Route path="/success"       element={<Success />} />
+          <Route path="/checkout"      element={<WithNav><Checkout /></WithNav>} />
           <Route
             path="/orders"
             element={
-              <SignedIn>
-                <WithNav><Orders /></WithNav>
-              </SignedIn>
+              <WithNav><Orders /></WithNav>
             }
           />
           <Route

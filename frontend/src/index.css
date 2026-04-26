@@ -848,6 +848,19 @@ select.input    { cursor: pointer; }
 .orders-header h1 { font-size: clamp(1.75rem, 5vw, 2.75rem); margin-bottom: 0.25rem; }
 .orders-header p  { font-size: 0.9rem; color: var(--ink2); }
 
+.checkout-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .checkout-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .order-card {
   background: var(--white);
   border: 1.5px solid var(--line);

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useOrders } from '../hooks/useOrders';
 import { Link } from 'react-router-dom';
 import { Skeleton } from '../components/ui/Skeleton';
+import { SignInButton, useAuth } from '@clerk/clerk-react';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 const isWithin90Days = (d?: string) =>
@@ -272,6 +273,7 @@ const PAGE_SIZE = 5;
 
 // ── Main ───────────────────────────────────────────────────────────────────
 const Orders: React.FC = () => {
+  const { isLoaded, isSignedIn } = useAuth();
   const { data: orders, isLoading, isError } = useOrders();
   const [page, setPage] = useState(1);
 
@@ -297,6 +299,44 @@ const Orders: React.FC = () => {
     setPage(p);
     setTimeout(() => listTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 20);
   };
+
+  if (isLoaded && !isSignedIn) {
+    return (
+      <div className="op-root">
+        <header className="op-hero" ref={heroRef}>
+          <div className="op-noise" />
+          <div className="op-diag" />
+          <div className="page-container op-hero-inner">
+            <div className="op-hero-text">
+              <p className="op-eyebrow">Mi cuenta · SafeTech</p>
+              <h1 className="op-title">
+                Historial de<br />
+                <em>pedidos</em>
+              </h1>
+            </div>
+          </div>
+        </header>
+
+        <main className="op-body">
+          <div className="page-container">
+            <div className="op-empty">
+              <div className="op-empty-icon">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M16 11V7a4 4 0 00-8 0v4" />
+                  <rect x="5" y="11" width="14" height="10" rx="2" />
+                </svg>
+              </div>
+              <h3>Debes iniciar sesión para ver tus pedidos</h3>
+              <p>Accede a tu cuenta para consultar compras, estados y garantías.</p>
+              <SignInButton mode="modal">
+                <button className="op-cta">Iniciar sesión</button>
+              </SignInButton>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="op-root">
