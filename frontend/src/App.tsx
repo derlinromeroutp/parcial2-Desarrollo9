@@ -11,6 +11,7 @@ import WarrantySuccess from './pages/WarrantySuccess';
 import AdminDashboard from './pages/AdminDashboard';
 import Success from './pages/Success';
 import ProductPage from './pages/ProductPage';
+import ProductDetail from './pages/ProductDetail';
 import Nosotros from './pages/Nosotros';
 import Contacto from './pages/Contacto';
 import { ProtectedAdminRoute } from './components/AdminRoute';
@@ -35,7 +36,7 @@ function App() {
           <Route path="/home"          element={<WithNav><Home /></WithNav>} />
           <Route path="/nosotros"      element={<WithNav><Nosotros /></WithNav>} />
           <Route path="/contacto"      element={<WithNav><Contacto /></WithNav>} />
-          <Route path="/product/:id"   element={<WithNav><ProductPage /></WithNav>} />
+          <Route path="/product/:id"   element={<WithNav><ProductDetail /></WithNav>} />
           <Route path="/product"       element={<WithNav><ProductPage /></WithNav>} />
           <Route path="/login"         element={<div className="page-main"><Login /></div>} />
           <Route path="/success"       element={<Success />} />
