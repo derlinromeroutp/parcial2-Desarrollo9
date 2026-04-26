@@ -30,42 +30,44 @@ export const stripeWebhookController = async (c: Context) => {
     return c.json({ error: `Webhook Error: ${err.message}` }, 400);
   }
 
-  // Manejar únicamente el evento de pago completado
-  if (event.type === 'checkout.session.completed') {
-    const sessionStripe = event.data.object as Stripe.Checkout.Session;
-    
+  // Embedded Payment Element flow — drive order state from PaymentIntent events.
+  if (event.type === 'payment_intent.succeeded') {
+    const pi = event.data.object as Stripe.PaymentIntent;
+
     // Iniciar transacción atómica en MongoDB
     const session = await mongoose.startSession();
     session.startTransaction();
 
     try {
-      // 1. Encontrar la orden correspondiente al stripeSessionId
-      const order = await Order.findOne({ stripe_session_id: sessionStripe.id }).session(session);
-
-      if (!order) {
-        throw new Error(`Order with stripe_session_id ${sessionStripe.id} not found`);
+      // Locate by payment_intent_id, with metadata.orderId as fallback.
+      let order = await Order.findOne({ payment_intent_id: pi.id }).session(session);
+      if (!order && pi.metadata?.orderId) {
+        order = await Order.findById(pi.metadata.orderId).session(session);
       }
 
+      if (!order) {
+        throw new Error(`Order for PaymentIntent ${pi.id} not found`);
+      }
+
+      // Idempotency: if already paid, ack and exit.
       if (order.status !== 'pending') {
-        // Podría ser un re-intento de Stripe de una orden ya pagada
         await session.abortTransaction();
         session.endSession();
         return c.json({ received: true }, 200);
       }
 
-      // 2. Cambiar status a 'paid'
       order.status = 'paid';
+      // Backfill in case the order was created before payment_intent_id was stamped.
+      if (!order.payment_intent_id) order.payment_intent_id = pi.id;
       await order.save({ session });
 
-      // 3. Encontrar los items de esa orden
       const orderItems = await OrderItem.find({ order_id: order._id }).session(session);
 
-      // 4. Reducir el stock de cada producto atómicamente
       for (const item of orderItems) {
         const result = await Product.updateOne(
-          { _id: item.product_id, stock: { $gte: item.quantity } }, // Evitar stock negativo
+          { _id: item.product_id, stock: { $gte: item.quantity } },
           { $inc: { stock: -item.quantity } },
-          { session }
+          { session },
         );
 
         if (result.modifiedCount === 0) {
@@ -73,21 +75,32 @@ export const stripeWebhookController = async (c: Context) => {
         }
       }
 
-      // Si todo funcionó, asentar los cambios
       await session.commitTransaction();
       session.endSession();
 
-      console.log(`Order ${order._id} paid and stock updated successfully`);
+      console.log(`Order ${order._id} paid (PI ${pi.id}) and stock updated successfully`);
       return c.json({ received: true }, 200);
-
     } catch (dbError: any) {
-      // Si ocurre un error, deshacer todas las operaciones en la DB
       await session.abortTransaction();
       session.endSession();
       console.error('Transaction aborted due to error:', dbError.message);
-      
       return c.json({ error: 'Database transaction failed' }, 400);
     }
+  }
+
+  if (event.type === 'payment_intent.payment_failed') {
+    const pi = event.data.object as Stripe.PaymentIntent;
+    try {
+      const order = await Order.findOne({ payment_intent_id: pi.id });
+      if (order && order.status === 'pending') {
+        // Keep pending so the customer can retry with a new payment method on the same order.
+        // Log only — do not mutate to 'failed' to preserve retry-on-same-order semantics.
+        console.log(`PaymentIntent ${pi.id} failed for order ${order._id}; keeping pending for retry.`);
+      }
+    } catch (err: any) {
+      console.error('Error processing payment_intent.payment_failed:', err.message);
+    }
+    return c.json({ received: true }, 200);
   }
 
   // Devolver un 200 OK vacío para eventos no manejados y evitar re-intentos de Stripe

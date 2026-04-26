@@ -189,32 +189,6 @@ export const HeroSection: React.FC = () => {
                 </svg>
               </button>
 
-              <button
-                onClick={() => navigate('/login')}
-                style={{
-                  background: 'transparent',
-                  color: 'rgba(255,255,255,0.6)',
-                  border: '1px solid rgba(255,255,255,0.25)',
-                  borderRadius: '2px',
-                  padding: '13px 22px',
-                  fontSize: '0.8rem',
-                  fontWeight: 500,
-                  fontFamily: 'var(--font-sans)',
-                  cursor: 'pointer',
-                  transition: 'all 0.25s ease',
-                  letterSpacing: '0.3px',
-                }}
-                onMouseEnter={e => {
-                  (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.6)';
-                  (e.currentTarget as HTMLButtonElement).style.color = 'white';
-                }}
-                onMouseLeave={e => {
-                  (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.25)';
-                  (e.currentTarget as HTMLButtonElement).style.color = 'rgba(255,255,255,0.6)';
-                }}
-              >
-                Iniciar sesión
-              </button>
             </div>
 
             <div

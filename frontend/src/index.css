@@ -199,7 +199,6 @@ button { font-family: var(--font-display); cursor: pointer; }
   background: transparent;
   color: var(--ink);
   border: 1.5px solid var(--line);
-  border-radius: var(--radius-ui);
   font-family: var(--font-display);
   font-weight: 600;
   font-size: 0.9rem;

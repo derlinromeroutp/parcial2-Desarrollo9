@@ -1,15 +1,15 @@
 import { Hono } from 'hono';
-import { zValidator } from '@hono/zod-validator';
-import { checkoutSessionController } from '../controllers/checkout.controller';
+import { createPaymentIntentController } from '../controllers/checkout.controller';
 import { clerkAuthMiddleware } from '../middlewares/auth.middleware';
 
 const checkoutRoutes = new Hono();
 
-// El middleware de Auth protege el inicio del endpoint de pagos
+// Embedded Stripe Payment Element flow — returns { clientSecret, orderId, amount }.
+// Reuses an existing pending Order + PaymentIntent for the same cart on retry.
 checkoutRoutes.post(
   '/',
   clerkAuthMiddleware,
-  checkoutSessionController
+  createPaymentIntentController,
 );
 
 export default checkoutRoutes;
