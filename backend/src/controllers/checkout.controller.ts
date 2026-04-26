@@ -142,7 +142,12 @@ export const createPaymentIntentController = async (c: Context) => {
           'requires_confirmation',
           'requires_action',
         ]);
-        if (reusableStatuses.has(existing.status)) {
+        const isCardOnlyIntent =
+          Array.isArray(existing.payment_method_types) &&
+          existing.payment_method_types.length === 1 &&
+          existing.payment_method_types[0] === 'card';
+
+        if (reusableStatuses.has(existing.status) && isCardOnlyIntent) {
           // If amount drifted (e.g., product price changed), update it.
           if (existing.amount !== amountInCents) {
             paymentIntent = await stripe.paymentIntents.update(existing.id, {
@@ -162,7 +167,7 @@ export const createPaymentIntentController = async (c: Context) => {
       paymentIntent = await stripe.paymentIntents.create({
         amount: amountInCents,
         currency: 'usd',
-        automatic_payment_methods: { enabled: true },
+        payment_method_types: ['card'],
         metadata: {
           clerkUserId: userId,
           // orderId is filled in below once the order exists.

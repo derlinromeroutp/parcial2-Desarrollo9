@@ -8,7 +8,11 @@ if (!PUBLISHABLE_KEY) {
   throw new Error("Missing Publishable Key: No se encontró VITE_CLERK_PUBLISHABLE_KEY en el archivo de entorno.");
 }
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+if (/^pk_(test|live)_51/.test(PUBLISHABLE_KEY)) {
+  throw new Error(
+    "VITE_CLERK_PUBLISHABLE_KEY parece ser una key de Stripe. Usa la key de Clerk en esta variable y la de Stripe en VITE_STRIPE_PUBLISHABLE_KEY.",
+  );
+}
 
 const ROUTES = {
   ADMIN: '/admin',

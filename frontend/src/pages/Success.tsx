@@ -19,7 +19,7 @@ const formatDate = (dateStr: string) =>
 
 export default function Success() {
   const [searchParams] = useSearchParams();
-  const sessionId = searchParams.get('session_id');
+  const paymentIntentId = searchParams.get('payment_intent');
   const { getToken } = useAuth();
   const clearCart = useCartStore((state) => state.clearCart);
 
@@ -29,17 +29,16 @@ export default function Success() {
   const [drawn, setDrawn] = useState(false);
 
   useEffect(() => {
-    if (sessionId) clearCart();
-  }, [sessionId, clearCart]);
+    if (paymentIntentId) clearCart();
+  }, [paymentIntentId, clearCart]);
 
   useEffect(() => {
     const fetchOrder = async () => {
-      if (!sessionId) { setLoading(false); return; }
+      if (!paymentIntentId) { setLoading(false); return; }
       try {
         const token = await getToken();
         if (!token) throw new Error('No autenticado');
-        await ordersService.confirmPayment(sessionId, token);
-        const data = await ordersService.getOrderBySession(sessionId, token);
+        const data = await ordersService.confirmPayment(paymentIntentId, token);
         setOrder(data);
       } catch (err: any) {
         setError(err.message || 'Error al cargar los detalles del pedido.');
@@ -48,7 +47,7 @@ export default function Success() {
       }
     };
     fetchOrder();
-  }, [sessionId, getToken]);
+  }, [paymentIntentId, getToken]);
 
   useEffect(() => {
     if (!loading) {
