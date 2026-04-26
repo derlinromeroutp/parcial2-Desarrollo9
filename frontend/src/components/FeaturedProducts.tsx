@@ -68,42 +68,51 @@ export const FeaturedProducts: React.FC = () => {
             {isLoading
               ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
               : featured.map((product) => (
-                  <article key={product._id} className="product-card">
-                    <div className="product-image-container">
-                      <span className="product-badge">{product.condition}</span>
-                      <img
-                        src={product.image_urls?.[0] || `https://picsum.photos/seed/${product._id}/400/300`}
-                        alt={product.name}
-                        className="product-image"
-                      />
-                    </div>
-                    <div className="product-info">
-                      <h3 className="product-title">{product.name}</h3>
-                      <div className="product-price">${product.price.toFixed(2)}</div>
-                      <p className="product-desc" style={{
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden',
-                      }}>
-                        {product.description}
-                      </p>
-                      <div className="product-add-wrapper">
-                        <button
-                          className="product-add-btn"
-                          onClick={() => {
-                            addItem(product);
-                            toggleDrawer();
-                          }}
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                          </svg>
-                          Añadir al carrito
-                        </button>
+                  <Link
+                    key={product._id}
+                    to={`/product/${product._id}`}
+                    style={{ display: 'block', color: 'inherit', textDecoration: 'none' }}
+                    aria-label={`Ver detalles de ${product.name}`}
+                  >
+                    <article className="product-card">
+                      <div className="product-image-container">
+                        <span className="product-badge">{product.condition}</span>
+                        <img
+                          src={product.image_urls?.[0] || `https://picsum.photos/seed/${product._id}/400/300`}
+                          alt={product.name}
+                          className="product-image"
+                        />
                       </div>
-                    </div>
-                  </article>
+                      <div className="product-info">
+                        <h3 className="product-title">{product.name}</h3>
+                        <div className="product-price">${product.price.toFixed(2)}</div>
+                        <p className="product-desc" style={{
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                        }}>
+                          {product.description}
+                        </p>
+                        <div className="product-add-wrapper">
+                          <button
+                            className="product-add-btn"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              addItem(product);
+                              toggleDrawer();
+                            }}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                            </svg>
+                            Añadir al carrito
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                  </Link>
                 ))}
           </div>
         )}

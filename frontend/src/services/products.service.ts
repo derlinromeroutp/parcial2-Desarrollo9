@@ -37,7 +37,9 @@ export const productsService = {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
     if (!response.ok) throw new Error('Failed to fetch product');
-    return response.json();
+    const result = await response.json();
+    // Backend returns { success, data: product }; older callers may have relied on raw shape.
+    return (result?.data ?? result) as Product;
   },
 
   async create(data: CreateProductDTO, token: string): Promise<Product> {

@@ -8,3 +8,11 @@ export const useProducts = () => {
     queryFn: () => productsService.getAll(),
   });
 };
+
+export const useProduct = (id: string | undefined) => {
+  return useQuery<Product, Error>({
+    queryKey: ['product', id],
+    queryFn: () => productsService.getById(id as string),
+    enabled: Boolean(id),
+  });
+};
