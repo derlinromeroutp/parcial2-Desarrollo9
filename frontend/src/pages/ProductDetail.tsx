@@ -134,7 +134,6 @@ const ProductDetail: React.FC = () => {
                 aspectRatio: '1 / 1',
                 background: 'var(--white)',
                 border: '1px solid var(--line)',
-                borderRadius: 'var(--radius-md)',
                 overflow: 'hidden',
                 marginBottom: '1rem',
                 position: 'relative',
@@ -176,7 +175,6 @@ const ProductDetail: React.FC = () => {
                     style={{
                       aspectRatio: '1',
                       border: `2px solid ${activeImg === i ? 'var(--ink)' : 'var(--line)'}`,
-                      borderRadius: 'var(--radius-sm)',
                       overflow: 'hidden',
                       cursor: 'pointer',
                       background: 'var(--white)',
@@ -323,7 +321,6 @@ const ProductDetail: React.FC = () => {
                   width: '100%',
                   padding: '14px 24px',
                   background: added ? '#10b981' : 'var(--ink)',
-                  borderRadius: 'var(--radius-md)',
                   fontSize: '0.875rem',
                   letterSpacing: '0.3px',
                   opacity: isOutOfStock ? 0.5 : 1,
@@ -339,7 +336,6 @@ const ProductDetail: React.FC = () => {
                 style={{
                   width: '100%',
                   padding: '13px 24px',
-                  borderRadius: 'var(--radius-md)',
                   fontSize: '0.875rem',
                   textAlign: 'center',
                 }}
