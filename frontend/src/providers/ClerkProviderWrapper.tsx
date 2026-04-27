@@ -16,6 +16,7 @@ if (/^pk_(test|live)_51/.test(PUBLISHABLE_KEY)) {
 
 const ROUTES = {
   ADMIN: '/admin',
+  TECHNICIAN: '/technician',
   HOME: '/home',
   LANDING: '/',
   LOGIN: '/login',
@@ -29,30 +30,27 @@ function AuthRedirectHandler({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const redirectAttempted = useRef(false);
 
-  const getRoleFromClerk = useCallback((): boolean => {
-    // Get role from Clerk user publicMetadata
+  const getRoleFromClerk = useCallback((): string => {
     const metadata = user?.publicMetadata as Record<string, unknown> | undefined;
-    const role = metadata?.role as string | undefined;
-    
-    return role === 'admin';
+    return (metadata?.role as string) || 'user';
   }, [user]);
 
   const redirectByRole = useCallback(async () => {
     if (redirectAttempted.current) return;
     redirectAttempted.current = true;
 
-    // Wait for user to be loaded
     if (!user) {
       console.log('[AuthRedirect] Waiting for user to load...');
       setTimeout(() => redirectByRole(), 500);
       return;
     }
 
-    const isAdmin = getRoleFromClerk();
-    const targetRoute = isAdmin ? ROUTES.ADMIN : ROUTES.HOME;
-    
-  
-    
+    const role = getRoleFromClerk();
+    const targetRoute =
+      role === 'admin' ? ROUTES.ADMIN :
+      role === 'technician' ? ROUTES.TECHNICIAN :
+      ROUTES.HOME;
+
     navigate(targetRoute, { replace: true });
   }, [user, getRoleFromClerk, navigate]);
 

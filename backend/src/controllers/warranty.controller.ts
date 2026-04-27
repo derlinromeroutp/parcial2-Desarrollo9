@@ -108,15 +108,15 @@ export const assignTechnician = async (c: Context) => {
   try {
     const { id } = c.req.param();
     const { technicianId, technicianName } = await c.req.json();
-    
+
     if (!technicianId || !technicianName) {
       return c.json({ error: 'Missing technicianId or technicianName' }, 400);
     }
 
     const report = await WarrantyReport.findByIdAndUpdate(
       id,
-      { 
-        technicianId, 
+      {
+        technicianId,
         technicianName,
         status: 'review'
       },
@@ -124,6 +124,44 @@ export const assignTechnician = async (c: Context) => {
     );
 
     if (!report) return c.json({ error: 'Report not found' }, 404);
+    return c.json(report);
+  } catch (error: any) {
+    return c.json({ error: error.message }, 400);
+  }
+};
+
+export const getAssignedWarranties = async (c: Context) => {
+  try {
+    const technicianDocId = c.get('technicianDocId');
+    const reports = await WarrantyReport.find({ technicianId: technicianDocId })
+      .populate('orderId')
+      .exec();
+    return c.json(reports);
+  } catch (error: any) {
+    return c.json({ error: error.message }, 500);
+  }
+};
+
+export const technicianUpdateWarranty = async (c: Context) => {
+  try {
+    const { id } = c.req.param();
+    const technicianDocId = c.get('technicianDocId');
+    const body = await c.req.json();
+
+    const report = await WarrantyReport.findById(id);
+    if (!report) return c.json({ error: 'Report not found' }, 404);
+    if (report.technicianId !== technicianDocId) {
+      return c.json({ error: 'Forbidden: This ticket is not assigned to you' }, 403);
+    }
+
+    const allowedStatuses = ['review', 'resolved', 'rejected', 'refunded'];
+    if (body.status && !allowedStatuses.includes(body.status)) {
+      return c.json({ error: 'Invalid status' }, 400);
+    }
+
+    if (body.status) report.status = body.status;
+    if (body.repairNotes !== undefined) report.repairNotes = body.repairNotes;
+    await report.save();
     return c.json(report);
   } catch (error: any) {
     return c.json({ error: error.message }, 400);

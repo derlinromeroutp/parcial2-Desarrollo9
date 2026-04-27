@@ -154,16 +154,17 @@ function SectionHeader({ title, count }: { title: string; count?: number }) {
 }
 
 /* ── Technician form ── */
-function TechnicianForm({ onSubmit, isPending }: { onSubmit: (d: { name: string; email: string; phone?: string }) => void; isPending: boolean }) {
+function TechnicianForm({ onSubmit, isPending }: { onSubmit: (d: { name: string; email: string; phone?: string; clerkId?: string }) => void; isPending: boolean }) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [clerkId, setClerkId] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !email.trim()) return;
-    onSubmit({ name: name.trim(), email: email.trim(), phone: phone.trim() || undefined });
-    setName(''); setEmail(''); setPhone('');
+    onSubmit({ name: name.trim(), email: email.trim(), phone: phone.trim() || undefined, clerkId: clerkId.trim() || undefined });
+    setName(''); setEmail(''); setPhone(''); setClerkId('');
   };
 
   return (
@@ -177,11 +178,12 @@ function TechnicianForm({ onSubmit, isPending }: { onSubmit: (d: { name: string;
       <p style={{ fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--ink3)', marginBottom: '1.25rem' }}>
         Agregar técnico
       </p>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: '1rem', alignItems: 'end' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr auto', gap: '1rem', alignItems: 'end' }}>
         {[
-          { label: 'Nombre',   value: name,  onChange: setName,  ph: 'Juan Pérez', type: 'text', required: true  },
-          { label: 'Email',    value: email, onChange: setEmail, ph: 'juan@safetech.com', type: 'email', required: true  },
-          { label: 'Teléfono', value: phone, onChange: setPhone, ph: '+507 0000-0000', type: 'text', required: false },
+          { label: 'Nombre',   value: name,    onChange: setName,    ph: 'Juan Pérez',          type: 'text',  required: true  },
+          { label: 'Email',    value: email,   onChange: setEmail,   ph: 'juan@safetech.com',   type: 'email', required: true  },
+          { label: 'Teléfono', value: phone,   onChange: setPhone,   ph: '+507 0000-0000',      type: 'text',  required: false },
+          { label: 'Clerk ID', value: clerkId, onChange: setClerkId, ph: 'user_2abc…',          type: 'text',  required: false },
         ].map(({ label, value, onChange, ph, type, required }) => (
           <div key={label}>
             <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: 'var(--ink3)', marginBottom: 5 }}>
@@ -251,15 +253,6 @@ export default function AdminDashboard() {
     enabled: isLoaded,
   });
 
-  const warrantyMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const token = await getToken();
-      if (!token) throw new Error('No token');
-      return warrantyService.updateWarrantyStatus(id, status, token);
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-warranties'] }),
-  });
-
   const assignTechMutation = useMutation({
     mutationFn: async ({ id, technicianId, technicianName }: { id: string; technicianId: string; technicianName: string }) => {
       const token = await getToken();
@@ -270,7 +263,7 @@ export default function AdminDashboard() {
   });
 
   const technicianMutation = useMutation({
-    mutationFn: async (data: { name: string; email: string; phone?: string }) => {
+    mutationFn: async (data: { name: string; email: string; phone?: string; clerkId?: string }) => {
       const token = await getToken();
       if (!token) throw new Error('No token');
       return technicianService.createTechnician(data, token);
@@ -449,36 +442,21 @@ export default function AdminDashboard() {
                               </Badge>
                             </td>
                             <td className="actions">
-                              <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                                <select
-                                  className="admin-select"
-                                  value={w.technicianId || ''}
-                                  onChange={(e) => {
-                                    const tech = technicians?.find((t) => t._id === e.target.value);
-                                    if (tech) assignTechMutation.mutate({ id: w._id, technicianId: tech._id, technicianName: tech.name });
-                                  }}
-                                  disabled={assignTechMutation.isPending}
-                                  style={{ minWidth: 120 }}
-                                >
-                                  <option value="">Técnico…</option>
-                                  {(technicians || []).map((t) => (
-                                    <option key={t._id} value={t._id}>{t.name}</option>
-                                  ))}
-                                </select>
-                                <select
-                                  className="admin-select"
-                                  value={w.status}
-                                  onChange={(e) => warrantyMutation.mutate({ id: w._id, status: e.target.value })}
-                                  disabled={warrantyMutation.isPending}
-                                  style={{ minWidth: 120 }}
-                                >
-                                  <option value="pending">Pendiente</option>
-                                  <option value="review">En revisión</option>
-                                  <option value="resolved">Resuelto</option>
-                                  <option value="refunded">Reembolsado</option>
-                                  <option value="rejected">Rechazado</option>
-                                </select>
-                              </div>
+                              <select
+                                className="admin-select"
+                                value={w.technicianId || ''}
+                                onChange={(e) => {
+                                  const tech = technicians?.find((t) => t._id === e.target.value);
+                                  if (tech) assignTechMutation.mutate({ id: w._id, technicianId: tech._id, technicianName: tech.name });
+                                }}
+                                disabled={assignTechMutation.isPending || w.status !== 'pending'}
+                                style={{ minWidth: 140 }}
+                              >
+                                <option value="">Asignar técnico…</option>
+                                {(technicians || []).map((t) => (
+                                  <option key={t._id} value={t._id}>{t.name}</option>
+                                ))}
+                              </select>
                             </td>
                           </tr>
                         ))

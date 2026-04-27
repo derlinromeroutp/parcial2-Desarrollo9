@@ -5,7 +5,8 @@ const technicianSchema = new Schema({
   email: { type: String, required: true, unique: true },
   phone: { type: String },
   specialties: [{ type: String }],
-  active: { type: Boolean, default: true }
+  active: { type: Boolean, default: true },
+  clerkId: { type: String, sparse: true, unique: true },
 }, { timestamps: true });
 
 export const Technician = model('Technician', technicianSchema);

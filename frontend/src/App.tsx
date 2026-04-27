@@ -16,7 +16,8 @@ import ProductDetail from './pages/ProductDetail';
 import Nosotros from './pages/Nosotros';
 import Contacto from './pages/Contacto';
 import MyWarranties from './pages/MyWarranties';
-import { ProtectedAdminRoute } from './components/AdminRoute';
+import { ProtectedAdminRoute, ProtectedTechnicianRoute } from './components/AdminRoute';
+import TechnicianDashboard from './pages/TechnicianDashboard';
 
 // Layout with NavMenu for all public pages
 function WithNav({ children }: { children: React.ReactNode }) {
@@ -76,6 +77,16 @@ function App() {
                 <ProtectedAdminRoute>
                   <AdminDashboard />
                 </ProtectedAdminRoute>
+              </SignedIn>
+            }
+          />
+          <Route
+            path="/technician"
+            element={
+              <SignedIn>
+                <ProtectedTechnicianRoute>
+                  <TechnicianDashboard />
+                </ProtectedTechnicianRoute>
               </SignedIn>
             }
           />
