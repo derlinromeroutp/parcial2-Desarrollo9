@@ -151,7 +151,7 @@ const RecentOrdersList: React.FC<{ orders: Order[] | undefined; trigger: boolean
         {recent.map((o, i) => (
           <div key={o._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '0.625rem', borderBottom: i < recent.length - 1 ? '1px solid var(--line)' : 'none' }}>
             <div>
-              <p style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--ink)', fontFamily: 'var(--font-sans)' }}>{o.userId?.slice(0, 10)}...</p>
+              <p style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--ink)', fontFamily: 'var(--font-sans)' }}>{o.userDoc?.email ?? o.userId?.slice(0, 10)}...</p>
               <p style={{ fontSize: '0.55rem', color: 'var(--gray)', fontFamily: 'var(--font-sans)' }}>{new Date(o.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}</p>
             </div>
             <p style={{ fontSize: '0.8rem', fontWeight: 400, color: 'var(--ink)', fontFamily: 'var(--font-display)' }}>${o.total_amount?.toFixed(2)}</p>

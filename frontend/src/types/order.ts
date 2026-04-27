@@ -10,6 +10,7 @@ export interface OrderItem {
 export interface Order {
   _id: string;
   userId: string;
+  userDoc?: { email?: string };
   total_amount: number;
   status: 'pending' | 'paid' | 'shipped' | 'failed';
   stripe_session_id?: string;
