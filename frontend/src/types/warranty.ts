@@ -11,6 +11,8 @@ export interface IWarranty {
   technicianId?: string;
   technicianName?: string;
   createdAt: string;
+  resolvedAt?: string;
+  updatedAt?: string;
 }
 
 export interface CreateWarrantyDTO {

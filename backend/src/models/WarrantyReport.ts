@@ -10,23 +10,29 @@ export interface IWarrantyReport extends Document {
   technicianId?: string;
   technicianName?: string;
   createdAt: Date;
+  resolvedAt?: Date;
+  updatedAt?: Date;
 }
 
-const WarrantyReportSchema = new Schema<IWarrantyReport>({
-  orderId: { type: Schema.Types.ObjectId, ref: 'Order', required: true },
-  userId: { type: String, required: true },
-  description: { type: String, required: true },
-  evidenceUrls: [{ type: String }],
-  status: { 
-    type: String, 
-    enum: ['pending', 'review', 'resolved', 'rejected', 'refunded'], 
-    default: 'pending' 
+const WarrantyReportSchema = new Schema<IWarrantyReport>(
+  {
+    orderId: { type: Schema.Types.ObjectId, ref: 'Order', required: true },
+    userId: { type: String, required: true },
+    description: { type: String, required: true },
+    evidenceUrls: [{ type: String }],
+    status: {
+      type: String,
+      enum: ['pending', 'review', 'resolved', 'rejected', 'refunded'],
+      default: 'pending'
+    },
+    repairNotes: { type: String },
+    technicianId: { type: String },
+    technicianName: { type: String },
+    createdAt: { type: Date, default: Date.now },
+    resolvedAt: { type: Date }
   },
-  repairNotes: { type: String },
-  technicianId: { type: String },
-  technicianName: { type: String },
-  createdAt: { type: Date, default: Date.now }
-});
+  { timestamps: { createdAt: false, updatedAt: true } }
+);
 
 // Relación virtual con el usuario a través de clerk_id
 WarrantyReportSchema.virtual('userDoc', {

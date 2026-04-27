@@ -26,6 +26,17 @@ const relativeDate = (d?: string) => {
   return new Date(d).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
 };
 
+const formatCompletedAt = (warranty: IWarranty) => {
+  const d = warranty.resolvedAt || warranty.updatedAt || warranty.createdAt;
+  return new Date(d).toLocaleString('es-ES', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
 const TIMELINE = ['pending', 'review', 'resolved'] as const;
 const TIMELINE_LABELS: Record<string, string> = {
   pending: 'Recibido',
@@ -74,6 +85,12 @@ function WarrantyCard({ warranty, idx }: { warranty: IWarranty; idx: number }) {
           <p className="wc-meta">Orden #{shortOrder} · {relativeDate(warranty.createdAt)}</p>
           {warranty.technicianName && (
             <p className="wc-technician">Técnico: {warranty.technicianName}</p>
+          )}
+          {warranty.status === 'resolved' && (
+            <div className="wc-resolution">
+              <p className="wc-resolution-msg">Su revision ha sido completada, ya puede pasar por su dispositivo</p>
+              <p className="wc-resolution-date">Fecha de finalizacion: {formatCompletedAt(warranty)}</p>
+            </div>
           )}
         </div>
 
@@ -124,19 +141,45 @@ export default function MyWarranties() {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    if (!isLoaded || !isSignedIn) return;
-    (async () => {
+    if (!isLoaded || !isSignedIn) {
+      setLoading(false);
+      return;
+    }
+
+    let alive = true;
+
+    const loadWarranties = async () => {
       try {
         const token = await getToken();
+        if (!token || !alive) return;
         const data = await warrantyService.getMyWarranties(token!);
+        if (!alive) return;
         setWarranties(data);
+        setError(false);
       } catch {
-        setError(true);
+        if (alive) setError(true);
       } finally {
-        setLoading(false);
+        if (alive) setLoading(false);
       }
-    })();
-  }, [isLoaded, isSignedIn]);
+    };
+
+    loadWarranties();
+
+    const interval = window.setInterval(loadWarranties, 15000);
+    const onFocus = () => {
+      if (document.visibilityState === 'visible') {
+        loadWarranties();
+      }
+    };
+
+    document.addEventListener('visibilitychange', onFocus);
+
+    return () => {
+      alive = false;
+      window.clearInterval(interval);
+      document.removeEventListener('visibilitychange', onFocus);
+    };
+  }, [isLoaded, isSignedIn, getToken]);
 
   if (isLoaded && !isSignedIn) {
     return (
@@ -318,6 +361,26 @@ export default function MyWarranties() {
           font-family: var(--st-font-sans);
           font-size: .75rem; color: var(--st-rust);
           margin-top: .2rem;
+        }
+        .wc-resolution {
+          margin-top: .75rem;
+          padding: .9rem 1rem;
+          border-radius: var(--st-radius-xs);
+          border: 1px solid rgba(16,185,129,.28);
+          background: rgba(16,185,129,.08);
+        }
+        .wc-resolution-msg {
+          font-family: var(--st-font-sans);
+          font-size: .84rem;
+          font-weight: 600;
+          color: #065f46;
+          line-height: 1.45;
+        }
+        .wc-resolution-date {
+          margin-top: .25rem;
+          font-family: var(--st-font-sans);
+          font-size: .74rem;
+          color: #047857;
         }
         .wc-chevron {
           flex-shrink: 0; color: var(--st-earth);
