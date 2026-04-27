@@ -15,6 +15,7 @@ import ProductPage from './pages/ProductPage';
 import ProductDetail from './pages/ProductDetail';
 import Nosotros from './pages/Nosotros';
 import Contacto from './pages/Contacto';
+import MyWarranties from './pages/MyWarranties';
 import { ProtectedAdminRoute } from './components/AdminRoute';
 
 // Layout with NavMenu for all public pages
@@ -47,6 +48,10 @@ function App() {
             element={
               <WithNav><Orders /></WithNav>
             }
+          />
+          <Route
+            path="/mis-garantias"
+            element={<WithNav><MyWarranties /></WithNav>}
           />
           <Route
             path="/warranties/new"

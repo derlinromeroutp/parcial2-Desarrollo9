@@ -56,18 +56,16 @@ function AuthRedirectHandler({ children }: { children: React.ReactNode }) {
     navigate(targetRoute, { replace: true });
   }, [user, getRoleFromClerk, navigate]);
 
+  const AUTH_ONLY_ROUTES = ['/', '/login', '/register'];
+
   useEffect(() => {
-    if (!isLoaded) {
-      return;
-    }
+    if (!isLoaded) return;
 
-
-    // Trigger redirect when user signs in
-    if (isSignedIn && !redirectAttempted.current) {
-    
+    // Solo redirigir desde páginas de auth, no desde cualquier ruta
+    if (isSignedIn && !redirectAttempted.current && AUTH_ONLY_ROUTES.includes(location.pathname)) {
       redirectByRole();
     }
-  }, [isLoaded, isSignedIn, redirectByRole, location.pathname]);
+  }, [isLoaded, isSignedIn, location.pathname]);
 
   return <>{children}</>;
 }

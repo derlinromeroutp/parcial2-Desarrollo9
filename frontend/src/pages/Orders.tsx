@@ -355,6 +355,9 @@ const Orders: React.FC = () => {
               Historial de<br />
               <em>pedidos</em>
             </h1>
+            <Link to="/mis-garantias" className="op-warranties-link">
+              Ver mis garantías →
+            </Link>
           </div>
 
           {orders && orders.length > 0 && (
@@ -534,6 +537,16 @@ const Orders: React.FC = () => {
           letter-spacing: -.035em;
         }
         .op-title em { font-style: italic; font-weight: 400; color: var(--st-sand); }
+        .op-warranties-link {
+          display: inline-flex; align-items: center; gap: 6px;
+          margin-top: 1.25rem;
+          font-family: var(--st-font-sans); font-size: .78rem; font-weight: 500;
+          color: rgba(244,244,242,.55); text-decoration: none;
+          border-bottom: 1px solid rgba(244,244,242,.2);
+          padding-bottom: 2px;
+          transition: color .2s, border-color .2s;
+        }
+        .op-warranties-link:hover { color: var(--st-bone); border-color: rgba(244,244,242,.5); }
 
         /* Stats row inside hero */
         .op-stats {

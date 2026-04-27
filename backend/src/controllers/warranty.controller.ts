@@ -26,7 +26,13 @@ export const createWarrantyReport = async (c: Context) => {
       return c.json({ error: 'No autorizado: La orden no pertenece a este usuario' }, 403);
     }
 
-    // 3. Validar plazo legal de 90 días
+    // 3. Verificar que no exista ya una garantía para esta orden
+    const existing = await WarrantyReport.findOne({ orderId, userId });
+    if (existing) {
+      return c.json({ error: 'Ya registraste una garantía para esta orden' }, 409);
+    }
+
+    // 4. Validar plazo legal de 90 días
     const createdAt = (order as any).createdAt;
     const diffInMs = Date.now() - createdAt.getTime();
     const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
@@ -35,7 +41,7 @@ export const createWarrantyReport = async (c: Context) => {
       return c.json({ error: 'Garantía Expirada. Plazo Legal agotado' }, 400);
     }
 
-    // 4. Crear el reporte con reason como parte de description
+    // 5. Crear el reporte con reason como parte de description
     const fullDescription = `[${reason}] ${description}`;
     const report = new WarrantyReport({
       orderId,
