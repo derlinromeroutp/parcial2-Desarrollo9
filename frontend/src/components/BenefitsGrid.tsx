@@ -1,291 +1,182 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
 const benefits = [
   {
-    number: '40+',
-    label: 'PUNTOS',
-    title: 'Inspección Rigurosa',
-    desc: 'Cada dispositivo pasa por más de 40 puntos de verificación con técnicos certificados.',
-    stat: '40pts',
+    eyebrow: '01 · INSPECCIÓN',
+    title: '40+ puntos de control',
+    desc: 'Cada dispositivo pasa por verificación rigurosa de hardware, software y batería.',
+    stat: '40',
+    statLabel: 'Puntos verificados',
     visual: (
-      <svg viewBox="0 0 80 80" fill="none" style={{ width: 60, height: 60 }}>
-        <circle cx="40" cy="40" r="36" stroke="currentColor" strokeWidth="2" strokeDasharray="8 4" opacity="0.3"/>
-        <circle cx="40" cy="40" r="28" stroke="currentColor" strokeWidth="2" transform="rotate(-90 40 40)"/>
-        <path d="M40 12V40L52 52" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
-        <circle cx="40" cy="40" r="4" fill="currentColor"/>
-      </svg>
-    ),
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} style={{ width: 24, height: 24 }}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      <svg viewBox="0 0 100 100" fill="none" style={{ width: '100%', height: '100%' }}>
+        <circle cx="50" cy="50" r="42" stroke="currentColor" strokeWidth="0.8" opacity="0.2" strokeDasharray="2 4" />
+        <circle cx="50" cy="50" r="32" stroke="currentColor" strokeWidth="0.8" />
+        <circle cx="50" cy="50" r="22" stroke="currentColor" strokeWidth="0.8" opacity="0.5" />
+        {Array.from({ length: 12 }).map((_, i) => {
+          const angle = (i / 12) * Math.PI * 2;
+          const x1 = 50 + Math.cos(angle) * 32;
+          const y1 = 50 + Math.sin(angle) * 32;
+          const x2 = 50 + Math.cos(angle) * 38;
+          const y2 = 50 + Math.sin(angle) * 38;
+          return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="currentColor" strokeWidth="0.8" />;
+        })}
+        <circle cx="50" cy="50" r="3" fill="currentColor" />
       </svg>
     ),
   },
   {
-    number: '90',
-    suffix: 'días',
-    label: 'GARANTÍA',
-    title: 'Garantía Total',
-    desc: 'Si algo falla en los primeros 3 meses, lo resolvemos sin preguntas.',
+    eyebrow: '02 · GARANTÍA',
+    title: '90 días de respaldo',
+    desc: 'Si algo falla en los primeros tres meses, lo reemplazamos. Punto.',
     stat: '90d',
+    statLabel: 'Cobertura total',
     visual: (
-      <svg viewBox="0 0 80 80" fill="none" style={{ width: 60, height: 60 }}>
-        <circle cx="40" cy="40" r="32" stroke="currentColor" strokeWidth="2.5"/>
-        <path d="M40 20V40L55 50" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
-        <path d="M28 40H52" stroke="currentColor" strokeWidth="2" strokeLinecap="round" opacity="0.4"/>
-        <path d="M32 28H48" stroke="currentColor" strokeWidth="2" strokeLinecap="round" opacity="0.4"/>
-        <path d="M32 52H48" stroke="currentColor" strokeWidth="2" strokeLinecap="round" opacity="0.4"/>
-      </svg>
-    ),
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} style={{ width: 24, height: 24 }}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+      <svg viewBox="0 0 100 100" fill="none" style={{ width: '100%', height: '100%' }}>
+        <path d="M50 12 L82 24 V52 C82 70 68 84 50 88 C32 84 18 70 18 52 V24 L50 12 Z" stroke="currentColor" strokeWidth="0.8" fill="none" />
+        <path d="M50 18 L76 28 V52 C76 67 64 79 50 82 C36 79 24 67 24 52 V28 L50 18 Z" stroke="currentColor" strokeWidth="0.8" opacity="0.4" />
+        <path d="M40 50 L47 57 L62 42" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     ),
   },
   {
-    number: '40%',
-    prefix: '−',
-    label: 'AHORRO',
-    title: 'Precios Justos',
-    desc: 'Hasta 40% más barato que comprar nuevo. Misma calidad, mejor precio.',
+    eyebrow: '03 · PRECIO',
+    title: 'Hasta 40% menos',
+    desc: 'Misma calidad técnica que un equipo nuevo. Sin pagar el sobreprecio del estreno.',
     stat: '−40%',
+    statLabel: 'Vs. precio retail',
     visual: (
-      <svg viewBox="0 0 80 80" fill="none" style={{ width: 60, height: 60 }}>
-        <rect x="16" y="20" width="48" height="6" rx="3" fill="currentColor" opacity="0.2"/>
-        <rect x="16" y="30" width="48" height="6" rx="3" fill="currentColor" opacity="0.4"/>
-        <rect x="16" y="40" width="48" height="6" rx="3" fill="currentColor" opacity="0.6"/>
-        <rect x="16" y="50" width="28" height="6" rx="3" fill="currentColor"/>
-        <path d="M50 18L56 24M50 18V26M50 18H42" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+      <svg viewBox="0 0 100 100" fill="none" style={{ width: '100%', height: '100%' }}>
+        <rect x="20" y="30" width="50" height="6" rx="3" fill="currentColor" opacity="0.15" />
+        <rect x="20" y="42" width="50" height="6" rx="3" fill="currentColor" opacity="0.3" />
+        <rect x="20" y="54" width="50" height="6" rx="3" fill="currentColor" opacity="0.5" />
+        <rect x="20" y="66" width="30" height="6" rx="3" fill="currentColor" />
+        <path d="M62 24 L72 24 L72 34 M72 24 L60 36" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     ),
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} style={{ width: 24, height: 24 }}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  },
+  {
+    eyebrow: '04 · IMPACTO',
+    title: 'Una vida más, no menos',
+    desc: 'Cada dispositivo refurbished evita extracción de tierras raras y reduce e-waste.',
+    stat: '12kg',
+    statLabel: 'CO₂ ahorrado / equipo',
+    visual: (
+      <svg viewBox="0 0 100 100" fill="none" style={{ width: '100%', height: '100%' }}>
+        <path d="M50 18 C30 28 24 45 30 60 C36 75 50 80 50 80 C50 80 64 75 70 60 C76 45 70 28 50 18 Z" stroke="currentColor" strokeWidth="0.8" fill="none" />
+        <path d="M50 78 V40" stroke="currentColor" strokeWidth="0.8" />
+        <path d="M50 50 L40 42 M50 58 L60 50 M50 66 L40 58" stroke="currentColor" strokeWidth="0.8" />
       </svg>
     ),
   },
 ];
 
-const BenefitItem: React.FC<{ b: typeof benefits[0]; index: number }> = ({ b, index }) => {
-  const [hovered, setHovered] = useState(false);
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setVisible(true), 300 + index * 150);
-    return () => clearTimeout(timer);
-  }, [index]);
-
+const BenefitCard: React.FC<{ b: typeof benefits[0] }> = ({ b }) => {
+  const [hover, setHover] = useState(false);
   return (
     <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
       style={{
+        background: hover ? 'var(--st-ink)' : 'var(--st-bone)',
+        color: hover ? 'var(--st-bone)' : 'var(--st-clay)',
+        padding: '40px 36px',
         position: 'relative',
-        padding: '2.5rem 2rem',
-        background: 'var(--white)',
-        border: '1px solid var(--line)',
-        transition: 'all 0.5s cubic-bezier(0.16,1,0.3,1)',
-        opacity: visible ? 1 : 0,
-        transform: visible ? 'translateY(0)' : 'translateY(30px)',
+        minHeight: 320,
         cursor: 'pointer',
+        transition: 'all 0.5s var(--st-ease)',
         overflow: 'hidden',
       }}
     >
-      {/* Hover fill effect */}
-      <div style={{
-        position: 'absolute',
-        inset: 0,
-        background: 'var(--ink)',
-        transform: hovered ? 'scaleY(1)' : 'scaleY(0)',
-        transformOrigin: 'bottom',
-        transition: 'transform 0.5s cubic-bezier(0.16,1,0.3,1)',
-        zIndex: 0,
-      }} />
-
-      {/* Visual graphic - only on desktop */}
-      <div style={{
-        position: 'absolute',
-        top: '1.5rem',
-        right: '1.5rem',
-        opacity: hovered ? 0.15 : 0.08,
-        transition: 'opacity 0.4s ease',
-        color: 'var(--ink)',
-      }} className="benefit-visual">
+      {/* Visual graphic */}
+      <div
+        style={{
+          position: 'absolute', top: 28, right: 28,
+          width: 100, height: 100,
+          color: hover ? 'var(--st-taupe)' : 'var(--st-sand)',
+          opacity: hover ? 0.5 : 0.7,
+          transition: 'all 0.5s var(--st-ease)',
+          transform: hover ? 'rotate(20deg) scale(1.1)' : 'rotate(0) scale(1)',
+        }}
+      >
         {b.visual}
       </div>
 
-      {/* Stat badge */}
-      <div style={{
-        position: 'absolute',
-        top: '1rem',
-        left: '1rem',
-        fontSize: '0.55rem',
-        fontWeight: 600,
-        color: hovered ? 'rgba(255,255,255,0.5)' : 'var(--gray)',
-        letterSpacing: '1px',
-        fontFamily: 'var(--font-sans)',
-        transition: 'color 0.4s ease',
-      }}>
-        {b.stat}
-      </div>
-
-      {/* Content */}
-      <div style={{ position: 'relative', zIndex: 1 }}>
-        {/* Icon */}
-        <div style={{
-          color: hovered ? 'rgba(255,255,255,0.5)' : 'var(--ink)',
-          marginBottom: '1.5rem',
-          transition: 'color 0.4s ease',
-        }}>
-          {b.icon}
-        </div>
-
-        {/* Number big */}
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: '0.5rem' }}>
-          {b.prefix && (
-            <span style={{
-              fontSize: '1.5rem',
-              fontWeight: 300,
-              color: hovered ? 'rgba(255,255,255,0.4)' : 'var(--ink)',
-              fontFamily: 'var(--font-display)',
-              transition: 'color 0.4s ease',
-            }}>
-              {b.prefix}
-            </span>
-          )}
-          <span style={{
-            fontSize: 'clamp(2rem, 4vw, 2.75rem)',
-            fontWeight: 300,
-            color: hovered ? 'var(--white)' : 'var(--ink)',
-            fontFamily: 'var(--font-display)',
-            lineHeight: 1,
-            letterSpacing: '-0.03em',
-            transition: 'color 0.4s ease',
-          }}>
-            {b.number}
-          </span>
-          {b.suffix && (
-            <span style={{
-              fontSize: '0.9rem',
-              fontWeight: 300,
-              color: hovered ? 'rgba(255,255,255,0.4)' : 'var(--ink)',
-              fontFamily: 'var(--font-display)',
-              transition: 'color 0.4s ease',
-            }}>
-              {b.suffix}
-            </span>
-          )}
-        </div>
-
-        {/* Label small */}
-        <p style={{
-          fontSize: '0.6rem',
-          fontWeight: 500,
-          color: hovered ? 'rgba(255,255,255,0.35)' : 'var(--gray)',
-          letterSpacing: '2px',
-          marginBottom: '1.25rem',
-          fontFamily: 'var(--font-sans)',
-          transition: 'color 0.4s ease',
-        }}>
-          {b.label}
+      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', height: '100%', minHeight: 240 }}>
+        <p
+          className="st-mono"
+          style={{ fontSize: 11, color: hover ? 'var(--st-taupe)' : 'var(--st-earth)', letterSpacing: '0.1em', marginBottom: 'auto', transition: 'color 0.5s var(--st-ease)' }}
+        >
+          {b.eyebrow}
         </p>
 
-        {/* Title */}
-        <h3 style={{
-          fontSize: '1.15rem',
-          fontWeight: 400,
-          color: hovered ? 'var(--white)' : 'var(--ink)',
-          marginBottom: '0.5rem',
-          letterSpacing: '-0.01em',
-          fontFamily: 'var(--font-display)',
-          transition: 'color 0.4s ease',
-        }}>
-          {b.title}
-        </h3>
+        <div style={{ marginTop: 'auto' }}>
+          <p
+            className="st-display"
+            style={{
+              fontSize: 64, fontWeight: 300, lineHeight: 0.9, letterSpacing: '-0.04em',
+              color: hover ? 'var(--st-bone)' : 'var(--st-clay)', marginBottom: 8,
+              transition: 'color 0.5s var(--st-ease)',
+            }}
+          >
+            {b.stat}
+          </p>
+          <p
+            className="st-mono"
+            style={{ fontSize: 11, color: hover ? 'var(--st-taupe)' : 'var(--st-earth)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 24, transition: 'color 0.5s var(--st-ease)' }}
+          >
+            {b.statLabel}
+          </p>
 
-        {/* Desc */}
-        <p style={{
-          fontSize: '0.85rem',
-          color: hovered ? 'rgba(255,255,255,0.55)' : 'var(--ink2)',
-          lineHeight: 1.65,
-          fontFamily: 'var(--font-sans)',
-          fontWeight: 300,
-          transition: 'color 0.4s ease',
-        }}>
-          {b.desc}
-        </p>
+          <h3 className="st-display" style={{ fontSize: 22, fontWeight: 400, letterSpacing: '-0.02em', marginBottom: 8 }}>
+            {b.title}
+          </h3>
+          <p style={{ fontSize: 14, lineHeight: 1.6, color: hover ? 'rgba(244,244,242,0.7)' : 'var(--st-earth)', maxWidth: 380, fontFamily: 'var(--st-font-sans)', transition: 'color 0.5s var(--st-ease)' }}>
+            {b.desc}
+          </p>
+        </div>
       </div>
-
-      {/* Corner accent on hover */}
-      <div style={{
-        position: 'absolute',
-        top: 0,
-        right: 0,
-        width: 40,
-        height: 40,
-        borderTop: `2px solid ${hovered ? 'rgba(255,255,255,0.3)' : 'transparent'}`,
-        borderRight: `2px solid ${hovered ? 'rgba(255,255,255,0.3)' : 'transparent'}`,
-        transition: 'all 0.4s ease',
-        borderRadius: '0 4px 0 0',
-      }} />
     </div>
   );
 };
 
 export const BenefitsGrid: React.FC = () => {
   return (
-    <section style={{ padding: '7rem 0', background: 'var(--cream)' }}>
-      <div className="page-container">
+    <section style={{ padding: '120px 32px', background: 'var(--st-bone)' }}>
+      <div style={{ maxWidth: 1280, margin: '0 auto' }}>
 
-        {/* Header */}
-        <div style={{ 
-          textAlign: 'center', 
-          marginBottom: '4rem',
-          maxWidth: 560,
-          margin: '0 auto 4rem'
-        }}>
-          <p style={{
-            fontSize: '0.65rem',
-            fontWeight: 500,
-            textTransform: 'uppercase',
-            letterSpacing: '3px',
-            color: 'var(--gray)',
-            marginBottom: '1.25rem',
-            fontFamily: 'var(--font-sans)',
-          }}>
-            Nuestra promesa
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 48, gap: 32, flexWrap: 'wrap' }}>
+          <div>
+            <p className="st-eyebrow" style={{ marginBottom: 16 }}>Por qué SafeTech</p>
+            <h2
+              className="st-display"
+              style={{ fontSize: 'clamp(36px, 4.5vw, 56px)', fontWeight: 300, lineHeight: 1, letterSpacing: '-0.035em', color: 'var(--st-clay)', maxWidth: 640 }}
+            >
+              Cuatro promesas{' '}
+              <em style={{ fontStyle: 'italic' }}>concretas</em>, no marketing.
+            </h2>
+          </div>
+          <p style={{ fontSize: 14, color: 'var(--st-earth)', maxWidth: 280, lineHeight: 1.6, paddingBottom: 8, fontFamily: 'var(--st-font-sans)' }}>
+            Lo que distingue un equipo de SafeTech de cualquier otro reacondicionado del mercado.
           </p>
-          <h2 style={{
-            fontSize: 'clamp(1.75rem, 4.5vw, 2.75rem)',
-            fontWeight: 400,
-            fontStyle: 'italic',
-            letterSpacing: '-0.025em',
-            color: 'var(--ink)',
-            lineHeight: 1.2,
-            fontFamily: 'var(--font-display)',
-          }}>
-            ¿Por qué elegir SafeTech?
-          </h2>
         </div>
 
-        {/* Grid - 3 cards grandes */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)',
-          gap: '1.5rem',
-        }}>
+        <div
+          style={{
+            display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)',
+            gap: 1, background: 'var(--st-line)',
+            border: '1px solid var(--st-line)', borderRadius: 18, overflow: 'hidden',
+          }}
+        >
           {benefits.map((b, i) => (
-            <BenefitItem key={i} b={b} index={i} />
+            <BenefitCard key={i} b={b} />
           ))}
         </div>
-
-        <style>{`
-          @media (max-width: 768px) {
-            .benefit-visual { display: none !important; }
-          }
-        `}</style>
       </div>
+      <style>{`
+        @media (max-width: 768px) {
+          .benefits-inner { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
     </section>
   );
 };

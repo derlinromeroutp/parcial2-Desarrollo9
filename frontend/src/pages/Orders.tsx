@@ -488,12 +488,12 @@ const Orders: React.FC = () => {
         /* ─ Root ─ */
         .op-root {
           min-height: 100vh;
-          background: var(--cream);
+          background: var(--st-bone);
         }
 
         /* ─ Hero band ─ */
         .op-hero {
-          background: var(--ink);
+          background: var(--st-clay);
           position: relative;
           overflow: hidden;
           padding-bottom: 3.5rem;
@@ -517,32 +517,32 @@ const Orders: React.FC = () => {
         }
         .op-hero-text {}
         .op-eyebrow {
-          font-family: var(--font-sans);
+          font-family: var(--st-font-mono);
           font-size: .62rem;
           font-weight: 500;
           letter-spacing: 3px;
           text-transform: uppercase;
-          color: rgba(255,255,255,.35);
+          color: rgba(244,244,242,.45);
           margin-bottom: .875rem;
         }
         .op-title {
-          font-family: var(--font-display);
+          font-family: var(--st-font-display);
           font-size: clamp(2.75rem, 6vw, 5rem);
           font-weight: 300;
-          color: var(--white);
+          color: var(--st-bone);
           line-height: 1.0;
           letter-spacing: -.035em;
         }
-        .op-title em { font-style: italic; font-weight: 400; }
+        .op-title em { font-style: italic; font-weight: 400; color: var(--st-sand); }
 
         /* Stats row inside hero */
         .op-stats {
           display: flex;
           align-items: center;
           gap: 0;
-          background: rgba(255,255,255,.04);
-          border: 1px solid rgba(255,255,255,.08);
-          border-radius: 10px;
+          background: rgba(244,244,242,.06);
+          border: 1px solid rgba(244,244,242,.12);
+          border-radius: var(--st-radius-md);
           overflow: hidden;
           backdrop-filter: blur(12px);
           flex-shrink: 0;
@@ -555,25 +555,25 @@ const Orders: React.FC = () => {
           gap: 4px;
         }
         .op-stat-n {
-          font-family: var(--font-display);
+          font-family: var(--st-font-display);
           font-size: clamp(1.6rem, 2.5vw, 2.25rem);
           font-weight: 300;
-          color: var(--white);
+          color: var(--st-bone);
           letter-spacing: -.04em;
           line-height: 1;
         }
         .op-stat-l {
-          font-family: var(--font-sans);
-          font-size: .62rem;
-          font-weight: 600;
+          font-family: var(--st-font-mono);
+          font-size: .6rem;
+          font-weight: 500;
           text-transform: uppercase;
           letter-spacing: 1.5px;
-          color: rgba(255,255,255,.38);
+          color: rgba(244,244,242,.4);
         }
         .op-stat-sep {
           width: 1px;
           height: 40px;
-          background: rgba(255,255,255,.08);
+          background: rgba(244,244,242,.1);
         }
 
         /* ─ Body ─ */
@@ -582,15 +582,15 @@ const Orders: React.FC = () => {
 
         /* ─ Card ─ */
         .oc-card {
-          background: var(--white);
-          border: 1.5px solid var(--line);
-          border-radius: 6px;
+          background: var(--st-bone);
+          border: 1px solid var(--st-line);
+          border-radius: var(--st-radius-sm);
           overflow: hidden;
-          transition: box-shadow .3s ease, border-color .3s ease, transform .3s ease;
+          transition: box-shadow .35s var(--st-ease), border-color .35s var(--st-ease), transform .35s var(--st-ease);
           cursor: default;
         }
         .oc-card:hover {
-          box-shadow: 0 20px 60px rgba(68,19,6,.12);
+          box-shadow: 0 20px 60px rgba(46,45,43,.12);
           border-color: transparent;
           transform: translateY(-3px);
         }
@@ -608,31 +608,31 @@ const Orders: React.FC = () => {
         .oc-img-panel {
           position: relative;
           overflow: hidden;
-          background: #1a0a04;
+          background: var(--st-clay);
         }
         .oc-img-hero {
           position: absolute;
           inset: 0; width: 100%; height: 100%;
           object-fit: cover;
-          transition: transform .6s cubic-bezier(.16,1,.3,1);
+          transition: transform .6s var(--st-ease);
           will-change: transform;
         }
         .oc-img-placeholder {
           position: absolute; inset: 0;
-          background: linear-gradient(135deg, rgba(255,255,255,.04) 0%, transparent 100%);
+          background: linear-gradient(135deg, rgba(244,244,242,.04) 0%, transparent 100%);
         }
         .oc-img-scrim {
           position: absolute; inset: 0;
-          background: linear-gradient(to right, rgba(68,19,6,.35) 0%, transparent 60%),
-                      linear-gradient(to top, rgba(0,0,0,.5) 0%, transparent 50%);
+          background: linear-gradient(to right, rgba(46,45,43,.4) 0%, transparent 60%),
+                      linear-gradient(to top, rgba(20,20,19,.5) 0%, transparent 50%);
         }
         .oc-watermark {
           position: absolute;
           bottom: -8px; left: -4px;
-          font-family: var(--font-display);
+          font-family: var(--st-font-display);
           font-size: 5.5rem;
           font-weight: 800;
-          color: rgba(255,255,255,.06);
+          color: rgba(244,244,242,.06);
           line-height: 1;
           letter-spacing: -.04em;
           pointer-events: none;
@@ -646,18 +646,18 @@ const Orders: React.FC = () => {
         }
         .oc-extra-thumb {
           width: 32px; height: 32px;
-          border-radius: 3px;
-          border: 2px solid rgba(255,255,255,.25);
+          border-radius: var(--st-radius-xs);
+          border: 2px solid rgba(244,244,242,.25);
           overflow: hidden;
-          background: rgba(255,255,255,.1);
+          background: rgba(244,244,242,.1);
           position: relative;
         }
         .oc-extra-thumb img { width: 100%; height: 100%; object-fit: cover; }
         .oc-extra-count {
-          font-family: var(--font-sans);
+          font-family: var(--st-font-mono);
           font-size: .62rem;
-          font-weight: 700;
-          color: rgba(255,255,255,.6);
+          font-weight: 500;
+          color: rgba(244,244,242,.6);
           margin-left: 8px;
         }
 
@@ -675,11 +675,11 @@ const Orders: React.FC = () => {
           margin-bottom: 1rem;
         }
         .oc-index {
-          font-family: var(--font-sans);
-          font-size: .65rem;
-          font-weight: 700;
-          letter-spacing: 2px;
-          color: var(--ink3);
+          font-family: var(--st-font-mono);
+          font-size: .62rem;
+          font-weight: 500;
+          letter-spacing: .1em;
+          color: var(--st-earth);
           text-transform: uppercase;
         }
         .oc-status-badge {
@@ -687,33 +687,33 @@ const Orders: React.FC = () => {
           align-items: center;
           gap: 6px;
           padding: 4px 12px;
-          border-radius: 4px;
-          font-family: var(--font-sans);
-          font-size: .7rem;
-          font-weight: 700;
-          letter-spacing: .3px;
+          border-radius: var(--st-radius-pill);
+          font-family: var(--st-font-mono);
+          font-size: .62rem;
+          font-weight: 500;
+          letter-spacing: .05em;
         }
         .oc-status-glyph { font-size: .65rem; }
 
         .oc-product-name {
-          font-family: var(--font-display);
+          font-family: var(--st-font-display);
           font-size: clamp(1.05rem, 1.6vw, 1.35rem);
-          font-weight: 600;
-          color: var(--ink);
+          font-weight: 400;
+          color: var(--st-clay);
           letter-spacing: -.02em;
           line-height: 1.25;
           margin-bottom: .25rem;
         }
         .oc-extra-label {
-          font-family: var(--font-sans);
+          font-family: var(--st-font-sans);
           font-size: .75rem;
-          color: var(--ink3);
+          color: var(--st-earth);
           margin-bottom: .75rem;
         }
         .oc-date {
-          font-family: var(--font-sans);
+          font-family: var(--st-font-sans);
           font-size: .78rem;
-          color: var(--ink3);
+          color: var(--st-earth);
           margin-bottom: auto;
           padding-bottom: 1rem;
         }
@@ -725,10 +725,10 @@ const Orders: React.FC = () => {
           margin-bottom: .75rem;
         }
         .oc-price {
-          font-family: var(--font-display);
+          font-family: var(--st-font-display);
           font-size: clamp(1.6rem, 2.5vw, 2.1rem);
           font-weight: 300;
-          color: var(--ink);
+          color: var(--st-clay);
           letter-spacing: -.04em;
           line-height: 1;
         }
@@ -746,25 +746,25 @@ const Orders: React.FC = () => {
           gap: 2px;
         }
         .oc-warranty-days {
-          font-family: var(--font-display);
+          font-family: var(--st-font-display);
           font-size: 1.3rem;
-          font-weight: 600;
-          color: var(--ink);
+          font-weight: 400;
+          color: var(--st-clay);
           letter-spacing: -.03em;
           line-height: 1;
         }
         .oc-warranty-label {
-          font-family: var(--font-sans);
-          font-size: .65rem;
-          font-weight: 600;
+          font-family: var(--st-font-mono);
+          font-size: .6rem;
+          font-weight: 500;
           text-transform: uppercase;
-          letter-spacing: 1px;
-          color: var(--ink3);
+          letter-spacing: .1em;
+          color: var(--st-earth);
         }
         .oc-expired {
-          font-family: var(--font-sans);
+          font-family: var(--st-font-sans);
           font-size: .72rem;
-          color: var(--gray);
+          color: var(--st-taupe);
           margin-bottom: .5rem;
         }
 
@@ -772,55 +772,55 @@ const Orders: React.FC = () => {
           display: flex;
           align-items: center;
           gap: 6px;
-          font-family: var(--font-sans);
+          font-family: var(--st-font-sans);
           font-size: .72rem;
-          font-weight: 600;
-          color: var(--ink3);
+          font-weight: 500;
+          color: var(--st-earth);
           margin-top: .75rem;
           padding-top: .75rem;
-          border-top: 1px solid var(--line);
+          border-top: 1px solid var(--st-line);
           transition: color .2s;
         }
-        .oc-card:hover .oc-chevron-wrap { color: var(--ink); }
+        .oc-card:hover .oc-chevron-wrap { color: var(--st-clay); }
 
         /* ─ Drawer ─ */
         .oc-drawer {
           overflow: hidden;
-          transition: max-height .42s cubic-bezier(.16,1,.3,1);
+          transition: max-height .42s var(--st-ease);
           max-height: 0;
         }
         .oc-drawer-inner {
-          background: var(--ink);
+          background: var(--st-clay);
         }
         .oc-drawer-header {
           display: flex;
           align-items: center;
           justify-content: space-between;
           padding: 1.25rem 2rem .75rem;
-          border-bottom: 1px solid rgba(255,255,255,.07);
-          font-family: var(--font-sans);
-          font-size: .65rem;
-          font-weight: 700;
+          border-bottom: 1px solid rgba(244,244,242,.08);
+          font-family: var(--st-font-mono);
+          font-size: .6rem;
+          font-weight: 500;
           text-transform: uppercase;
-          letter-spacing: 2px;
-          color: rgba(255,255,255,.4);
+          letter-spacing: .1em;
+          color: rgba(244,244,242,.4);
         }
         .oc-warranty-link {
-          font-family: var(--font-sans);
+          font-family: var(--st-font-sans);
           font-size: .72rem;
-          font-weight: 600;
+          font-weight: 500;
           letter-spacing: .3px;
-          color: rgba(255,255,255,.7);
+          color: rgba(244,244,242,.7);
           text-decoration: none;
           padding: 5px 14px;
-          border: 1px solid rgba(255,255,255,.18);
-          border-radius: 4px;
+          border: 1px solid rgba(244,244,242,.2);
+          border-radius: var(--st-radius-pill);
           transition: all .2s;
           text-transform: none;
         }
         .oc-warranty-link:hover {
-          background: rgba(255,255,255,.08);
-          color: var(--white);
+          background: rgba(244,244,242,.08);
+          color: var(--st-bone);
         }
 
         .oc-items {
@@ -833,19 +833,19 @@ const Orders: React.FC = () => {
           align-items: center;
           gap: 1.25rem;
           padding: 1rem 2rem;
-          border-bottom: 1px solid rgba(255,255,255,.05);
-          animation: slideUpFade .3s cubic-bezier(.16,1,.3,1) both;
+          border-bottom: 1px solid rgba(244,244,242,.06);
+          animation: slideUpFade .3s var(--st-ease) both;
           transition: background .2s;
         }
         .oc-item:last-child { border-bottom: none; }
-        .oc-item:hover { background: rgba(255,255,255,.04); }
+        .oc-item:hover { background: rgba(244,244,242,.04); }
 
         .oc-item-img {
           width: 64px; height: 64px;
-          border-radius: 4px;
+          border-radius: var(--st-radius-xs);
           overflow: hidden;
-          background: rgba(255,255,255,.06);
-          border: 1px solid rgba(255,255,255,.1);
+          background: rgba(244,244,242,.06);
+          border: 1px solid rgba(244,244,242,.1);
           flex-shrink: 0;
           display: flex; align-items: center; justify-content: center;
         }
@@ -854,23 +854,23 @@ const Orders: React.FC = () => {
 
         .oc-item-body { flex: 1; min-width: 0; }
         .oc-item-name {
-          font-family: var(--font-display);
+          font-family: var(--st-font-display);
           font-size: .95rem;
-          font-weight: 500;
-          color: rgba(255,255,255,.9);
+          font-weight: 400;
+          color: rgba(244,244,242,.9);
           white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
           margin-bottom: 4px;
         }
         .oc-item-meta {
-          font-family: var(--font-sans);
+          font-family: var(--st-font-sans);
           font-size: .75rem;
-          color: rgba(255,255,255,.35);
+          color: rgba(244,244,242,.38);
         }
         .oc-item-total {
-          font-family: var(--font-display);
+          font-family: var(--st-font-display);
           font-size: 1rem;
-          font-weight: 600;
-          color: rgba(255,255,255,.85);
+          font-weight: 400;
+          color: rgba(244,244,242,.85);
           flex-shrink: 0;
         }
 
@@ -879,22 +879,22 @@ const Orders: React.FC = () => {
           align-items: center;
           justify-content: space-between;
           padding: 1.25rem 2rem;
-          border-top: 1px solid rgba(255,255,255,.08);
-          background: rgba(0,0,0,.2);
+          border-top: 1px solid rgba(244,244,242,.08);
+          background: rgba(0,0,0,.15);
         }
         .oc-foot-label {
-          font-family: var(--font-sans);
-          font-size: .65rem;
-          font-weight: 700;
+          font-family: var(--st-font-mono);
+          font-size: .6rem;
+          font-weight: 500;
           text-transform: uppercase;
-          letter-spacing: 2px;
-          color: rgba(255,255,255,.35);
+          letter-spacing: .1em;
+          color: rgba(244,244,242,.38);
         }
         .oc-foot-amount {
-          font-family: var(--font-display);
+          font-family: var(--st-font-display);
           font-size: 1.75rem;
           font-weight: 300;
-          color: var(--white);
+          color: var(--st-bone);
           letter-spacing: -.04em;
           line-height: 1;
         }
@@ -908,32 +908,33 @@ const Orders: React.FC = () => {
         .op-empty-icon {
           width: 60px; height: 60px;
           display: flex; align-items: center; justify-content: center;
-          border-radius: 8px;
-          background: rgba(0,0,0,.04);
-          border: 1px solid var(--line);
-          color: var(--ink3);
+          border-radius: var(--st-radius-sm);
+          background: rgba(46,45,43,.05);
+          border: 1px solid var(--st-line);
+          color: var(--st-earth);
           margin-bottom: 1rem;
         }
         .op-empty-icon--err { background: rgba(239,68,68,.06); border-color: rgba(239,68,68,.2); }
         .op-empty h3 {
-          font-family: var(--font-display);
+          font-family: var(--st-font-display);
           font-size: 1.35rem; font-weight: 400;
-          color: var(--ink); letter-spacing: -.02em;
+          color: var(--st-clay); letter-spacing: -.02em;
         }
         .op-empty p {
-          font-family: var(--font-sans); font-size: .875rem;
-          color: var(--ink3); max-width: 300px; line-height: 1.65;
+          font-family: var(--st-font-sans); font-size: .875rem;
+          color: var(--st-earth); max-width: 300px; line-height: 1.65;
         }
         .op-cta {
           margin-top: 1.25rem;
           display: inline-flex; align-items: center; gap: 8px;
           padding: 13px 26px;
-          background: var(--ink); color: var(--white);
-          font-family: var(--font-sans); font-size: .82rem; font-weight: 500;
-          letter-spacing: .3px; text-decoration: none; border-radius: 4px;
-          transition: transform .2s, box-shadow .2s;
+          background: var(--st-clay); color: var(--st-bone);
+          font-family: var(--st-font-sans); font-size: .82rem; font-weight: 500;
+          letter-spacing: .3px; text-decoration: none; border-radius: var(--st-radius-pill);
+          border: 1px solid var(--st-clay);
+          transition: all .25s var(--st-ease);
         }
-        .op-cta:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(68,19,6,.28); }
+        .op-cta:hover { background: var(--st-ink); border-color: var(--st-ink); transform: translateY(-2px); box-shadow: 0 10px 28px rgba(46,45,43,.25); }
 
         /* ─ Pagination ─ */
         .op-pagination {
@@ -943,56 +944,56 @@ const Orders: React.FC = () => {
           gap: 4px;
           margin-top: 2.5rem;
           padding-top: 2rem;
-          border-top: 1px solid var(--line);
+          border-top: 1px solid var(--st-line);
         }
         .op-pg-btn {
           min-width: 36px; height: 36px;
           display: inline-flex; align-items: center; justify-content: center;
           padding: 0 8px;
-          background: var(--white);
-          border: 1.5px solid var(--line);
-          border-radius: 4px;
-          font-family: var(--font-sans);
+          background: var(--st-bone);
+          border: 1px solid var(--st-line);
+          border-radius: var(--st-radius-xs);
+          font-family: var(--st-font-sans);
           font-size: .82rem;
           font-weight: 500;
-          color: var(--ink2);
+          color: var(--st-clay);
           cursor: pointer;
-          transition: all .18s ease;
+          transition: all .18s var(--st-ease);
         }
         .op-pg-btn:hover:not(:disabled) {
-          border-color: var(--ink);
-          color: var(--ink);
-          background: var(--cream);
+          border-color: var(--st-clay);
+          color: var(--st-clay);
+          background: var(--st-cream);
         }
         .op-pg-btn:disabled {
           opacity: .3;
           cursor: not-allowed;
         }
         .op-pg-btn--active {
-          background: var(--ink);
-          border-color: var(--ink);
-          color: var(--white);
-          font-weight: 700;
+          background: var(--st-clay);
+          border-color: var(--st-clay);
+          color: var(--st-bone);
+          font-weight: 600;
         }
         .op-pg-btn--active:hover {
-          background: var(--ink);
-          border-color: var(--ink);
-          color: var(--white);
+          background: var(--st-clay);
+          border-color: var(--st-clay);
+          color: var(--st-bone);
         }
         .op-pg-ellipsis {
           min-width: 36px; height: 36px;
           display: inline-flex; align-items: center; justify-content: center;
-          font-family: var(--font-sans);
+          font-family: var(--st-font-sans);
           font-size: .85rem;
-          color: var(--ink3);
+          color: var(--st-earth);
           user-select: none;
         }
         .op-pg-info {
-          font-family: var(--font-sans);
-          font-size: .72rem;
-          color: var(--ink3);
+          font-family: var(--st-font-mono);
+          font-size: .62rem;
+          color: var(--st-earth);
           margin-left: 8px;
-          letter-spacing: .5px;
+          letter-spacing: .05em;
         }
 
         /* ─ Responsive ─ */

@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-// ── Counter hook ──────────────────────────────────────────────────────────
 function useCount(target: number, active: boolean, ms = 1100) {
   const [v, setV] = useState(0);
   useEffect(() => {
@@ -18,40 +17,22 @@ function useCount(target: number, active: boolean, ms = 1100) {
   return v;
 }
 
-// ── Team data ─────────────────────────────────────────────────────────────
 const team = [
-  { name: 'Carlos Mendoza', role: 'CEO & Fundador',     bio: 'Ingeniero en electrónica con 12 años certificando equipos para distribuidoras regionales.', initials: 'CM', color: '#441306' },
-  { name: 'Ana Torres',     role: 'Directora Técnica',  bio: 'Apple Certified Technician. Lidera el protocolo de inspección de 40+ puntos de SafeTech.', initials: 'AT', color: '#1e3a5f' },
-  { name: 'Luis Vargas',    role: 'Jefe de Logística',  bio: 'Operaciones y cadena de suministro para garantizar que cada equipo llegue en condición óptima.', initials: 'LV', color: '#1a4731' },
-  { name: 'María Solís',    role: 'Atención al Cliente', bio: 'Especialista en posventa. Tiempo de respuesta promedio: 18 minutos en horario laboral.', initials: 'MS', color: '#4a1942' },
+  { name: 'Camila Ruiz',   role: 'CEO & Co-fundadora',   bio: 'Ingeniera en electrónica con 12 años certificando equipos para distribuidoras regionales.', initials: 'CR', color: '#3D1F12' },
+  { name: 'Mateo Reyes',   role: 'Director técnico',      bio: 'Apple Certified Technician. Lidera el protocolo de inspección de 40+ puntos.', initials: 'MR', color: '#4A5C45' },
+  { name: 'Lucía Ortiz',   role: 'Inspectora senior',     bio: 'Especialista en pantallas y baterías. Más de 3,000 dispositivos certificados.', initials: 'LO', color: '#2E2D2B' },
+  { name: 'Daniel Vega',   role: 'Logística',             bio: 'Operaciones y cadena de suministro. Tiempo promedio de entrega: 3.2 días.', initials: 'DV', color: '#5C5B57' },
 ];
 
-const values = [
-  {
-    n: '01',
-    title: 'Transparencia total',
-    body: 'Cada dispositivo llega con su reporte de inspección detallado. Sin sorpresas, sin letra pequeña. Sabes exactamente qué compras.',
-  },
-  {
-    n: '02',
-    title: 'Calidad garantizada',
-    body: '40+ puntos de verificación técnica por equipo. Si un dispositivo no pasa, no se vende. No hay excepciones.',
-  },
-  {
-    n: '03',
-    title: 'Precio justo',
-    body: 'Hasta 40% más barato que comprar nuevo. La misma tecnología, sin el costo del empaque y el marketing original.',
-  },
-  {
-    n: '04',
-    title: 'Impacto sostenible',
-    body: 'Cada equipo reacondicionado evita hasta 70 kg de CO₂. Elegir SafeTech es también elegir el planeta.',
-  },
+const pillars = [
+  { n: '01', t: 'Inspección obsesiva',      d: 'Cada dispositivo se prueba en 40 puntos: pantalla, batería, puertos, sensores, software. Si reprueba uno, no se vende.' },
+  { n: '02', t: 'Garantía sin asteriscos',  d: '90 días totales desde la entrega. Si falla, lo reemplazamos. No hay lectura de letra chica.' },
+  { n: '03', t: 'Cero residuos electrónicos', d: 'Lo que no se puede restaurar se desmonta. Las piezas regresan al ciclo. Cero al vertedero.' },
 ];
 
 export default function Nosotros() {
-  const navigate     = useNavigate();
-  const statsRef     = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const statsRef = useRef<HTMLDivElement>(null);
   const [fired, setFired] = useState(false);
 
   useEffect(() => {
@@ -60,239 +41,210 @@ export default function Nosotros() {
     return () => obs.disconnect();
   }, []);
 
-  const c1 = useCount(5000,  fired, 1400);
-  const c2 = useCount(97,    fired, 1000);
-  const c3 = useCount(12,    fired,  900);
-  const c4 = useCount(90,    fired,  800);
+  const c1 = useCount(27,    fired, 800);
+  const c2 = useCount(5200,  fired, 1400);
+  const c3 = useCount(40,    fired, 900);
+  const c4 = useCount(49,    fired, 1000);
 
   return (
-    <div style={{ background: 'var(--cream)' }}>
+    <div style={{ background: 'var(--st-bone)' }}>
 
-      {/* ── HERO ────────────────────────────────────────────── */}
-      <section style={{
-        background: 'var(--ink)',
-        position: 'relative',
-        overflow: 'hidden',
-        padding: '5rem 0 5.5rem',
-      }}>
-        {/* Noise */}
-        <div style={{ position:'absolute', inset:0, opacity:.04, pointerEvents:'none',
-          backgroundImage:`url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")` }} />
-        {/* Diagonal lines */}
-        <div style={{ position:'absolute', inset:0, pointerEvents:'none',
-          backgroundImage:'repeating-linear-gradient(45deg,transparent,transparent 80px,rgba(255,255,255,.015) 80px,rgba(255,255,255,.015) 81px)' }} />
-
-        <div className="page-container" style={{ position:'relative', zIndex:2 }}>
-          <p className="animate-slide-up" style={{ fontSize:'.62rem', fontWeight:600, letterSpacing:'3px', textTransform:'uppercase', color:'rgba(255,255,255,.35)', fontFamily:'var(--font-sans)', marginBottom:'1.25rem' }}>
-            Nuestra historia
-          </p>
-          <h1 className="animate-slide-up stagger-2" style={{ fontFamily:'var(--font-display)', fontSize:'clamp(2.75rem,6vw,5rem)', fontWeight:300, color:'var(--white)', lineHeight:1.05, letterSpacing:'-.035em', maxWidth:700, marginBottom:'1.75rem' }}>
-            Creemos que la tecnología buena no debería costar una fortuna.
-          </h1>
-          <p className="animate-slide-up stagger-3" style={{ fontFamily:'var(--font-sans)', fontSize:'1rem', color:'rgba(255,255,255,.5)', lineHeight:1.8, maxWidth:520, fontWeight:300 }}>
-            SafeTech nació en Panamá en 2023 con una idea simple: darle una segunda vida a los dispositivos electrónicos de calidad, con inspección técnica rigurosa y garantía real.
-          </p>
-        </div>
-      </section>
-
-      {/* ── STATS ───────────────────────────────────────────── */}
-      <section ref={statsRef} style={{ background:'var(--white)', borderBottom:'1px solid var(--line)' }}>
-        <div className="page-container">
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', borderLeft:'1px solid var(--line)' }}>
-            {[
-              { value: `${c1.toLocaleString()}+`, label:'Dispositivos certificados', sub:'desde 2023' },
-              { value: `${c2}%`,                  label:'Satisfacción de clientes',  sub:'en post-venta' },
-              { value: `${c3}`,                   label:'Técnicos certificados',      sub:'en nuestro equipo' },
-              { value: `${c4} días`,              label:'Garantía incluida',          sub:'en cada equipo' },
-            ].map((s, i) => (
-              <div key={i} style={{ padding:'2.5rem 2rem', borderRight:'1px solid var(--line)', borderBottom:'1px solid var(--line)' }}>
-                <p style={{ fontFamily:'var(--font-display)', fontSize:'clamp(2rem,3.5vw,2.75rem)', fontWeight:300, color:'var(--ink)', letterSpacing:'-.04em', lineHeight:1, marginBottom:'.5rem' }}>
-                  {s.value}
-                </p>
-                <p style={{ fontFamily:'var(--font-sans)', fontSize:'.78rem', fontWeight:600, color:'var(--ink2)', marginBottom:'.2rem' }}>{s.label}</p>
-                <p style={{ fontFamily:'var(--font-sans)', fontSize:'.7rem', color:'var(--gray)' }}>{s.sub}</p>
-              </div>
-            ))}
+      {/* ── HERO ── */}
+      <section style={{ padding: '80px 32px 60px' }}>
+        <div style={{ maxWidth: 1280, margin: '0 auto', display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: 64, alignItems: 'flex-end' }}>
+          <div>
+            <p className="st-eyebrow" style={{ marginBottom: 18 }}>NOSOTROS · DESDE 2023</p>
+            <h1
+              className="st-display"
+              style={{ fontSize: 'clamp(48px, 7vw, 96px)', fontWeight: 300, lineHeight: 0.95, letterSpacing: '-0.045em', color: 'var(--st-clay)' }}
+            >
+              Reparamos<br />tecnología,<br />
+              <em style={{ fontStyle: 'italic', color: 'var(--st-earth)' }}>no la desechamos.</em>
+            </h1>
           </div>
-        </div>
-      </section>
-
-      {/* ── STORY ───────────────────────────────────────────── */}
-      <section style={{ padding:'5.5rem 0', background:'var(--cream)' }}>
-        <div className="page-container">
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'6rem', alignItems:'start' }}>
-            {/* Left: big manifesto */}
-            <div>
-              <p style={{ fontSize:'.62rem', fontWeight:600, letterSpacing:'3px', textTransform:'uppercase', color:'var(--gray)', fontFamily:'var(--font-sans)', marginBottom:'1.25rem' }}>
-                Nuestra misión
-              </p>
-              <h2 style={{ fontFamily:'var(--font-display)', fontSize:'clamp(1.75rem,3vw,2.5rem)', fontWeight:400, fontStyle:'italic', color:'var(--ink)', letterSpacing:'-.03em', lineHeight:1.2, marginBottom:'2rem' }}>
-                "Democratizar el acceso a la tecnología sin sacrificar calidad ni confianza."
-              </h2>
-              <div style={{ display:'flex', flexDirection:'column', gap:'1.25rem' }}>
-                {[
-                  'Cada dispositivo que vendemos ha pasado por nuestro protocolo de inspección de 40+ puntos antes de llegar a tus manos.',
-                  'Trabajamos con técnicos certificados por los fabricantes originales. No aceptamos dispositivos que no cumplan nuestros estándares, sin excepciones.',
-                  'La garantía de 90 días no es un slogan — es un compromiso legal que cubrimos con nuestro propio equipo técnico.',
-                ].map((t, i) => (
-                  <div key={i} style={{ display:'flex', gap:'1rem', alignItems:'flex-start' }}>
-                    <span style={{ width:20, height:20, background:'var(--ink)', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, marginTop:2 }}>
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                        <polyline points="20 6 9 17 4 12"/>
-                      </svg>
-                    </span>
-                    <p style={{ fontFamily:'var(--font-sans)', fontSize:'.9rem', color:'var(--ink2)', lineHeight:1.75, fontWeight:300 }}>{t}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Right: timeline */}
-            <div>
-              <p style={{ fontSize:'.62rem', fontWeight:600, letterSpacing:'3px', textTransform:'uppercase', color:'var(--gray)', fontFamily:'var(--font-sans)', marginBottom:'1.25rem' }}>
-                Nuestro camino
-              </p>
-              <div style={{ display:'flex', flexDirection:'column', gap:0 }}>
-                {[
-                  { year:'2023', title:'Fundación',       body:'SafeTech abre sus puertas en Ciudad de Panamá con 3 técnicos y el compromiso de hacer las cosas diferente.' },
-                  { year:'2023', title:'Primer millar',   body:'500 dispositivos certificados en los primeros 6 meses. 98% de satisfacción en encuestas post-venta.' },
-                  { year:'2024', title:'Garantía 90 días', body:'Lanzamos la garantía ampliada de 90 días — la más generosa del mercado local de reacondicionados.' },
-                  { year:'2024', title:'Expansión',       body:'Abrimos taller técnico propio y ampliamos el equipo a 12 especialistas certificados.' },
-                  { year:'2025', title:'SafeTech Online',  body:'Lanzamos nuestra plataforma digital para que cualquier persona en Panamá pueda comprar con confianza.' },
-                ].map((m, i, arr) => (
-                  <div key={i} style={{ display:'flex', gap:'1.25rem', paddingBottom: i < arr.length - 1 ? '1.75rem' : 0 }}>
-                    {/* Line + dot */}
-                    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', flexShrink:0 }}>
-                      <div style={{ width:10, height:10, borderRadius:'50%', background:'var(--ink)', flexShrink:0, marginTop:4 }} />
-                      {i < arr.length - 1 && (
-                        <div style={{ width:1, flex:1, background:'var(--line)', marginTop:6 }} />
-                      )}
-                    </div>
-                    <div style={{ paddingBottom: i < arr.length - 1 ? '0' : 0 }}>
-                      <div style={{ display:'flex', gap:'.75rem', alignItems:'baseline', marginBottom:'.3rem' }}>
-                        <span style={{ fontFamily:'var(--font-sans)', fontSize:'.65rem', fontWeight:700, letterSpacing:'1.5px', color:'var(--gray)', textTransform:'uppercase' }}>{m.year}</span>
-                        <span style={{ fontFamily:'var(--font-display)', fontSize:'1rem', fontWeight:600, color:'var(--ink)' }}>{m.title}</span>
-                      </div>
-                      <p style={{ fontFamily:'var(--font-sans)', fontSize:'.82rem', color:'var(--ink3)', lineHeight:1.65, fontWeight:300 }}>{m.body}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── VALUES ──────────────────────────────────────────── */}
-      <section style={{ background:'var(--white)', borderTop:'1px solid var(--line)', padding:'5.5rem 0' }}>
-        <div className="page-container">
-          <div style={{ textAlign:'center', marginBottom:'3.5rem' }}>
-            <p style={{ fontSize:'.62rem', fontWeight:600, letterSpacing:'3px', textTransform:'uppercase', color:'var(--gray)', fontFamily:'var(--font-sans)', marginBottom:'.875rem' }}>
-              Lo que nos define
+          <div>
+            <p style={{ fontSize: 17, lineHeight: 1.65, color: 'var(--st-earth)', marginBottom: 16, fontFamily: 'var(--st-font-sans)' }}>
+              SafeTech nació con una idea simple: la tecnología no se gasta — se descarta. Cada año millones de dispositivos perfectamente funcionales terminan en gavetas o vertederos.
             </p>
-            <h2 style={{ fontFamily:'var(--font-display)', fontSize:'clamp(1.5rem,3vw,2rem)', fontWeight:400, fontStyle:'italic', color:'var(--ink)', letterSpacing:'-.025em' }}>
-              Nuestros valores
-            </h2>
-          </div>
-
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:0, border:'1px solid var(--line)' }}>
-            {values.map((v, i) => (
-              <ValueCard key={i} v={v} last={i === values.length - 1} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── TEAM ────────────────────────────────────────────── */}
-      <section style={{ background:'var(--cream)', padding:'5.5rem 0' }}>
-        <div className="page-container">
-          <div style={{ marginBottom:'3rem' }}>
-            <p style={{ fontSize:'.62rem', fontWeight:600, letterSpacing:'3px', textTransform:'uppercase', color:'var(--gray)', fontFamily:'var(--font-sans)', marginBottom:'.875rem' }}>
-              Quiénes somos
+            <p style={{ fontSize: 17, lineHeight: 1.65, color: 'var(--st-earth)', fontFamily: 'var(--st-font-sans)' }}>
+              Llevamos años devolviéndolos al mundo. Cada uno pasa por <strong style={{ color: 'var(--st-clay)' }}>40 puntos de inspección</strong> y sale con 90 días de garantía.
             </p>
-            <h2 style={{ fontFamily:'var(--font-display)', fontSize:'clamp(1.5rem,3vw,2rem)', fontWeight:400, fontStyle:'italic', color:'var(--ink)', letterSpacing:'-.025em' }}>
-              El equipo detrás de SafeTech
-            </h2>
-          </div>
-
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'1.25rem' }}>
-            {team.map((member, i) => (
-              <TeamCard key={i} member={member} />
-            ))}
           </div>
         </div>
       </section>
 
-      {/* ── CTA ─────────────────────────────────────────────── */}
-      <section style={{ background:'var(--ink)', padding:'5rem 0' }}>
-        <div className="page-container" style={{ textAlign:'center', maxWidth:560 }}>
-          <h2 style={{ fontFamily:'var(--font-display)', fontSize:'clamp(1.75rem,3.5vw,2.5rem)', fontWeight:300, color:'var(--white)', letterSpacing:'-.03em', marginBottom:'1rem', lineHeight:1.15 }}>
-            ¿Listo para comprar con confianza?
+      {/* ── STATS ── */}
+      <section
+        ref={statsRef}
+        style={{ padding: '40px 32px', borderTop: '1px solid var(--st-line)', borderBottom: '1px solid var(--st-line)', overflow: 'hidden' }}
+      >
+        <div style={{ maxWidth: 1280, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 0 }}>
+          {[
+            { n: `${c1}`, l: 'años de oficio' },
+            { n: `${c2.toLocaleString()}+`, l: 'dispositivos restaurados' },
+            { n: `${c3}`, l: 'puntos de inspección' },
+            { n: `4.${c4 > 49 ? 9 : c4 < 49 ? Math.floor(c4 / 10) : 9}`, l: 'rating en reseñas' },
+          ].map((s, i) => (
+            <div key={i} style={{ padding: '28px 32px', borderRight: i < 3 ? '1px solid var(--st-line)' : 'none' }}>
+              <p
+                className="st-display"
+                style={{ fontSize: 'clamp(48px, 5.5vw, 72px)', fontWeight: 300, lineHeight: 0.95, letterSpacing: '-0.04em', color: 'var(--st-clay)', marginBottom: 8 }}
+              >
+                {s.n}
+              </p>
+              <p className="st-eyebrow">{s.l}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── PILLARS ── */}
+      <section style={{ padding: '100px 32px' }}>
+        <div style={{ maxWidth: 1280, margin: '0 auto' }}>
+          <p className="st-eyebrow" style={{ marginBottom: 16 }}>NUESTROS PILARES</p>
+          <h2
+            className="st-display"
+            style={{ fontSize: 'clamp(36px, 4.5vw, 56px)', fontWeight: 300, lineHeight: 1, letterSpacing: '-0.035em', color: 'var(--st-clay)', marginBottom: 60, maxWidth: 720 }}
+          >
+            Lo que hacemos diferente, <em style={{ fontStyle: 'italic' }}>en práctica.</em>
           </h2>
-          <p style={{ fontFamily:'var(--font-sans)', fontSize:'.9rem', color:'rgba(255,255,255,.45)', lineHeight:1.75, marginBottom:'2rem', fontWeight:300 }}>
-            Explora nuestro catálogo de dispositivos verificados. Cada uno con garantía de 90 días incluida.
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 32 }}>
+            {pillars.map((p) => (
+              <article
+                key={p.n}
+                style={{ padding: '28px 0 32px', borderTop: '1px solid var(--st-clay)' }}
+              >
+                <p className="st-mono" style={{ fontSize: 11, color: 'var(--st-rust)', letterSpacing: '0.1em', marginBottom: 18 }}>{p.n}</p>
+                <h3
+                  className="st-display"
+                  style={{ fontSize: 26, fontWeight: 400, lineHeight: 1.1, color: 'var(--st-clay)', marginBottom: 14, letterSpacing: '-0.02em' }}
+                >
+                  {p.t}
+                </h3>
+                <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--st-earth)', fontFamily: 'var(--st-font-sans)' }}>{p.d}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── TEAM ── */}
+      <section style={{ padding: '60px 32px 100px', background: 'var(--st-cream)' }}>
+        <div style={{ maxWidth: 1280, margin: '0 auto' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 48, flexWrap: 'wrap', gap: 24 }}>
+            <div>
+              <p className="st-eyebrow" style={{ marginBottom: 16 }}>EL EQUIPO</p>
+              <h2
+                className="st-display"
+                style={{ fontSize: 'clamp(36px, 4.5vw, 56px)', fontWeight: 300, lineHeight: 1, letterSpacing: '-0.035em', color: 'var(--st-clay)' }}
+              >
+                Personas reales, <em style={{ fontStyle: 'italic' }}>oficio real.</em>
+              </h2>
+            </div>
+            <p style={{ fontSize: 14, color: 'var(--st-earth)', maxWidth: 320, fontFamily: 'var(--st-font-sans)' }}>
+              Técnicos certificados, no operarios de línea. Cada inspector firma su reporte.
+            </p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+            {team.map((m) => (
+              <TeamCard key={m.name} member={m} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── CTA ── */}
+      <section style={{ padding: '120px 32px', background: 'var(--st-ink)', position: 'relative', overflow: 'hidden' }}>
+        <div style={{
+          position: 'absolute', width: 600, height: 600, top: '50%', left: '50%',
+          transform: 'translate(-50%, -50%)',
+          background: 'radial-gradient(circle, rgba(74,92,69,0.15) 0%, transparent 60%)',
+          pointerEvents: 'none', filter: 'blur(60px)',
+        }} />
+        <div style={{ maxWidth: 720, margin: '0 auto', textAlign: 'center', position: 'relative' }}>
+          <h2
+            className="st-display"
+            style={{ fontSize: 'clamp(40px, 5.5vw, 72px)', fontWeight: 300, lineHeight: 1, letterSpacing: '-0.04em', color: 'var(--st-bone)', marginBottom: 24 }}
+          >
+            ¿Listo para comprar <em style={{ fontStyle: 'italic', color: 'var(--st-sand)' }}>con confianza?</em>
+          </h2>
+          <p style={{ fontSize: 16, color: 'rgba(244,244,242,0.55)', lineHeight: 1.75, marginBottom: 36, fontFamily: 'var(--st-font-sans)' }}>
+            Cada dispositivo con garantía de 90 días incluida. Sin sorpresas.
           </p>
           <button
             onClick={() => navigate('/home')}
-            style={{ background:'var(--white)', color:'var(--ink)', border:'none', padding:'14px 32px', fontFamily:'var(--font-sans)', fontSize:'.85rem', fontWeight:600, letterSpacing:'.3px', cursor:'pointer', transition:'all .25s ease' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform='translateY(-2px)'; (e.currentTarget as HTMLButtonElement).style.boxShadow='0 10px 28px rgba(0,0,0,.3)'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform=''; (e.currentTarget as HTMLButtonElement).style.boxShadow=''; }}
+            style={{
+              padding: '16px 36px', background: 'var(--st-bone)', color: 'var(--st-ink)',
+              border: 'none', borderRadius: 'var(--st-radius-pill)',
+              fontFamily: 'var(--st-font-sans)', fontSize: 15, fontWeight: 500,
+              cursor: 'pointer', transition: 'all 0.25s var(--st-ease)',
+              display: 'inline-flex', alignItems: 'center', gap: 10,
+            }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = '#fff'; (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 10px 28px rgba(0,0,0,0.3)'; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--st-bone)'; (e.currentTarget as HTMLButtonElement).style.transform = ''; (e.currentTarget as HTMLButtonElement).style.boxShadow = ''; }}
           >
             Ver catálogo
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14M13 5l7 7-7 7" />
+            </svg>
           </button>
         </div>
       </section>
 
+      <style>{`
+        @media (max-width: 900px) {
+          .nosotros-hero  { grid-template-columns: 1fr !important; }
+          .nosotros-stats { grid-template-columns: repeat(2, 1fr) !important; }
+          .nosotros-team  { grid-template-columns: repeat(2, 1fr) !important; }
+          .nosotros-pillars { grid-template-columns: 1fr !important; }
+        }
+        @media (max-width: 480px) {
+          .nosotros-team  { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
     </div>
   );
 }
 
-// ── Value card ────────────────────────────────────────────────────────────
-function ValueCard({ v, last }: { v: { n: string; title: string; body: string }; last: boolean }) {
-  const [hovered, setHovered] = useState(false);
-  return (
-    <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{ padding:'2.5rem 2rem', borderRight: last ? 'none' : '1px solid var(--line)', position:'relative', overflow:'hidden', cursor:'default', transition:'background .35s ease', background: hovered ? 'var(--ink)' : 'var(--white)' }}
-    >
-      <p style={{ fontFamily:'var(--font-display)', fontSize:'3rem', fontWeight:300, color: hovered ? 'rgba(255,255,255,.07)' : 'rgba(0,0,0,.05)', letterSpacing:'-.04em', lineHeight:1, marginBottom:'1.5rem', transition:'color .35s ease' }}>
-        {v.n}
-      </p>
-      <h3 style={{ fontFamily:'var(--font-display)', fontSize:'1.05rem', fontWeight:600, color: hovered ? 'var(--white)' : 'var(--ink)', marginBottom:'.625rem', letterSpacing:'-.01em', transition:'color .35s ease' }}>
-        {v.title}
-      </h3>
-      <p style={{ fontFamily:'var(--font-sans)', fontSize:'.82rem', color: hovered ? 'rgba(255,255,255,.5)' : 'var(--ink3)', lineHeight:1.7, fontWeight:300, transition:'color .35s ease' }}>
-        {v.body}
-      </p>
-    </div>
-  );
-}
-
-// ── Team card ─────────────────────────────────────────────────────────────
 function TeamCard({ member }: { member: typeof team[0] }) {
   const [hovered, setHovered] = useState(false);
   return (
-    <div
+    <article
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      style={{ background:'var(--white)', border:'1.5px solid', borderColor: hovered ? 'transparent' : 'var(--line)', borderRadius:6, padding:'1.75rem 1.5rem', transition:'all .25s ease', boxShadow: hovered ? '0 12px 40px rgba(0,0,0,.1)' : 'none', transform: hovered ? 'translateY(-4px)' : 'none', cursor:'default' }}
+      style={{
+        background: 'var(--st-bone)', borderRadius: 14, overflow: 'hidden',
+        border: '1px solid var(--st-line)', transition: 'all 0.3s var(--st-ease)',
+        transform: hovered ? 'translateY(-4px)' : 'none',
+        boxShadow: hovered ? '0 20px 48px -12px rgba(46,45,43,0.15)' : 'none',
+      }}
     >
-      {/* Avatar */}
-      <div style={{ width:56, height:56, borderRadius:6, background:member.color, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:'1.25rem' }}>
-        <span style={{ fontFamily:'var(--font-display)', fontSize:'1.1rem', fontWeight:600, color:'rgba(255,255,255,.9)', letterSpacing:'-.01em' }}>
+      <div
+        style={{
+          aspectRatio: '4/3', background: member.color, display: 'flex',
+          alignItems: 'center', justifyContent: 'center',
+        }}
+      >
+        <span
+          className="st-display"
+          style={{ fontSize: 40, fontWeight: 300, color: 'rgba(244,244,242,0.8)', letterSpacing: '-0.02em' }}
+        >
           {member.initials}
         </span>
       </div>
-      <p style={{ fontFamily:'var(--font-display)', fontSize:'1rem', fontWeight:600, color:'var(--ink)', marginBottom:'.2rem', letterSpacing:'-.01em' }}>
-        {member.name}
-      </p>
-      <p style={{ fontFamily:'var(--font-sans)', fontSize:'.7rem', fontWeight:600, textTransform:'uppercase', letterSpacing:'1.5px', color:'var(--gray)', marginBottom:'1rem' }}>
-        {member.role}
-      </p>
-      <p style={{ fontFamily:'var(--font-sans)', fontSize:'.8rem', color:'var(--ink3)', lineHeight:1.65, fontWeight:300 }}>
-        {member.bio}
-      </p>
-    </div>
+      <div style={{ padding: '20px 20px 24px' }}>
+        <p style={{ fontSize: 15, fontWeight: 500, color: 'var(--st-clay)', marginBottom: 4, fontFamily: 'var(--st-font-sans)' }}>
+          {member.name}
+        </p>
+        <p className="st-mono" style={{ fontSize: 10, color: 'var(--st-rust)', letterSpacing: '0.08em', marginBottom: 12 }}>
+          {member.role.toUpperCase()}
+        </p>
+        <p style={{ fontSize: 13, color: 'var(--st-earth)', lineHeight: 1.6, fontFamily: 'var(--st-font-sans)' }}>
+          {member.bio}
+        </p>
+      </div>
+    </article>
   );
 }
