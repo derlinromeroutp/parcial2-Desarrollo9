@@ -18,10 +18,9 @@ function useCount(target: number, active: boolean, ms = 1100) {
 }
 
 const team = [
-  { name: 'Camila Ruiz',   role: 'CEO & Co-fundadora',   bio: 'Ingeniera en electrónica con 12 años certificando equipos para distribuidoras regionales.', initials: 'CR', color: '#3D1F12' },
-  { name: 'Mateo Reyes',   role: 'Director técnico',      bio: 'Apple Certified Technician. Lidera el protocolo de inspección de 40+ puntos.', initials: 'MR', color: '#4A5C45' },
-  { name: 'Lucía Ortiz',   role: 'Inspectora senior',     bio: 'Especialista en pantallas y baterías. Más de 3,000 dispositivos certificados.', initials: 'LO', color: '#2E2D2B' },
-  { name: 'Daniel Vega',   role: 'Logística',             bio: 'Operaciones y cadena de suministro. Tiempo promedio de entrega: 3.2 días.', initials: 'DV', color: '#5C5B57' },
+  { name: 'Ana Patricia Aparicio', role: 'CEO & Co-fundadora',  bio: 'Ingeniera en electrónica con 12 años certificando equipos para distribuidoras regionales.', initials: 'AA', color: '#3D1F12' },
+  { name: 'Bruno Ferreira',        role: 'Director técnico',     bio: 'Apple Certified Technician. Lidera el protocolo de inspección de 40+ puntos.', initials: 'BF', color: '#4A5C45' },
+  { name: 'Derlin Romero',         role: 'Inspectora senior',    bio: 'Especialista en pantallas y baterías. Más de 3,000 dispositivos certificados.', initials: 'DR', color: '#2E2D2B' },
 ];
 
 const pillars = [

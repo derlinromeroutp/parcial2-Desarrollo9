@@ -15,7 +15,9 @@ import ProductPage from './pages/ProductPage';
 import ProductDetail from './pages/ProductDetail';
 import Nosotros from './pages/Nosotros';
 import Contacto from './pages/Contacto';
-import { ProtectedAdminRoute } from './components/AdminRoute';
+import MyWarranties from './pages/MyWarranties';
+import { ProtectedAdminRoute, ProtectedTechnicianRoute } from './components/AdminRoute';
+import TechnicianDashboard from './pages/TechnicianDashboard';
 
 // Layout with NavMenu for all public pages
 function WithNav({ children }: { children: React.ReactNode }) {
@@ -49,6 +51,10 @@ function App() {
             }
           />
           <Route
+            path="/mis-garantias"
+            element={<WithNav><MyWarranties /></WithNav>}
+          />
+          <Route
             path="/warranties/new"
             element={
               <SignedIn>
@@ -71,6 +77,16 @@ function App() {
                 <ProtectedAdminRoute>
                   <AdminDashboard />
                 </ProtectedAdminRoute>
+              </SignedIn>
+            }
+          />
+          <Route
+            path="/technician"
+            element={
+              <SignedIn>
+                <ProtectedTechnicianRoute>
+                  <TechnicianDashboard />
+                </ProtectedTechnicianRoute>
               </SignedIn>
             }
           />

@@ -4,7 +4,8 @@ import { Link, useLocation } from 'react-router-dom';
 const menuItems = [
   { label: 'Inicio',    href: '/' },
   { label: 'Catálogo',  href: '/home' },
-  { label: 'Pedidos',   href: '/orders' },
+  { label: 'Pedidos',      href: '/orders' },
+  { label: 'Garantías',   href: '/mis-garantias' },
   { label: 'Nosotros',  href: '/nosotros' },
   { label: 'Contacto',  href: '/contacto' },
 ];

@@ -6,7 +6,8 @@
       "PowerShell(cd frontend; npx tsc --noEmit; \"ExitCode=$LASTEXITCODE\")",
       "WebFetch(domain:api.anthropic.com)",
       "Bash(bun run *)",
-      "Bash(bunx tsc *)"
+      "Bash(bunx tsc *)",
+      "Bash(docker compose *)"
     ]
   }
 }

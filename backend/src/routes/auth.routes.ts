@@ -63,11 +63,12 @@ authRoutes.get('/me', clerkAuthMiddleware, async (c) => {
     return c.json({
       userId,
       role: role || 'user',
-      isAdmin: role === 'admin'
+      isAdmin: role === 'admin',
+      isTechnician: role === 'technician',
     });
   } catch (error) {
     console.error('[Auth/Me Error]:', error);
-    return c.json({ userId, role: 'user', isAdmin: false }, 200);
+    return c.json({ userId, role: 'user', isAdmin: false, isTechnician: false }, 200);
   }
 });
 

@@ -91,5 +91,26 @@ export const warrantyService = {
 
     if (!response.ok) throw new Error('Failed to assign technician');
     return response.json();
-  }
+  },
+
+  async getAssignedWarranties(token: string): Promise<IWarranty[]> {
+    const response = await fetch(`${API_URL}/warranties/assigned`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!response.ok) throw new Error('Failed to fetch assigned warranties');
+    return response.json();
+  },
+
+  async technicianUpdate(id: string, data: { status?: string; repairNotes?: string }, token: string): Promise<IWarranty> {
+    const response = await fetch(`${API_URL}/warranties/${id}/tech-update`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) throw new Error('Failed to update warranty');
+    return response.json();
+  },
 };

@@ -5,6 +5,7 @@ export interface Technician {
   phone?: string;
   specialties?: string[];
   active: boolean;
+  clerkId?: string;
   createdAt: string;
   updatedAt: string;
 }

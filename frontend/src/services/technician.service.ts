@@ -9,7 +9,7 @@ export const technicianService = {
     });
     return response.data;
   },
-  createTechnician: async (data: { name: string; email: string; phone?: string; specialties?: string[] }, token: string) => {
+  createTechnician: async (data: { name: string; email: string; phone?: string; specialties?: string[]; clerkId?: string }, token: string) => {
     const response = await axios.post(`${API_URL}/technicians`, data, {
       headers: { Authorization: `Bearer ${token}` }
     });

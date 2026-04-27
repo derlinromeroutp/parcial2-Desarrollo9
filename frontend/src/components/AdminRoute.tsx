@@ -10,6 +10,7 @@ interface ProtectedAdminRouteProps {
 
 interface MeResponse {
   isAdmin: boolean;
+  isTechnician: boolean;
   role: string;
 }
 
@@ -67,6 +68,44 @@ export function ProtectedAdminRoute({ children }: ProtectedAdminRouteProps) {
     return null;
   }
 
+  return <>{children}</>;
+}
+
+export function ProtectedTechnicianRoute({ children }: { children: React.ReactNode }) {
+  const { isLoaded, getToken } = useAuth();
+  const [verified, setVerified] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const verify = async () => {
+      if (!isLoaded) return;
+      try {
+        const token = await getToken();
+        if (!token) { setVerified(false); return; }
+        const response = await fetch(`${API_URL}/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (response.ok) {
+          const data: MeResponse = await response.json();
+          setVerified(data.isTechnician);
+        } else {
+          setVerified(false);
+        }
+      } catch {
+        setVerified(false);
+      }
+    };
+    verify();
+  }, [isLoaded, getToken]);
+
+  if (isLoaded && verified === null) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <p style={{ fontFamily: 'var(--font-sans)', color: 'var(--gray)' }}>Verificando acceso…</p>
+      </div>
+    );
+  }
+  if (isLoaded && verified === false) return <Navigate to="/home" replace />;
+  if (!isLoaded || verified !== true) return null;
   return <>{children}</>;
 }
 
