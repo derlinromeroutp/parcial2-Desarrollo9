@@ -90,14 +90,26 @@ export const updateWarrantyStatus = async (c: Context) => {
   try {
     const { id } = c.req.param();
     const body = await c.req.json();
-    
-    const report = await WarrantyReport.findByIdAndUpdate(
-      id,
-      { status: body.status, repairNotes: body.repairNotes },
-      { new: true }
-    );
+
+    const report = await WarrantyReport.findById(id);
 
     if (!report) return c.json({ error: 'Report not found' }, 404);
+
+    if (body.status) {
+      const previousStatus = report.status;
+      report.status = body.status;
+      if (body.status === 'resolved' && (previousStatus !== 'resolved' || !report.resolvedAt)) {
+        report.resolvedAt = new Date();
+      } else if (body.status !== 'resolved') {
+        report.resolvedAt = undefined;
+      }
+    }
+
+    if (body.repairNotes !== undefined) {
+      report.repairNotes = body.repairNotes;
+    }
+
+    await report.save();
     return c.json(report);
   } catch (error: any) {
     return c.json({ error: error.message }, 400);
@@ -118,7 +130,8 @@ export const assignTechnician = async (c: Context) => {
       {
         technicianId,
         technicianName,
-        status: 'review'
+        status: 'review',
+        resolvedAt: undefined
       },
       { new: true }
     );
@@ -159,7 +172,15 @@ export const technicianUpdateWarranty = async (c: Context) => {
       return c.json({ error: 'Invalid status' }, 400);
     }
 
-    if (body.status) report.status = body.status;
+    if (body.status) {
+      const previousStatus = report.status;
+      report.status = body.status;
+      if (body.status === 'resolved' && (previousStatus !== 'resolved' || !report.resolvedAt)) {
+        report.resolvedAt = new Date();
+      } else if (body.status !== 'resolved') {
+        report.resolvedAt = undefined;
+      }
+    }
     if (body.repairNotes !== undefined) report.repairNotes = body.repairNotes;
     await report.save();
     return c.json(report);
