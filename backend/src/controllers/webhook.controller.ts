@@ -24,7 +24,7 @@ export const stripeWebhookController = async (c: Context) => {
       console.warn('[Stripe Webhook] No webhook secret or signature — skipping verification (dev only)');
       event = JSON.parse(rawBody) as Stripe.Event;
     } else {
-      event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
+      event = await stripe.webhooks.constructEventAsync(rawBody, sig, webhookSecret);
     }
   } catch (err: any) {
     console.error('[Stripe Webhook] Signature verification failed:', err.message);
