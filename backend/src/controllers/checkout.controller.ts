@@ -4,6 +4,7 @@ import { Product } from '../models/Product';
 import { Order } from '../models/Order';
 import { OrderItem } from '../models/OrderItem';
 import { Types } from 'mongoose';
+import { isE2ETestMode } from '../lib/e2e';
 
 const getStripeClient = () => {
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
@@ -103,8 +104,6 @@ export const createPaymentIntentController = async (c: Context) => {
       );
     }
 
-    const stripe = getStripeClient();
-
     // Build a stable signature of the cart so we can reuse a pending order on retry.
     const cartSignature = [...cartItems]
       .sort((a, b) => a.productId.localeCompare(b.productId))
@@ -132,6 +131,50 @@ export const createPaymentIntentController = async (c: Context) => {
 
     let order = reusableOrder;
     let paymentIntent: Stripe.PaymentIntent | null = null;
+    let e2ePaymentIntentId: string | null = null;
+
+    if (isE2ETestMode && String(userId).startsWith('e2e-')) {
+      e2ePaymentIntentId = order?.payment_intent_id || `e2e_pi_${Date.now()}`;
+
+      if (!order) {
+        order = await Order.create({
+          userId,
+          total_amount: totalAmount,
+          status: 'pending',
+          payment_intent_id: e2ePaymentIntentId,
+          items: validItems.map((item) => ({
+            product: item.product._id,
+            quantity: item.quantity,
+            price: item.product.price,
+          })),
+        });
+
+        for (const validItem of validItems) {
+          await OrderItem.create({
+            order_id: order._id,
+            product_id: validItem.product._id,
+            price: validItem.product.price,
+            quantity: validItem.quantity,
+          });
+        }
+      } else {
+        order.total_amount = totalAmount;
+        order.payment_intent_id = e2ePaymentIntentId;
+        await order.save();
+      }
+
+      return c.json(
+        {
+          clientSecret: `e2e_secret_${e2ePaymentIntentId}`,
+          paymentIntentId: e2ePaymentIntentId,
+          orderId: String(order._id),
+          amount: totalAmount,
+        },
+        200,
+      );
+    }
+
+    const stripe = getStripeClient();
 
     if (order && order.payment_intent_id) {
       // Try to reuse the existing PaymentIntent.
@@ -218,6 +261,7 @@ export const createPaymentIntentController = async (c: Context) => {
     return c.json(
       {
         clientSecret: paymentIntent.client_secret,
+        paymentIntentId: paymentIntent.id,
         orderId: String(order._id),
         amount: totalAmount,
       },

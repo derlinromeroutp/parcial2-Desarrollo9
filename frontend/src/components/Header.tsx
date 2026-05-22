@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { SignedIn, SignedOut, SignInButton, UserButton, useAuth } from "@clerk/clerk-react";
+import { SignedIn, SignedOut, SignInButton, UserButton, useAuth } from '../lib/auth';
 import { Link } from "react-router-dom";
 import { CartIcon } from "./CartIcon";
 import { CartDrawer } from "./CartDrawer";

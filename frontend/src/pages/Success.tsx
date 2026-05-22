@@ -1,6 +1,6 @@
 import { Link, useSearchParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { useAuth } from '@clerk/clerk-react';
+import { useAuth } from '../lib/auth';
 import { useCartStore } from '../store/cart.store';
 import { ordersService } from '../services/orders.service';
 import { Skeleton } from '../components/ui/Skeleton';

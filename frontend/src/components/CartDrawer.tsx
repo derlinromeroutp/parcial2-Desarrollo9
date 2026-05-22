@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { SignInButton, useAuth } from '@clerk/clerk-react';
+import { SignInButton, useAuth } from '../lib/auth';
 import { useNavigate } from 'react-router-dom';
 import { useCartStore } from '../store/cart.store';
 

@@ -2,6 +2,7 @@ import { verifyToken, createClerkClient } from '@clerk/backend';
 import { Context, Next } from 'hono';
 import { User } from '../models/User';
 import { Technician } from '../models/Technician';
+import { getE2EPrincipalFromToken } from '../lib/e2e';
 
 export const clerkAuthMiddleware = async (c: Context, next: Next) => {
   const authHeader = c.req.header('Authorization');
@@ -11,6 +12,14 @@ export const clerkAuthMiddleware = async (c: Context, next: Next) => {
   }
 
   const token = authHeader.split(' ')[1];
+  const e2ePrincipal = getE2EPrincipalFromToken(token);
+
+  if (e2ePrincipal) {
+    c.set('userId', e2ePrincipal.userId);
+    c.set('authRole', e2ePrincipal.role);
+    await next();
+    return;
+  }
 
   try {
     const payload = await verifyToken(token, {
@@ -37,6 +46,18 @@ export const adminAuthMiddleware = async (c: Context, next: Next) => {
   }
 
   const token = authHeader.split(' ')[1];
+  const e2ePrincipal = getE2EPrincipalFromToken(token);
+
+  if (e2ePrincipal) {
+    if (e2ePrincipal.role !== 'admin') {
+      return c.json({ error: 'Forbidden: Insufficient privileges' }, 403);
+    }
+
+    c.set('userId', e2ePrincipal.userId);
+    c.set('authRole', e2ePrincipal.role);
+    await next();
+    return;
+  }
   
   try {
     const payload = await verifyToken(token, {
@@ -76,6 +97,25 @@ export const technicianAuthMiddleware = async (c: Context, next: Next) => {
     return c.json({ error: 'Unauthorized: No token provided' }, 401);
   }
   const token = authHeader.split(' ')[1];
+  const e2ePrincipal = getE2EPrincipalFromToken(token);
+
+  if (e2ePrincipal) {
+    if (e2ePrincipal.role !== 'technician') {
+      return c.json({ error: 'Forbidden: Not a technician' }, 403);
+    }
+
+    const tech = await Technician.findOne({ clerkId: e2ePrincipal.userId });
+    if (!tech) {
+      return c.json({ error: 'Forbidden: Technician record not linked to this account' }, 403);
+    }
+
+    c.set('userId', e2ePrincipal.userId);
+    c.set('authRole', e2ePrincipal.role);
+    c.set('technicianDocId', (tech._id as any).toString());
+    await next();
+    return;
+  }
+
   try {
     const payload = await verifyToken(token, { secretKey: process.env.CLERK_SECRET_KEY });
     if (!payload.sub) return c.json({ error: 'Unauthorized: Invalid token payload' }, 401);

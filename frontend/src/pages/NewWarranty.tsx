@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { warrantyService } from '../services/warranty.service';
-import { useAuth } from '@clerk/clerk-react';
+import { useAuth } from '../lib/auth';
 
 const warrantySchema = z.object({
   reason: z.string().min(1, 'Selecciona un motivo'),

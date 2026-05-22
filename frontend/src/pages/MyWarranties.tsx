@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useAuth, SignInButton } from '@clerk/clerk-react';
+import { useAuth, SignInButton } from '../lib/auth';
 import { Link } from 'react-router-dom';
 import { warrantyService } from '../services/warranty.service';
 import type { IWarranty } from '../types/warranty';

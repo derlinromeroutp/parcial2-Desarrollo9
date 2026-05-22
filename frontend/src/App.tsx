@@ -1,5 +1,5 @@
 import { Routes, Route } from 'react-router-dom';
-import { SignedIn } from '@clerk/clerk-react';
+import { SignedIn } from './lib/auth';
 import Header from './components/Header';
 import NavMenu from './components/ui/menu-hover-effects';
 import Home from './pages/Home';
