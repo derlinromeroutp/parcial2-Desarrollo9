@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { Order } from '../models/Order';
 import { OrderItem } from '../models/OrderItem';
 import { finalizePaidOrder } from '../services/order.service';
+import { isE2EPaymentIntent, isE2ETestMode } from '../lib/e2e';
 
 const getStripeClient = () => {
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
@@ -119,6 +120,39 @@ export const confirmOrderPayment = async (c: Context) => {
 
     if (!paymentIntentId || typeof paymentIntentId !== 'string') {
       return c.json({ error: 'paymentIntentId is required' }, 400);
+    }
+
+    if (isE2ETestMode && isE2EPaymentIntent(paymentIntentId)) {
+      const order = await Order.findOne({ payment_intent_id: paymentIntentId, userId });
+
+      if (!order) {
+        return c.json({ error: 'Order not found' }, 404);
+      }
+
+      if (order.status === 'paid') {
+        const relatedItems = await OrderItem.find({ order_id: order._id }).populate('product_id').lean();
+        const items = relatedItems.map((item) => ({
+          ...item,
+          product: item.product_id,
+        }));
+        return c.json({ ...order.toObject(), items }, 200);
+      }
+
+      const confirmation = await finalizePaidOrder(
+        userId,
+        String(order._id),
+        paymentIntentId,
+        false,
+      );
+
+      const paidOrder = await Order.findById(confirmation.lockedOrder._id).lean();
+      const relatedItems = await OrderItem.find({ order_id: confirmation.lockedOrder._id }).populate('product_id').lean();
+      const items = relatedItems.map((item) => ({
+        ...item,
+        product: item.product_id,
+      }));
+
+      return c.json({ ...paidOrder, items, stockWarnings: confirmation.stockWarnings }, 200);
     }
 
     const stripe = getStripeClient();

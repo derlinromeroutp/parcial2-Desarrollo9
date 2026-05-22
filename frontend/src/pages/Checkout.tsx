@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { SignInButton, useAuth } from '@clerk/clerk-react';
+import { SignInButton, useAuth } from '../lib/auth';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 import { checkoutService } from '../services/checkout.service';
@@ -9,6 +9,7 @@ import { useCartStore } from '../store/cart.store';
 
 const stripePublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string | undefined;
 const stripePromise = stripePublishableKey ? loadStripe(stripePublishableKey) : null;
+const isE2ETestMode = import.meta.env.VITE_E2E_TEST_MODE === 'true';
 
 function extractPaymentIntentId(clientSecret: string): string | null {
   const match = clientSecret.match(/^(pi_[^_]+)_secret_/);
@@ -114,11 +115,15 @@ function CheckoutForm({ amount, clientSecret }: { amount: number; clientSecret: 
 
 export default function Checkout() {
   const { getToken, isLoaded, isSignedIn } = useAuth();
+  const navigate = useNavigate();
+  const clearCart = useCartStore((state) => state.clearCart);
   const items = useCartStore((state) => state.items);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
   const [serverAmount, setServerAmount] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isCreatingIntent, setIsCreatingIntent] = useState(false);
+  const [isConfirmingTestPayment, setIsConfirmingTestPayment] = useState(false);
   const createdSignatureRef = useRef<string | null>(null);
 
   const cartPayload = useMemo(
@@ -146,6 +151,7 @@ export default function Checkout() {
         if (!token) throw new Error('No autenticado');
         const response = await checkoutService.createPaymentIntent(cartPayload, token);
         setClientSecret(response.clientSecret);
+        setPaymentIntentId(response.paymentIntentId ?? null);
         setServerAmount(response.amount);
       } catch (err: any) {
         createdSignatureRef.current = null;
@@ -158,7 +164,28 @@ export default function Checkout() {
     createIntent();
   }, [cartPayload, cartSignature, getToken, isLoaded, isSignedIn]);
 
-  if (!stripePublishableKey || !stripePromise) {
+  const handleTestPayment = async () => {
+    if (!paymentIntentId) return;
+
+    setIsConfirmingTestPayment(true);
+    setError(null);
+
+    try {
+      const token = await getToken();
+      if (!token) throw new Error('No autenticado');
+      await ordersService.confirmPayment(paymentIntentId, token);
+      clearCart();
+      navigate(`/success?payment_intent=${paymentIntentId}`);
+    } catch (err: any) {
+      setError(err?.response?.data?.error || err?.message || 'No pudimos confirmar el pago de prueba.');
+      setIsConfirmingTestPayment(false);
+      return;
+    }
+
+    setIsConfirmingTestPayment(false);
+  };
+
+  if (!isE2ETestMode && (!stripePublishableKey || !stripePromise)) {
     return (
       <div className="op-root">
         <main className="op-body">
@@ -248,7 +275,25 @@ export default function Checkout() {
             {isCreatingIntent && <p style={{ color: 'var(--ink2)' }}>Preparando formulario de pago...</p>}
             {error && <div className="alert alert-error">{error}</div>}
 
-            {clientSecret && serverAmount !== null && (
+            {isE2ETestMode && paymentIntentId && serverAmount !== null && (
+              <div style={{ display: 'grid', gap: '1rem' }}>
+                <div className="alert alert-success">
+                  Modo de prueba activo. El pago se confirma localmente sin usar Stripe.
+                </div>
+                <button
+                  className="btn-primary"
+                  type="button"
+                  onClick={handleTestPayment}
+                  disabled={isConfirmingTestPayment}
+                  data-testid="test-payment-button"
+                  style={{ width: '100%', padding: '14px', justifyContent: 'center' }}
+                >
+                  {isConfirmingTestPayment ? 'Confirmando pago...' : `Confirmar pago de prueba por $${serverAmount.toFixed(2)}`}
+                </button>
+              </div>
+            )}
+
+            {!isE2ETestMode && clientSecret && serverAmount !== null && (
               <Elements
                 stripe={stripePromise}
                 options={{

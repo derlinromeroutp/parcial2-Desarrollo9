@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useOrders } from '../hooks/useOrders';
 import { Link } from 'react-router-dom';
 import { Skeleton } from '../components/ui/Skeleton';
-import { SignInButton, useAuth } from '@clerk/clerk-react';
+import { SignInButton, useAuth } from '../lib/auth';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 const isWithin90Days = (d?: string) =>

@@ -1,12 +1,24 @@
 import { Hono } from 'hono';
 import { clerkAuthMiddleware } from '../middlewares/auth.middleware';
-import { verifyToken, createClerkClient } from '@clerk/backend';
+import { createClerkClient } from '@clerk/backend';
 import { User } from '../models/User';
+import { getE2EPrincipalFromToken } from '../lib/e2e';
 
 const authRoutes = new Hono();
 
 authRoutes.get('/me', clerkAuthMiddleware, async (c) => {
   const userId = c.get('userId');
+  const authHeader = c.req.header('Authorization');
+  const e2ePrincipal = getE2EPrincipalFromToken(authHeader?.split(' ')[1]);
+
+  if (e2ePrincipal) {
+    return c.json({
+      userId: e2ePrincipal.userId,
+      role: e2ePrincipal.role,
+      isAdmin: e2ePrincipal.role === 'admin',
+      isTechnician: e2ePrincipal.role === 'technician',
+    });
+  }
 
   try {
     let userDoc = await User.findOne({ clerk_id: userId });

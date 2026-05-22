@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '@clerk/clerk-react';
+import { useAuth } from '../lib/auth';
 import type { Product } from '../types/product';
 import type { UpdateProductDTO } from '../services/products.service';
 import { productsService } from '../services/products.service';

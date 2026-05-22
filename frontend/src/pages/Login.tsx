@@ -1,4 +1,4 @@
-import { SignIn } from '@clerk/clerk-react';
+import { SignIn } from '../lib/auth';
 
 const clerkAppearance = {
   variables: {

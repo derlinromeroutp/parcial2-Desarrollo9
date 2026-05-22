@@ -1,18 +1,8 @@
-import { ClerkProvider, useAuth, useUser } from '@clerk/clerk-react';
-import React, { useEffect, useCallback, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { ClerkProvider, isMockAuthEnabled, useAuth, useUser } from '../lib/auth';
 
 const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
-
-if (!PUBLISHABLE_KEY) {
-  throw new Error("Missing Publishable Key: No se encontró VITE_CLERK_PUBLISHABLE_KEY en el archivo de entorno.");
-}
-
-if (/^pk_(test|live)_51/.test(PUBLISHABLE_KEY)) {
-  throw new Error(
-    "VITE_CLERK_PUBLISHABLE_KEY parece ser una key de Stripe. Usa la key de Clerk en esta variable y la de Stripe en VITE_STRIPE_PUBLISHABLE_KEY.",
-  );
-}
 
 const ROUTES = {
   ADMIN: '/admin',
@@ -22,6 +12,7 @@ const ROUTES = {
   LOGIN: '/login',
   REGISTER: '/register',
 } as const;
+const AUTH_ONLY_ROUTES = ['/', '/login', '/register'];
 
 function AuthRedirectHandler({ children }: { children: React.ReactNode }) {
   const { isLoaded, isSignedIn } = useAuth();
@@ -35,16 +26,17 @@ function AuthRedirectHandler({ children }: { children: React.ReactNode }) {
     return (metadata?.role as string) || 'user';
   }, [user]);
 
-  const redirectByRole = useCallback(async () => {
-    if (redirectAttempted.current) return;
-    redirectAttempted.current = true;
-
-    if (!user) {
-      console.log('[AuthRedirect] Waiting for user to load...');
-      setTimeout(() => redirectByRole(), 500);
+  useEffect(() => {
+    if (!isLoaded) return;
+    if (!isSignedIn) {
+      redirectAttempted.current = false;
       return;
     }
+    if (!user) return;
+    if (redirectAttempted.current) return;
+    if (!AUTH_ONLY_ROUTES.includes(location.pathname)) return;
 
+    redirectAttempted.current = true;
     const role = getRoleFromClerk();
     const targetRoute =
       role === 'admin' ? ROUTES.ADMIN :
@@ -52,23 +44,30 @@ function AuthRedirectHandler({ children }: { children: React.ReactNode }) {
       ROUTES.HOME;
 
     navigate(targetRoute, { replace: true });
-  }, [user, getRoleFromClerk, navigate]);
-
-  const AUTH_ONLY_ROUTES = ['/', '/login', '/register'];
-
-  useEffect(() => {
-    if (!isLoaded) return;
-
-    // Solo redirigir desde páginas de auth, no desde cualquier ruta
-    if (isSignedIn && !redirectAttempted.current && AUTH_ONLY_ROUTES.includes(location.pathname)) {
-      redirectByRole();
-    }
-  }, [isLoaded, isSignedIn, location.pathname]);
+  }, [getRoleFromClerk, isLoaded, isSignedIn, location.pathname, navigate, user]);
 
   return <>{children}</>;
 }
 
 export function ClerkProviderWrapper({ children }: { children: React.ReactNode }) {
+  if (isMockAuthEnabled) {
+    return (
+      <ClerkProvider publishableKey="mock-publishable-key">
+        <AuthRedirectHandler>{children}</AuthRedirectHandler>
+      </ClerkProvider>
+    );
+  }
+
+  if (!PUBLISHABLE_KEY) {
+    throw new Error('Missing Publishable Key: No se encontro VITE_CLERK_PUBLISHABLE_KEY en el archivo de entorno.');
+  }
+
+  if (/^pk_(test|live)_51/.test(PUBLISHABLE_KEY)) {
+    throw new Error(
+      'VITE_CLERK_PUBLISHABLE_KEY parece ser una key de Stripe. Usa la key de Clerk en esta variable y la de Stripe en VITE_STRIPE_PUBLISHABLE_KEY.',
+    );
+  }
+
   return (
     <ClerkProvider
       publishableKey={PUBLISHABLE_KEY}
