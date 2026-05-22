@@ -15,13 +15,13 @@ SafeTech es una plataforma full-stack para vender tecnologia reacondicionada con
 - Bruno Ferreira
 
 ## Estructura principal
-- [PRD.md](C:/Users/derli/OneDrive/Documents/GitHub/parcial2-Desarrollo9/PRD.md)
-- [REQUIREMENTS.md](C:/Users/derli/OneDrive/Documents/GitHub/parcial2-Desarrollo9/REQUIREMENTS.md)
-- [ARCHITECTURE.md](C:/Users/derli/OneDrive/Documents/GitHub/parcial2-Desarrollo9/ARCHITECTURE.md)
-- [STARTUP_SHEET.md](C:/Users/derli/OneDrive/Documents/GitHub/parcial2-Desarrollo9/STARTUP_SHEET.md)
-- [PITCH.md](C:/Users/derli/OneDrive/Documents/GitHub/parcial2-Desarrollo9/PITCH.md)
-- [PLAN.md](C:/Users/derli/OneDrive/Documents/GitHub/parcial2-Desarrollo9/PLAN.md)
-- [PROGRESS.md](C:/Users/derli/OneDrive/Documents/GitHub/parcial2-Desarrollo9/PROGRESS.md)
+- [PRD.md](PRD.md)
+- [REQUIREMENTS.md](REQUIREMENTS.md)
+- [ARCHITECTURE.md](ARCHITECTURE.md)
+- [STARTUP_SHEET.md](STARTUP_SHEET.md)
+- [PITCH.md](PITCH.md)
+- [PLAN.md](PLAN.md)
+- [PROGRESS.md](PROGRESS.md)
 
 ## Arranque rapido
 1. Levanta MongoDB:
