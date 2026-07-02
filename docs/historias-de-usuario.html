@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SafeTech - Historias de Usuario</title>
+  <style>
+    :root {
+      --bg: #f4f1ea;
+      --paper: #fffdf8;
+      --ink: #1f2937;
+      --muted: #5f6b7a;
+      --line: #ddd2c1;
+      --accent: #0f766e;
+      --accent-soft: #d8efe9;
+      --mcp: #a16207;
+      --mcp-soft: #fef3c7;
+      --shadow: 0 18px 40px rgba(72, 55, 21, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at top left, rgba(15, 118, 110, 0.08), transparent 28%),
+        radial-gradient(circle at top right, rgba(161, 98, 7, 0.08), transparent 24%),
+        var(--bg);
+      color: var(--ink);
+      font: 16px/1.6 Georgia, "Times New Roman", serif;
+    }
+
+    .page {
+      width: min(980px, calc(100vw - 32px));
+      margin: 32px auto 48px;
+      background: var(--paper);
+      border: 1px solid rgba(221, 210, 193, 0.9);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    header {
+      padding: 40px 48px 28px;
+      background: linear-gradient(135deg, rgba(15, 118, 110, 0.08), rgba(161, 98, 7, 0.08));
+      border-bottom: 1px solid var(--line);
+    }
+
+    header h1 {
+      margin: 0 0 10px;
+      font-size: clamp(2rem, 3.8vw, 3.2rem);
+      line-height: 1.08;
+      letter-spacing: -0.03em;
+    }
+
+    header p {
+      margin: 0;
+      max-width: 70ch;
+      color: var(--muted);
+      font-size: 1.03rem;
+    }
+
+    main {
+      padding: 32px 48px 48px;
+    }
+
+    h2 {
+      margin: 34px 0 14px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--line);
+      font-size: 1.55rem;
+      line-height: 1.25;
+    }
+
+    h3 {
+      margin: 0 0 12px;
+      font-size: 1.18rem;
+      line-height: 1.3;
+    }
+
+    p {
+      margin: 0 0 12px;
+    }
+
+    ol,
+    ul {
+      margin: 0 0 14px 22px;
+      padding: 0;
+    }
+
+    li + li {
+      margin-top: 6px;
+    }
+
+    code {
+      padding: 0.12rem 0.35rem;
+      background: rgba(15, 23, 42, 0.06);
+      border-radius: 6px;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 0.92em;
+    }
+
+    .story {
+      margin: 18px 0;
+      padding: 18px 20px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.74);
+    }
+
+    .story.mcp {
+      border-color: rgba(161, 98, 7, 0.35);
+      background: linear-gradient(180deg, rgba(254, 243, 199, 0.36), rgba(255, 255, 255, 0.92));
+    }
+
+    .story h3 .tag {
+      display: inline-block;
+      margin-left: 8px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: var(--mcp-soft);
+      color: var(--mcp);
+      font-size: 0.78rem;
+      letter-spacing: 0.02em;
+      vertical-align: middle;
+    }
+
+    .section-note {
+      margin: 8px 0 18px;
+      padding: 14px 16px;
+      border-left: 4px solid var(--accent);
+      background: var(--accent-soft);
+      border-radius: 0 14px 14px 0;
+    }
+
+    .section-note p:last-child {
+      margin-bottom: 0;
+    }
+
+    .mcp-meta {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed rgba(161, 98, 7, 0.32);
+      color: #513815;
+    }
+
+    .summary {
+      margin-top: 24px;
+      padding: 18px 20px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(15, 118, 110, 0.05);
+    }
+
+    @media print {
+      body {
+        background: #fff;
+      }
+
+      .page {
+        width: 100%;
+        margin: 0;
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+      }
+
+      .story,
+      .summary,
+      .section-note {
+        break-inside: avoid;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .page {
+        width: calc(100vw - 16px);
+        margin: 8px auto 20px;
+        border-radius: 18px;
+      }
+
+      header,
+      main {
+        padding-left: 20px;
+        padding-right: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header>
+      <h1>SafeTech - Historias de Usuario</h1>
+      <p>Documento de alcance funcional del MVP y de las funcionalidades faltantes para considerar SafeTech como un proyecto production ready, incluyendo la identificacion de historias candidatas para exposicion via MCP.</p>
+    </header>
+    <main id="content"></main>
+  </div>
+
+  <script id="md-source" type="text/plain"># SafeTech - Historias de Usuario
+
+Documento de historias de usuario del MVP actual y de las funcionalidades faltantes para considerar SafeTech como un proyecto production ready.
+
+## 1. Funcionalidades Ya Implementadas
+
+Nota sobre `[MCP]` en esta seccion:
+
+Las historias marcadas con `[MCP]` en esta seccion representan funcionalidades cuya base ya existe en SafeTech y que, por tanto, pueden reutilizarse o envolverse mas adelante como `tools` de un servidor MCP autenticado. La etiqueta `[MCP]` no significa que el servidor MCP ya este implementado hoy; significa que la funcionalidad actual ya es una buena candidata para exponerse por esa via. Por esa razon, cada historia `[MCP]` incluye `Tool`, `Autenticacion` y `El agente puede`.
+
+### HU-01
+Como visitante, quiero navegar el catalogo publico de productos, para explorar la oferta disponible antes de iniciar sesion.
+
+Criterios de aceptacion:
+1. El sistema debe mostrar un listado publico de productos desde el frontend.
+2. El sistema debe consumir una API de productos para poblar el catalogo.
+3. Cada producto debe mostrar al menos nombre, precio, condicion e imagen principal.
+
+### HU-02 [MCP]
+Como agente IA autenticado, quiero buscar el catalogo de productos, para responder consultas de disponibilidad y opciones de compra.
+
+Criterios de aceptacion:
+1. La herramienta debe devolver la lista de productos disponibles con sus datos basicos.
+2. La herramienta debe permitir buscar por identificador o por coincidencia simple de nombre.
+3. La respuesta debe omitir datos sensibles de configuracion interna.
+
+Tool: `search_products`
+Autenticacion: token de usuario o service token MCP con alcance de lectura.
+El agente puede: consultar productos y sugerir opciones al usuario dentro de un flujo asistido.
+
+### HU-03 [MCP]
+Como agente IA autenticado, quiero obtener el detalle de un producto, para explicar especificaciones, condicion y precio de un articulo concreto.
+
+Criterios de aceptacion:
+1. La herramienta debe recibir el identificador del producto.
+2. La herramienta debe devolver nombre, descripcion, precio, stock, categoria, condicion e imagenes.
+3. Si el producto no existe, la herramienta debe responder con un error controlado.
+
+Tool: `get_product`
+Autenticacion: token de usuario o service token MCP con alcance de lectura.
+El agente puede: responder preguntas detalladas sobre un producto especifico.
+
+### HU-04
+Como comprador, quiero ver el detalle individual de un producto, para revisar mejor sus caracteristicas antes de agregarlo al carrito.
+
+Criterios de aceptacion:
+1. El frontend debe tener una vista de detalle por producto.
+2. La vista debe cargar la informacion del producto usando su identificador.
+3. La vista debe mostrar precio, descripcion, condicion, stock e imagenes disponibles.
+
+### HU-05
+Como comprador, quiero agregar productos al carrito y conservarlos en el navegador, para continuar mi compra aunque cambie de pagina.
+
+Criterios de aceptacion:
+1. El carrito debe permitir agregar productos con cantidad.
+2. El carrito debe persistirse en `localStorage`.
+3. El carrito debe recalcular subtotal cuando cambian cantidades.
+
+### HU-06
+Como comprador autenticado, quiero iniciar un checkout de pago con Stripe, para pagar mi pedido de forma segura.
+
+Criterios de aceptacion:
+1. El checkout debe requerir sesion autenticada.
+2. El backend debe recalcular el monto total en servidor a partir de los productos reales.
+3. El flujo debe crear o reutilizar una orden pendiente asociada al pago.
+
+### HU-07
+Como sistema, quiero confirmar pagos por medio de eventos de Stripe, para actualizar el estado de las ordenes sin depender solo del cliente.
+
+Criterios de aceptacion:
+1. El backend debe procesar eventos de webhook de Stripe.
+2. Cuando un pago se confirma, la orden debe pasar a estado `paid`.
+3. El sistema debe descontar stock al confirmar exitosamente la compra.
+
+### HU-08 [MCP]
+Como cliente autenticado, quiero consultar mis pedidos desde un agente IA, para obtener seguimiento de mis compras sin entrar manualmente al panel.
+
+Criterios de aceptacion:
+1. La herramienta debe devolver solo los pedidos del usuario autenticado.
+2. Cada pedido debe incluir estado, monto, fecha e items asociados.
+3. La herramienta no debe exponer pedidos de otros usuarios.
+
+Tool: `list_my_orders`
+Autenticacion: token de usuario Clerk propagado al servidor MCP.
+El agente puede: resumir compras pasadas y responder preguntas sobre estado de ordenes.
+
+### HU-09
+Como cliente autenticado, quiero ver mi historial de pedidos, para consultar el estado de mis compras anteriores.
+
+Criterios de aceptacion:
+1. El frontend debe tener una pagina de pedidos del usuario.
+2. El backend debe devolver solo pedidos pertenecientes al usuario autenticado.
+3. Cada pedido debe mostrar su estado y datos basicos de compra.
+
+### HU-10
+Como cliente autenticado, quiero crear un reclamo de garantia, para reportar un problema con un producto comprado.
+
+Criterios de aceptacion:
+1. El sistema debe permitir registrar un reclamo sobre una orden valida del usuario.
+2. El reclamo debe incluir descripcion del problema.
+3. El sistema debe rechazar reclamos fuera del periodo permitido de garantia.
+
+### HU-11
+Como cliente autenticado, quiero adjuntar evidencias a un reclamo de garantia, para documentar mejor el problema reportado.
+
+Criterios de aceptacion:
+1. El frontend debe permitir seleccionar archivos de evidencia.
+2. El backend debe recibir el archivo y almacenarlo en R2.
+3. El reclamo debe poder guardar una o mas URLs de evidencia.
+
+### HU-12 [MCP]
+Como cliente autenticado, quiero consultar mis reclamos de garantia desde un agente IA, para conocer su estado sin navegar manualmente la aplicacion.
+
+Criterios de aceptacion:
+1. La herramienta debe devolver solo garantias del usuario autenticado.
+2. Cada garantia debe incluir estado, fecha, orden relacionada y tecnico asignado si existe.
+3. La herramienta debe respetar el contexto del usuario autenticado.
+
+Tool: `list_my_warranties`
+Autenticacion: token de usuario Clerk propagado al servidor MCP.
+El agente puede: informar avance de casos de garantia y responder preguntas del cliente.
+
+### HU-13 [MCP]
+Como cliente autenticado, quiero abrir un reclamo de garantia desde un agente IA, para recibir ayuda asistida sin salir del entorno conversacional.
+
+Criterios de aceptacion:
+1. La herramienta debe validar que la orden pertenezca al usuario autenticado.
+2. La herramienta debe registrar descripcion y referencias de evidencia.
+3. La herramienta debe devolver el identificador del nuevo caso creado.
+
+Tool: `create_warranty_claim`
+Autenticacion: token de usuario Clerk propagado al servidor MCP.
+El agente puede: registrar reclamos guiados paso a paso para el cliente.
+
+### HU-14
+Como cliente autenticado, quiero ver mis garantias registradas, para dar seguimiento a reclamos abiertos y resueltos.
+
+Criterios de aceptacion:
+1. El frontend debe mostrar una pagina con las garantias del usuario.
+2. Cada garantia debe reflejar su estado actual.
+3. La vista debe mostrar notas o evidencias cuando esten disponibles.
+
+### HU-15
+Como administrador, quiero listar todas las garantias, para supervisar la operacion postventa.
+
+Criterios de aceptacion:
+1. El acceso debe estar protegido por rol administrador.
+2. La vista debe mostrar todas las garantias registradas.
+3. El administrador debe poder identificar orden, usuario y estado de cada caso.
+
+### HU-16 [MCP]
+Como administrador, quiero actualizar el estado de una garantia desde un agente IA, para acelerar la gestion operativa de casos.
+
+Criterios de aceptacion:
+1. La herramienta debe permitir cambiar el estado de un caso existente.
+2. La herramienta debe rechazar usuarios sin rol administrador.
+3. La accion debe devolver el nuevo estado persistido.
+
+Tool: `update_warranty_status`
+Autenticacion: token de administrador Clerk o service token MCP con rol admin.
+El agente puede: asistir en el avance de reclamos bajo supervision autorizada.
+
+### HU-17 [MCP]
+Como administrador, quiero asignar un tecnico a una garantia desde un agente IA, para distribuir casos con apoyo asistido.
+
+Criterios de aceptacion:
+1. La herramienta debe recibir identificador de garantia e identificador de tecnico.
+2. La herramienta debe rechazar usuarios sin rol administrador.
+3. El caso debe quedar asociado al tecnico seleccionado.
+
+Tool: `assign_technician`
+Autenticacion: token de administrador Clerk o service token MCP con rol admin.
+El agente puede: ayudar a repartir casos y confirmar asignaciones operativas.
+
+### HU-18
+Como tecnico, quiero ver las garantias que me fueron asignadas, para gestionar mi carga de trabajo.
+
+Criterios de aceptacion:
+1. El acceso debe estar protegido por rol tecnico.
+2. La vista debe mostrar solo garantias asignadas al tecnico autenticado.
+3. Cada caso debe incluir informacion suficiente para iniciar diagnostico.
+
+### HU-19
+Como tecnico, quiero actualizar notas o estado de una garantia asignada, para registrar el avance del caso.
+
+Criterios de aceptacion:
+1. El tecnico debe poder editar solo casos asignados a el.
+2. El sistema debe permitir guardar notas de reparacion.
+3. El nuevo estado debe reflejarse en la consulta posterior del caso.
+
+### HU-20
+Como administrador, quiero gestionar tecnicos desde el backend y el dashboard, para mantener operativo el flujo de garantias.
+
+Criterios de aceptacion:
+1. El sistema debe permitir crear tecnicos.
+2. El sistema debe permitir listarlos para asignacion.
+3. El sistema debe permitir desactivarlos cuando ya no esten disponibles.
+
+### HU-21
+Como administrador, quiero consultar un dashboard con metricas basicas, para visualizar el estado general del negocio.
+
+Criterios de aceptacion:
+1. El dashboard debe estar protegido por rol administrador.
+2. El dashboard debe mostrar metricas basicas de pedidos, productos o garantias.
+3. El dashboard debe consumir informacion real del backend.
+
+### HU-22
+Como sistema, quiero sincronizar usuarios desde Clerk por webhook, para mantener una representacion local consistente de los usuarios.
+
+Criterios de aceptacion:
+1. El backend debe procesar eventos `user.created`, `user.updated` y `user.deleted`.
+2. La coleccion local de usuarios debe reflejar los cambios recibidos.
+3. La sincronizacion debe preservar el identificador `clerk_id`.
+
+### HU-23
+Como sistema, quiero verificar la autenticacion y el rol del usuario en rutas protegidas, para restringir acceso a recursos sensibles.
+
+Criterios de aceptacion:
+1. El backend debe tener middleware de usuario autenticado.
+2. El backend debe tener middleware de administrador.
+3. El backend debe tener middleware de tecnico para rutas operativas correspondientes.
+
+### HU-24
+Como equipo de operaciones, quiero disponer de un health check y rutas de apoyo E2E, para validar que el sistema esta vivo y testeable.
+
+Criterios de aceptacion:
+1. El backend debe exponer una ruta de health check.
+2. El proyecto debe incluir soporte para flujos E2E controlados.
+3. Las rutas de soporte no deben reemplazar las validaciones reales del sistema productivo.
+
+## 2. Funcionalidades Faltantes Para Production Ready
+
+Nota sobre `[MCP]` en esta seccion:
+
+Las historias marcadas con `[MCP]` en esta seccion representan funcionalidades que aun faltan, pero que deberian diseñarse de forma que luego puedan exponerse de manera segura como `tools` de un servidor MCP autenticado e importable desde clientes compatibles como Claude Code o Codex.
+
+### HU-25
+Como administrador, quiero que el CRUD de productos requiera rol admin en todas sus rutas, para evitar modificaciones no autorizadas del catalogo.
+
+Criterios de aceptacion:
+1. Crear, editar y eliminar productos debe exigir middleware de administrador.
+2. Usuarios no administradores deben recibir error de autorizacion.
+3. La proteccion debe aplicarse tanto desde frontend como desde acceso directo a la API.
+
+### HU-26 [MCP]
+Como administrador, quiero crear productos desde un agente IA, para acelerar la carga asistida del catalogo.
+
+Criterios de aceptacion:
+1. La herramienta debe crear un producto validando categoria, condicion, precio y stock.
+2. La herramienta debe estar disponible solo para administradores.
+3. La respuesta debe devolver el identificador del producto creado.
+
+Tool: `create_product`
+Autenticacion: token de administrador Clerk o service token MCP con rol admin.
+El agente puede: registrar nuevos productos siguiendo instrucciones del operador.
+
+### HU-27 [MCP]
+Como administrador, quiero actualizar productos desde un agente IA, para corregir catalogo, precios o stock con asistencia conversacional.
+
+Criterios de aceptacion:
+1. La herramienta debe permitir cambios parciales sobre productos existentes.
+2. La herramienta debe validar el payload de actualizacion.
+3. La herramienta debe estar restringida a administradores.
+
+Tool: `update_product`
+Autenticacion: token de administrador Clerk o service token MCP con rol admin.
+El agente puede: corregir informacion de productos de forma controlada.
+
+### HU-28 [MCP]
+Como administrador, quiero eliminar productos desde un agente IA, para retirar articulos descontinuados del catalogo bajo control autorizado.
+
+Criterios de aceptacion:
+1. La herramienta debe exigir confirmacion humana en el cliente MCP.
+2. La herramienta debe rechazar usuarios sin rol administrador.
+3. La respuesta debe confirmar que el producto ya no esta disponible en el catalogo.
+
+Tool: `delete_product`
+Autenticacion: token de administrador Clerk o service token MCP con rol admin.
+El agente puede: retirar productos del catalogo con aprobacion explicita.
+
+### HU-29
+Como visitante, quiero filtrar el catalogo por nombre, categoria, condicion y rango de precio, para reducir la lista de productos y encontrar opciones acordes a mi presupuesto y necesidad.
+
+Criterios de aceptacion:
+1. El sistema debe permitir aplicar uno o varios filtros al mismo tiempo.
+2. El filtro por texto debe buscar coincidencias parciales sobre el nombre del producto.
+3. El sistema debe permitir definir precio minimo y/o precio maximo.
+4. Si no existen coincidencias, el sistema debe mostrar un estado de sin resultados.
+5. Si el rango de precio es invalido, el sistema debe informar el error y no ejecutar la busqueda.
+6. Los resultados mostrados deben cumplir todos los filtros activos.
+
+### HU-30 [MCP]
+Como agente IA autenticado, quiero buscar productos con filtros avanzados, para recomendar opciones ajustadas a la necesidad del usuario.
+
+Criterios de aceptacion:
+1. La herramienta debe aceptar filtros por categoria, condicion, precio y disponibilidad.
+2. La herramienta debe devolver resultados ordenados y acotados.
+3. La consulta debe responder con errores controlados cuando los filtros sean invalidos.
+
+Tool: `search_products_advanced`
+Autenticacion: token de usuario o service token MCP con alcance de lectura.
+El agente puede: recomendar productos concretos segun restricciones dadas en la conversacion.
+
+### HU-31
+Como visitante, quiero paginacion en el catalogo, para navegar volumenes grandes de productos sin degradar rendimiento.
+
+Criterios de aceptacion:
+1. La API debe devolver pagina, limite y total de resultados.
+2. El frontend debe permitir avanzar y retroceder entre paginas.
+3. La paginacion debe combinarse con filtros de busqueda.
+
+### HU-32
+Como comprador, quiero registrar direcciones de entrega, para no reescribir mis datos en cada compra.
+
+Criterios de aceptacion:
+1. El usuario debe poder crear, editar y eliminar direcciones.
+2. El checkout debe permitir seleccionar una direccion guardada.
+3. El sistema debe validar campos obligatorios de entrega.
+
+### HU-33
+Como comprador, quiero que la orden incluya informacion de envio y tracking, para seguir el progreso logistico hasta la entrega.
+
+Criterios de aceptacion:
+1. La orden debe almacenar direccion, transportista y numero de seguimiento cuando aplique.
+2. El sistema debe soportar estados adicionales como `processing`, `shipped` y `delivered`.
+3. El cliente debe poder consultar esa informacion desde su historial de pedidos.
+
+### HU-34
+Como sistema, quiero enviar correos transaccionales de compra, pago, garantia y cambios de estado, para mantener informado al usuario sin depender del panel web.
+
+Criterios de aceptacion:
+1. El sistema debe enviar correo de confirmacion de compra exitosa.
+2. El sistema debe enviar correo al crear un reclamo de garantia.
+3. El sistema debe enviar correo cuando cambie el estado de una garantia o una orden.
+
+### HU-35
+Como administrador, quiero recibir alertas de stock bajo, para reponer inventario antes de perder ventas.
+
+Criterios de aceptacion:
+1. El sistema debe permitir definir un umbral de stock bajo.
+2. Cuando un producto cruce el umbral, debe generarse una alerta.
+3. La alerta debe poder verse en un panel o enviarse por correo.
+
+### HU-36
+Como administrador, quiero un historial de movimientos de inventario, para auditar entradas, salidas y ajustes de stock.
+
+Criterios de aceptacion:
+1. Cada ajuste manual o automatico debe quedar registrado.
+2. El historial debe indicar motivo, usuario responsable y fecha.
+3. El sistema debe permitir consultar movimientos por producto.
+
+### HU-37 [MCP]
+Como administrador, quiero consultar un reporte consolidado de ventas desde un agente IA, para pedir resumenes operativos y comerciales en lenguaje natural.
+
+Criterios de aceptacion:
+1. La herramienta debe devolver ventas, ingresos y volumen de pedidos para un rango de fechas.
+2. La herramienta debe restringirse a administradores.
+3. La respuesta debe usar datos agregados del backend y no estimaciones del agente.
+
+Tool: `get_sales_report`
+Autenticacion: token de administrador Clerk o service token MCP con rol admin.
+El agente puede: resumir rendimiento comercial y responder preguntas analiticas.
+
+### HU-38 [MCP]
+Como administrador, quiero consultar un reporte de garantias desde un agente IA, para identificar patrones de falla y carga operativa.
+
+Criterios de aceptacion:
+1. La herramienta debe devolver cantidad de casos por estado, periodo y tecnico.
+2. La herramienta debe restringirse a administradores.
+3. La respuesta debe poder filtrarse por fechas.
+
+Tool: `get_warranty_report`
+Autenticacion: token de administrador Clerk o service token MCP con rol admin.
+El agente puede: detectar volumen de reclamos y tendencias operativas.
+
+### HU-39
+Como administrador, quiero administrar cupones y descuentos en checkout, para ejecutar campañas promocionales.
+
+Criterios de aceptacion:
+1. El sistema debe permitir crear cupones con vigencia y reglas.
+2. El checkout debe validar y aplicar cupones validos.
+3. El backend debe recalcular el total final aplicando el descuento correcto.
+
+### HU-40
+Como administrador, quiero ejecutar reembolsos integrados con Stripe, para resolver incidentes de pago o postventa de forma trazable.
+
+Criterios de aceptacion:
+1. El sistema debe poder crear un refund sobre un pago confirmado.
+2. La orden debe reflejar el estado financiero actualizado.
+3. El sistema debe registrar quien ejecuto el reembolso y cuando.
+
+### HU-41
+Como cliente, quiero un sistema de tickets o soporte, para reportar problemas que no encajen en garantias o pedidos.
+
+Criterios de aceptacion:
+1. El usuario debe poder abrir un ticket con categoria y descripcion.
+2. El sistema debe asignar un identificador unico por ticket.
+3. El usuario debe poder consultar el estado del ticket.
+
+### HU-42 [MCP]
+Como cliente autenticado, quiero abrir tickets de soporte desde un agente IA, para pedir ayuda sin salir del entorno conversacional.
+
+Criterios de aceptacion:
+1. La herramienta debe registrar categoria, descripcion y canal de contacto.
+2. La herramienta debe devolver el identificador del ticket creado.
+3. La herramienta debe asociar el ticket al usuario autenticado.
+
+Tool: `create_support_ticket`
+Autenticacion: token de usuario Clerk propagado al servidor MCP.
+El agente puede: registrar incidencias de soporte con contexto conversacional.
+
+### HU-43
+Como visitante, quiero comparar varios productos lado a lado, para evaluar rapidamente diferencias de precio, condicion, capacidad y especificaciones.
+
+Criterios de aceptacion:
+1. El usuario debe poder seleccionar al menos dos productos para comparar.
+2. La vista de comparacion debe mostrar en columnas los atributos clave de cada producto.
+3. El sistema debe permitir quitar productos de la comparacion sin perder los demas seleccionados.
+
+### HU-44
+Como visitante, quiero ver productos relacionados dentro de una misma categoria, para descubrir opciones similares sin hacer una nueva busqueda.
+
+Criterios de aceptacion:
+1. La vista de detalle debe mostrar una seccion de productos de la misma categoria.
+2. La seccion debe excluir el producto que el usuario esta viendo actualmente.
+3. El usuario debe poder navegar al detalle de cualquiera de los productos sugeridos.
+
+### HU-45
+Como comprador, quiero guardar productos en una lista personal de deseos, para revisarlos mas tarde antes de decidir mi compra.
+
+Criterios de aceptacion:
+1. El usuario autenticado debe poder agregar y quitar productos de su lista de deseos.
+2. El sistema debe conservar la lista asociada a la cuenta del usuario.
+3. El frontend debe mostrar una vista donde el usuario consulte todos sus productos guardados.
+
+### HU-46
+Como visitante, quiero ver una ficha de inspeccion tecnica por producto, para entender que aspectos fueron revisados antes de publicarlo.
+
+Criterios de aceptacion:
+1. Cada producto debe poder mostrar una lista de chequeos tecnicos realizados.
+2. La ficha debe indicar al menos el aspecto revisado y su resultado.
+3. Si un producto no tiene ficha registrada, el sistema debe mostrar un estado informativo y no un error.
+
+### HU-47
+Como visitante, quiero ver el nivel de salud de bateria cuando aplique, para evaluar mejor la calidad real de dispositivos reacondicionados.
+
+Criterios de aceptacion:
+1. El sistema debe permitir registrar salud de bateria para productos compatibles.
+2. La vista de detalle debe mostrar ese valor de forma clara cuando exista.
+3. Si el producto no usa bateria o no tiene dato registrado, el sistema no debe mostrar informacion falsa.
+
+### HU-48
+Como comprador, quiero ver si un producto fue visto recientemente por mi, para retomar articulos de interes sin tener que buscarlos otra vez.
+
+Criterios de aceptacion:
+1. El sistema debe registrar localmente los productos vistos recientemente.
+2. El frontend debe mostrar una seccion con esos productos en orden cronologico inverso.
+3. El usuario debe poder abrir nuevamente el detalle de cualquiera de los productos listados.
+
+### HU-49
+Como comprador, quiero poder limpiar mi historial de productos vistos, para controlar mejor mi experiencia de navegacion.
+
+Criterios de aceptacion:
+1. El usuario debe poder eliminar todo su historial de productos vistos desde el frontend.
+2. Al limpiar el historial, la seccion correspondiente debe quedar vacia inmediatamente.
+3. El sistema no debe mostrar productos antiguos despues de ejecutar la limpieza.
+
+### HU-50
+Como visitante, quiero ver los productos mas recientes del catalogo, para identificar rapidamente nuevas incorporaciones.
+
+Criterios de aceptacion:
+1. El sistema debe poder ordenar o destacar productos segun fecha de registro.
+2. El frontend debe mostrar una seccion de productos recientes.
+3. El usuario debe poder navegar al detalle de cualquiera de los productos mostrados.
+
+### HU-51
+Como comprador, quiero recibir una alerta cuando baje el precio de un producto guardado en mi lista de deseos, para aprovechar una mejor oportunidad de compra.
+
+Criterios de aceptacion:
+1. El sistema solo debe permitir alertas de precio sobre productos que esten en la lista de deseos del usuario.
+2. El sistema debe detectar cuando el precio actual sea menor al precio registrado al activar la alerta.
+3. El usuario debe poder consultar y desactivar sus alertas de precio.
+
+### HU-52
+Como comprador, quiero ver si un producto de mi lista de deseos tuvo cambios de precio, para decidir mejor cuando comprarlo.
+
+Criterios de aceptacion:
+1. La lista de deseos debe mostrar el precio actual de cada producto guardado.
+2. El sistema debe indicar cuando un producto bajo de precio desde que fue agregado a la lista.
+3. El usuario debe poder identificar visualmente cuales productos tuvieron cambios.
+
+### HU-53
+Como visitante, quiero ver una seccion de productos mas vendidos, para identificar opciones populares entre otros compradores.
+
+Criterios de aceptacion:
+1. El sistema debe calcular productos destacados por volumen de ventas.
+2. El frontend debe mostrar una seccion de productos mas vendidos.
+3. El usuario debe poder abrir el detalle de cualquiera de los productos listados.
+
+### HU-54
+Como comprador, quiero duplicar al carrito una compra anterior, para repetir una adquisicion sin agregar los productos manualmente otra vez.
+
+Criterios de aceptacion:
+1. Desde el historial de pedidos, el usuario debe poder volver a agregar al carrito los productos de una orden anterior.
+2. El sistema debe agregar solo productos que sigan existiendo en el catalogo.
+3. Si algun producto ya no tiene stock suficiente, el sistema debe informar la situacion al usuario.
+
+### HU-55
+Como comprador, quiero compartir un producto mediante un enlace directo, para enviarlo facilmente a otra persona.
+
+Criterios de aceptacion:
+1. La pagina de detalle debe ofrecer una accion para compartir el producto.
+2. El enlace compartido debe abrir directamente el detalle correcto del producto.
+3. La funcion debe estar disponible tanto en desktop como en mobile.
+
+### HU-56
+Como comprador, quiero agregar notas personales a productos de mi lista de deseos, para recordar por que me interesan o que debo revisar antes de comprarlos.
+
+Criterios de aceptacion:
+1. El usuario autenticado debe poder escribir una nota corta sobre un producto guardado en su lista de deseos.
+2. La nota debe conservarse asociada al producto y al usuario.
+3. El usuario debe poder editar o eliminar la nota posteriormente.
+
+### HU-57
+Como comprador, quiero recibir sugerencias basadas en mi lista de deseos, para descubrir productos cercanos a mis intereses.
+
+Criterios de aceptacion:
+1. El sistema debe generar sugerencias a partir de categorias o caracteristicas de los productos guardados.
+2. El frontend debe mostrar una seccion de recomendaciones asociadas a la lista de deseos.
+3. El usuario debe poder navegar al detalle de cualquiera de los productos sugeridos.
+
+### HU-58
+Como sistema, quiero aplicar rate limiting en endpoints sensibles, para reducir abuso, scraping y ataques automatizados.
+
+Criterios de aceptacion:
+1. El sistema debe limitar peticiones por IP o por identidad autenticada.
+2. Endpoints de auth, checkout, uploads y administracion deben tener proteccion reforzada.
+3. Al superar el limite, la API debe responder con error controlado.
+
+### HU-59
+Como sistema, quiero validacion uniforme con Zod en todas las rutas de entrada, para rechazar payloads invalidos de forma consistente.
+
+Criterios de aceptacion:
+1. Todas las rutas de escritura deben validar su entrada.
+2. Los errores deben devolverse en un formato consistente.
+3. El sistema no debe continuar procesamiento si la validacion falla.
+
+### HU-60
+Como sistema, quiero manejo centralizado de errores, para evitar respuestas ambiguas y facilitar soporte.
+
+Criterios de aceptacion:
+1. Los errores no controlados deben capturarse en un middleware global.
+2. La API debe devolver codigos HTTP coherentes.
+3. Los mensajes expuestos al cliente no deben filtrar informacion sensible.
+
+### HU-61
+Como equipo de operaciones, quiero logs estructurados con correlacion por request, para diagnosticar incidentes con rapidez.
+
+Criterios de aceptacion:
+1. Cada request debe generar logs con identificador de correlacion.
+2. Los logs deben incluir ruta, metodo, duracion y resultado.
+3. Eventos criticos de pago, auth y garantia deben quedar registrados.
+
+### HU-62
+Como equipo de operaciones, quiero metricas tecnicas y de negocio, para monitorear salud y comportamiento del sistema.
+
+Criterios de aceptacion:
+1. El sistema debe medir latencia, tasa de error y volumen de requests.
+2. El sistema debe medir conversion, ordenes y reclamos de garantia.
+3. Las metricas deben poder consumirse desde una herramienta de monitoreo.
+
+### HU-63
+Como equipo de operaciones, quiero alertas sobre fallos criticos, para reaccionar antes de afectar seriamente a los usuarios.
+
+Criterios de aceptacion:
+1. Deben existir alertas por errores elevados en checkout y webhooks.
+2. Deben existir alertas por fallos de base de datos o almacenamiento.
+3. Las alertas deben enviarse a un canal operativo definido.
+
+### HU-64
+Como equipo de desarrollo, quiero pruebas unitarias de servicios y validadores, para detectar regresiones funcionales temprano.
+
+Criterios de aceptacion:
+1. El proyecto debe incluir suite automatizada de pruebas unitarias.
+2. Las reglas de negocio criticas deben tener cobertura.
+3. Las pruebas deben ejecutarse de forma reproducible en CI.
+
+### HU-65
+Como equipo de desarrollo, quiero pruebas E2E de flujos criticos, para validar la integracion real entre frontend, backend y autenticacion.
+
+Criterios de aceptacion:
+1. Deben cubrirse al menos login, compra, consulta de pedidos y garantia.
+2. Las pruebas deben ser ejecutables en entorno aislado.
+3. El pipeline debe marcar fallo cuando las pruebas criticas no pasen.
+
+### HU-66
+Como equipo de desarrollo, quiero un pipeline CI/CD, para validar calidad y desplegar cambios de forma confiable.
+
+Criterios de aceptacion:
+1. El pipeline debe ejecutar lint, pruebas y build.
+2. El despliegue a ambientes superiores debe depender del resultado del pipeline.
+3. El sistema debe registrar artefactos y resultados de cada ejecucion.
+
+### HU-67
+Como equipo de operaciones, quiero respaldos y restauracion de base de datos, para recuperarme de perdida o corrupcion de informacion.
+
+Criterios de aceptacion:
+1. Debe existir una politica automatizada de backups.
+2. Debe poder ejecutarse una restauracion de prueba.
+3. Debe documentarse la frecuencia y retencion de respaldos.
+
+### HU-68
+Como sistema, quiero auditoria de acciones administrativas, para saber quien hizo cambios sensibles y cuando.
+
+Criterios de aceptacion:
+1. Acciones como crear producto, reembolsar o cambiar estados deben quedar auditadas.
+2. La auditoria debe registrar usuario, accion, fecha y recurso afectado.
+3. Los registros deben ser consultables por administradores autorizados.
+
+## 3. Resumen de Cobertura
+
+- Historias de funcionalidades ya implementadas: `24`
+- Historias nuevas para production ready: `44`
+- Total de historias: `68`
+- Historias etiquetadas como `[MCP]`: `14`
+
+## 4. Nota de Alcance
+
+Las historias de la seccion de implementado describen funcionalidades verificables en el MVP actual. Las historias de production ready representan trabajo adicional necesario para endurecer seguridad, operacion, calidad, observabilidad, despliegue y exposicion segura de capacidades via MCP.</script>
+
+  <script>
+    const source = document.getElementById('md-source').textContent.trim();
+    const content = document.getElementById('content');
+
+    const escapeHtml = (text) =>
+      text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+    const inline = (text) =>
+      escapeHtml(text).replace(/`([^`]+)`/g, '<code>$1</code>');
+
+    const lines = source.split('\n');
+    const out = [];
+    let inOl = false;
+    let inUl = false;
+    let inStory = false;
+    let inNote = false;
+    let inSummary = false;
+
+    const closeLists = () => {
+      if (inOl) {
+        out.push('</ol>');
+        inOl = false;
+      }
+      if (inUl) {
+        out.push('</ul>');
+        inUl = false;
+      }
+    };
+
+    const closeStory = () => {
+      closeLists();
+      if (inStory) {
+        out.push('</section>');
+        inStory = false;
+      }
+    };
+
+    const closeNote = () => {
+      closeLists();
+      if (inNote) {
+        out.push('</div>');
+        inNote = false;
+      }
+    };
+
+    const closeSummary = () => {
+      closeLists();
+      if (inSummary) {
+        out.push('</div>');
+        inSummary = false;
+      }
+    };
+
+    for (const rawLine of lines) {
+      const line = rawLine.trim();
+
+      if (!line) {
+        closeLists();
+        continue;
+      }
+
+      if (line.startsWith('# ')) {
+        continue;
+      }
+
+      if (line.startsWith('## ')) {
+        closeStory();
+        closeNote();
+        closeSummary();
+        const title = line.slice(3);
+        out.push(`<h2>${inline(title)}</h2>`);
+        inSummary = /^3\. /.test(title) || /^4\. /.test(title);
+        if (inSummary) {
+          out.push('<div class="summary">');
+        }
+        continue;
+      }
+
+      if (line.startsWith('### ')) {
+        closeNote();
+        closeSummary();
+        closeStory();
+        const title = line.slice(4);
+        const isMcp = title.includes('[MCP]');
+        const displayTitle = inline(title.replace(' [MCP]', ''));
+        out.push(`<section class="story${isMcp ? ' mcp' : ''}">`);
+        out.push(`<h3>${displayTitle}${isMcp ? '<span class="tag">MCP</span>' : ''}</h3>`);
+        inStory = true;
+        continue;
+      }
+
+      if (line.startsWith('Nota sobre ')) {
+        closeStory();
+        closeSummary();
+        closeNote();
+        out.push('<div class="section-note">');
+        out.push(`<p><strong>${inline(line)}</strong></p>`);
+        inNote = true;
+        continue;
+      }
+
+      const orderedMatch = line.match(/^\d+\.\s+(.*)$/);
+      if (orderedMatch) {
+        if (inUl) {
+          out.push('</ul>');
+          inUl = false;
+        }
+        if (!inOl) {
+          out.push('<ol>');
+          inOl = true;
+        }
+        out.push(`<li>${inline(orderedMatch[1])}</li>`);
+        continue;
+      }
+
+      const bulletMatch = line.match(/^- (.*)$/);
+      if (bulletMatch) {
+        if (inOl) {
+          out.push('</ol>');
+          inOl = false;
+        }
+        if (!inUl) {
+          out.push('<ul>');
+          inUl = true;
+        }
+        out.push(`<li>${inline(bulletMatch[1])}</li>`);
+        continue;
+      }
+
+      if (/^(Tool|Autenticacion|El agente puede):/.test(line)) {
+        out.push(`<p class="mcp-meta"><strong>${inline(line.split(':')[0])}:</strong>${inline(line.slice(line.indexOf(':') + 1))}</p>`);
+        continue;
+      }
+
+      if (line === 'Criterios de aceptacion:') {
+        out.push('<p><strong>Criterios de aceptacion:</strong></p>');
+        continue;
+      }
+
+      out.push(`<p>${inline(line)}</p>`);
+    }
+
+    closeStory();
+    closeNote();
+    closeSummary();
+    content.innerHTML = out.join('');
+  </script>
+</body>
+</html>
