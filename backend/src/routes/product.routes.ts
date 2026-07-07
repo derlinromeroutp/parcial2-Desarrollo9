@@ -11,7 +11,6 @@ import {
   createProductSchema,
   updateProductSchema,
 } from '../validators/product.validator';
-import { adminAuthMiddleware } from '../middlewares/auth.middleware';
 
 const productRoutes = new Hono();
 
@@ -21,10 +20,9 @@ productRoutes.get('/', getProducts);
 // Obtener un producto por ID
 productRoutes.get('/:id', getProductById);
 
-// Crear un producto con validación de Zod (solo admin)
+// Crear un producto con validación de Zod
 productRoutes.post(
   '/',
-  adminAuthMiddleware,
   zValidator('json', createProductSchema, (result, c) => {
     if (!result.success) {
       return c.json({ success: false, errors: result.error.errors }, 400);
@@ -33,10 +31,9 @@ productRoutes.post(
   createProduct
 );
 
-// Actualizar un producto con validación parcial (solo admin)
+// Actualizar un producto con validación parcial
 productRoutes.put(
   '/:id',
-  adminAuthMiddleware,
   zValidator('json', updateProductSchema, (result, c) => {
     if (!result.success) {
       return c.json({ success: false, errors: result.error.errors }, 400);
@@ -45,7 +42,7 @@ productRoutes.put(
   updateProduct
 );
 
-// Eliminar un producto (solo admin)
-productRoutes.delete('/:id', adminAuthMiddleware, deleteProduct);
+// Eliminar un producto
+productRoutes.delete('/:id', deleteProduct);
 
 export default productRoutes;
