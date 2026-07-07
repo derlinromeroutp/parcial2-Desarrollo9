@@ -9,14 +9,24 @@ import {
 } from '../controllers/product.controller';
 import {
   createProductSchema,
+  productFilterSchema,
   updateProductSchema,
 } from '../validators/product.validator';
 import { adminAuthMiddleware } from '../middlewares/auth.middleware';
 
 const productRoutes = new Hono();
 
-// Obtener todos los productos
-productRoutes.get('/', getProducts);
+// Obtener todos los productos, con filtros opcionales (categoria, condicion,
+// rango de precio, disponibilidad) para busquedas acotadas y ordenadas
+productRoutes.get(
+  '/',
+  zValidator('query', productFilterSchema, (result, c) => {
+    if (!result.success) {
+      return c.json({ success: false, errors: result.error.errors }, 400);
+    }
+  }),
+  getProducts
+);
 
 // Obtener un producto por ID
 productRoutes.get('/:id', getProductById);
