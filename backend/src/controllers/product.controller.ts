@@ -3,7 +3,38 @@ import { Product } from '../models/Product';
 
 export const getProducts = async (c: Context) => {
   try {
-    const products = await Product.find();
+    const query = c.req.valid('query' as any) as {
+      category?: string;
+      condition?: string;
+      minPrice?: number;
+      maxPrice?: number;
+      available?: 'true' | 'false';
+      limit?: number;
+    };
+
+    const hasFilters = Object.values(query).some((value) => value !== undefined);
+
+    if (!hasFilters) {
+      const products = await Product.find();
+      return c.json({ success: true, data: products });
+    }
+
+    const filter: Record<string, unknown> = {};
+    if (query.category) filter.category = query.category;
+    if (query.condition) filter.condition = query.condition;
+    if (query.minPrice !== undefined || query.maxPrice !== undefined) {
+      filter.price = {
+        ...(query.minPrice !== undefined && { $gte: query.minPrice }),
+        ...(query.maxPrice !== undefined && { $lte: query.maxPrice }),
+      };
+    }
+    if (query.available === 'true') filter.stock = { $gt: 0 };
+    if (query.available === 'false') filter.stock = { $lte: 0 };
+
+    const products = await Product.find(filter)
+      .sort({ price: 1 })
+      .limit(query.limit ?? 20);
+
     return c.json({ success: true, data: products });
   } catch (error: any) {
     return c.json({ success: false, message: error.message }, 500);
