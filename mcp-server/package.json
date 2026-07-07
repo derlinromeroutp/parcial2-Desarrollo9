@@ -1,0 +1,26 @@
+{
+  "name": "safetech-mcp-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "test": "node --import tsx --test \"src/**/*.test.ts\""
+  },
+  "dependencies": {
+    "@clerk/backend": "^3.2.13",
+    "@hono/node-server": "^1.19.3",
+    "@modelcontextprotocol/client": "2.0.0-beta.2",
+    "@modelcontextprotocol/server": "2.0.0-beta.2",
+    "dotenv": "^17.4.2",
+    "hono": "^4.9.4",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.15",
+    "tsx": "^4.20.3",
+    "typescript": "^5.9.2"
+  }
+}
