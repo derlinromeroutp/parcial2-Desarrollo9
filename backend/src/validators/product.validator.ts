@@ -26,6 +26,7 @@ export const updateProductSchema = z.object(productFields).partial();
 
 export const productFilterSchema = z
   .object({
+    name: z.string().min(1, 'El nombre debe tener al menos 1 caracter').max(100, 'El nombre no puede superar los 100 caracteres').optional(),
     category: productFields.category.optional(),
     condition: productFields.condition.optional(),
     minPrice: z.coerce.number().min(0, 'minPrice debe ser 0 o un valor positivo').optional(),

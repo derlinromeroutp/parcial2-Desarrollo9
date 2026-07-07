@@ -95,6 +95,37 @@ test('rechaza un precio de filtro no numerico', async ({ request }) => {
   expect(response.status()).toBe(400);
 });
 
+test('filtra por nombre con coincidencia parcial', async ({ request }) => {
+  const response = await request.get(`${API_URL}/products?name=iPhone`);
+  expect(response.status()).toBe(200);
+  const body = await response.json();
+  expect(body.data.length).toBeGreaterThan(0);
+  expect(body.data.every((p: { name: string }) => p.name.toLowerCase().includes('iphone'))).toBe(true);
+});
+
+test('filtra por nombre ignorando mayusculas y minusculas', async ({ request }) => {
+  const response = await request.get(`${API_URL}/products?name=IPHONE`);
+  expect(response.status()).toBe(200);
+  const body = await response.json();
+  expect(body.data.length).toBeGreaterThan(0);
+  expect(body.data.every((p: { name: string }) => p.name.toLowerCase().includes('iphone'))).toBe(true);
+});
+
+test('combina filtros de nombre, categoria, condicion y rango de precio', async ({ request }) => {
+  const response = await request.get(`${API_URL}/products?name=iPhone&category=celular&condition=A&minPrice=400&maxPrice=750`);
+  expect(response.status()).toBe(200);
+  const body = await response.json();
+  expect(body.data.length).toBe(1);
+  expect(body.data[0].name).toBe('iPhone 13 Reacondicionado');
+});
+
+test('devuelve lista vacia cuando el nombre no coincide con ningun producto', async ({ request }) => {
+  const response = await request.get(`${API_URL}/products?name=xyzxyz`);
+  expect(response.status()).toBe(200);
+  const body = await response.json();
+  expect(body.data).toEqual([]);
+});
+
 test('rechaza un rango de precio invalido (minPrice mayor que maxPrice)', async ({ request }) => {
   const response = await request.get(`${API_URL}/products?minPrice=500&maxPrice=100`);
   expect(response.status()).toBe(400);

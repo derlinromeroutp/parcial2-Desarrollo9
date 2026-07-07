@@ -167,7 +167,7 @@ export default function ProductTable() {
     queryFn: async () => {
       const t = await getToken();
       if (!t) throw new Error('No token');
-      return productsService.getAll(t);
+      return productsService.getAll(undefined, t);
     },
   });
 
