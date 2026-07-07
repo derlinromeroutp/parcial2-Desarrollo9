@@ -4,6 +4,7 @@ import { Product } from '../models/Product';
 export const getProducts = async (c: Context) => {
   try {
     const query = c.req.valid('query' as any) as {
+      name?: string;
       category?: string;
       condition?: string;
       minPrice?: number;
@@ -20,6 +21,7 @@ export const getProducts = async (c: Context) => {
     }
 
     const filter: Record<string, unknown> = {};
+    if (query.name) filter.name = { $regex: query.name, $options: 'i' };
     if (query.category) filter.category = query.category;
     if (query.condition) filter.condition = query.condition;
     if (query.minPrice !== undefined || query.maxPrice !== undefined) {
