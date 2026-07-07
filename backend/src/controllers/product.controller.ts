@@ -103,6 +103,21 @@ export const updateProduct = async (c: Context) => {
   }
 };
 
+const DEFAULT_LOW_STOCK_THRESHOLD = 5;
+
+export const getLowStockProducts = async (c: Context) => {
+  try {
+    const { threshold } = c.req.valid('query' as any) as { threshold?: number };
+    const effectiveThreshold = threshold ?? DEFAULT_LOW_STOCK_THRESHOLD;
+
+    const products = await Product.find({ stock: { $lte: effectiveThreshold } }).sort({ stock: 1 });
+
+    return c.json({ success: true, threshold: effectiveThreshold, data: products });
+  } catch (error: any) {
+    return c.json({ success: false, message: error.message }, 500);
+  }
+};
+
 export const deleteProduct = async (c: Context) => {
   try {
     const id = c.req.param('id');

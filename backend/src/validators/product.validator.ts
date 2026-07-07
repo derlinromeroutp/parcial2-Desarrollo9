@@ -39,3 +39,7 @@ export const productFilterSchema = z
     message: 'minPrice no puede ser mayor que maxPrice',
     path: ['minPrice'],
   });
+
+export const lowStockQuerySchema = z.object({
+  threshold: z.coerce.number().int().min(0, 'threshold debe ser 0 o un entero positivo').optional(),
+});
