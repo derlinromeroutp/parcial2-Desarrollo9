@@ -271,6 +271,15 @@ export default function AdminDashboard() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['technicians'] }),
   });
 
+  const deactivateTechnicianMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const token = await getToken();
+      if (!token) throw new Error('No token');
+      return technicianService.deleteTechnician(id, token);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['technicians'] }),
+  });
+
   const handleSectionChange = (section: string) => {
     setActiveSection(section as SectionType);
     setOrdersPage(1);
@@ -492,15 +501,16 @@ export default function AdminDashboard() {
                       <th>Email</th>
                       <th>Teléfono</th>
                       <th>Estado</th>
+                      <th>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
                     {techniciansLoading
-                      ? Array.from({ length: 4 }).map((_, i) => <SkeletonTableRow key={i} cols={4} />)
+                      ? Array.from({ length: 4 }).map((_, i) => <SkeletonTableRow key={i} cols={5} />)
                       : pagedTechnicians.length === 0
                         ? (
                           <tr>
-                            <td colSpan={4} style={{ padding: '3rem', textAlign: 'center', color: 'var(--ink3)', fontSize: '0.9rem' }}>
+                            <td colSpan={5} style={{ padding: '3rem', textAlign: 'center', color: 'var(--ink3)', fontSize: '0.9rem' }}>
                               No hay técnicos registrados.
                             </td>
                           </tr>
@@ -514,6 +524,32 @@ export default function AdminDashboard() {
                               <Badge variant={tech.active ? 'success' : 'neutral'}>
                                 {tech.active ? 'Activo' : 'Inactivo'}
                               </Badge>
+                            </td>
+                            <td className="actions">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const confirmed = window.confirm(`¿Desactivar a ${tech.name}?`);
+                                  if (!confirmed) return;
+                                  deactivateTechnicianMutation.mutate(tech._id);
+                                }}
+                                disabled={deactivateTechnicianMutation.isPending}
+                                style={{
+                                  padding: '7px 12px',
+                                  border: '1px solid var(--line)',
+                                  borderRadius: 'var(--radius-ui)',
+                                  background: 'var(--white)',
+                                  color: 'var(--ink)',
+                                  fontSize: '0.78rem',
+                                  fontWeight: 500,
+                                  fontFamily: 'var(--font-sans)',
+                                  cursor: deactivateTechnicianMutation.isPending ? 'not-allowed' : 'pointer',
+                                  opacity: deactivateTechnicianMutation.isPending ? 0.6 : 1,
+                                }}
+                                title={`Desactivar a ${tech.name}`}
+                              >
+                                {deactivateTechnicianMutation.isPending ? 'Desactivando…' : 'Desactivar'}
+                              </button>
                             </td>
                           </tr>
                         ))
