@@ -3,7 +3,14 @@ import { Schema, model } from 'mongoose';
 const orderSchema = new Schema({
   userId: { type: String, required: true },
   total_amount: { type: Number, required: true },
-  status: { type: String, enum: ['pending', 'paid', 'shipped', 'failed'], default: 'pending' },
+  status: {
+    type: String,
+    enum: ['pending', 'paid', 'processing', 'shipped', 'delivered', 'failed'],
+    default: 'pending',
+  },
+  // Info de envio y tracking (HU-33): se completan cuando el admin despacha la orden.
+  carrier: { type: String },
+  trackingNumber: { type: String },
   // Legacy field — kept for back-compat with old hosted-checkout orders.
   stripe_session_id: { type: String, index: true },
   // New field — used by embedded Payment Element flow.

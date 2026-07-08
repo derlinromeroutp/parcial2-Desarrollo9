@@ -35,5 +35,17 @@ export const ordersService = {
       }
     });
     return response.data;
+  },
+  updateShipping: async (
+    orderId: string,
+    data: { status?: 'processing' | 'shipped' | 'delivered'; carrier?: string; trackingNumber?: string },
+    token: string,
+  ): Promise<Order> => {
+    const response = await axios.put(`${API_URL}/orders/${orderId}/shipping`, data, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    return response.data;
   }
 };
