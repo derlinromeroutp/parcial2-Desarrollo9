@@ -29,6 +29,10 @@ export interface ProductSummary {
   primaryImageUrl?: string;
 }
 
+export interface ProductDetail extends ProductSummary {
+  imageUrls: string[];
+}
+
 export interface ProductListResponse {
   success: boolean;
   data: Array<{
@@ -44,4 +48,21 @@ export interface ProductListResponse {
     updatedAt?: string;
     __v?: number;
   }>;
+}
+
+export interface ProductDetailResponse {
+  success: boolean;
+  data: {
+    _id: string;
+    name: string;
+    description?: string;
+    price: number;
+    stock: number;
+    condition: 'A' | 'B' | 'C';
+    category: 'celular' | 'laptop' | 'pc' | 'auriculares' | 'tablet';
+    image_urls?: string[];
+    createdAt?: string;
+    updatedAt?: string;
+    __v?: number;
+  };
 }

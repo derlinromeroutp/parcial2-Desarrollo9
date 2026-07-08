@@ -1,4 +1,5 @@
 import { Context } from 'hono';
+import mongoose from 'mongoose';
 import { Product } from '../models/Product';
 import { InventoryMovement } from '../models/InventoryMovement';
 import { recordInventoryMovement } from '../services/inventory.service';
@@ -60,6 +61,10 @@ export const getProducts = async (c: Context) => {
 export const getProductById = async (c: Context) => {
   try {
     const id = c.req.param('id');
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return c.json({ success: false, message: 'ID de producto invalido' }, 400);
+    }
+
     const product = await Product.findById(id);
     
     if (!product) {
