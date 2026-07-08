@@ -1,5 +1,7 @@
 import type {
+  BackendOrderResponse,
   BackendHealth,
+  OrderSummary,
   ProductDetail,
   ProductDetailResponse,
   ProductListResponse,
@@ -84,6 +86,52 @@ export class BackendApiClient {
         primaryImageUrl: response.data.image_urls?.[0],
         imageUrls: response.data.image_urls ?? [],
       },
+    };
+  }
+
+  async getMyOrders(token: string, requestId: string): Promise<{ data: OrderSummary[] }> {
+    const response = await this.request<BackendOrderResponse[]>('/orders/mine', {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'x-request-id': requestId,
+      },
+    });
+
+    return {
+      data: response.map((order) => ({
+        id: order._id,
+        totalAmount: order.total_amount,
+        status: order.status,
+        createdAt: order.createdAt,
+        updatedAt: order.updatedAt,
+        ...(order.stripe_session_id ? { stripeSessionId: order.stripe_session_id } : {}),
+        ...(order.payment_intent_id ? { paymentIntentId: order.payment_intent_id } : {}),
+        ...(order.carrier ? { carrier: order.carrier } : {}),
+        ...(order.trackingNumber ? { trackingNumber: order.trackingNumber } : {}),
+        ...(order.shippingAddress ? { shippingAddress: order.shippingAddress } : {}),
+        items: (order.items ?? []).map((item) => ({
+          id: item._id,
+          quantity: item.quantity,
+          price: item.price,
+          ...(item.product?._id
+            ? {
+                product: {
+                  id: item.product._id,
+                  ...(item.product.name ? { name: item.product.name } : {}),
+                  ...(item.product.description ? { description: item.product.description } : {}),
+                  ...(item.product.price !== undefined ? { price: item.product.price } : {}),
+                  ...(item.product.stock !== undefined ? { stock: item.product.stock } : {}),
+                  ...(item.product.condition ? { condition: item.product.condition } : {}),
+                  ...(item.product.category ? { category: item.product.category } : {}),
+                  ...(item.product.image_urls?.[0]
+                    ? { primaryImageUrl: item.product.image_urls[0] }
+                    : {}),
+                },
+              }
+            : {}),
+        })),
+      })),
     };
   }
 

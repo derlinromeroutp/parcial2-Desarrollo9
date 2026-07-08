@@ -66,3 +66,75 @@ export interface ProductDetailResponse {
     __v?: number;
   };
 }
+
+export interface OrderProductSummary {
+  id: string;
+  name?: string;
+  description?: string;
+  price?: number;
+  stock?: number;
+  condition?: 'A' | 'B' | 'C';
+  category?: 'celular' | 'laptop' | 'pc' | 'auriculares' | 'tablet';
+  primaryImageUrl?: string;
+}
+
+export interface OrderItemSummary {
+  id: string;
+  quantity: number;
+  price: number;
+  product?: OrderProductSummary;
+}
+
+export interface ShippingAddressSummary {
+  recipientName?: string;
+  phone?: string;
+  street?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  country?: string;
+}
+
+export interface OrderSummary {
+  id: string;
+  totalAmount: number;
+  status: 'pending' | 'paid' | 'processing' | 'shipped' | 'delivered' | 'failed';
+  createdAt: string;
+  updatedAt: string;
+  stripeSessionId?: string;
+  paymentIntentId?: string;
+  carrier?: string;
+  trackingNumber?: string;
+  shippingAddress?: ShippingAddressSummary;
+  items: OrderItemSummary[];
+}
+
+export interface BackendOrderItemResponse {
+  _id: string;
+  quantity: number;
+  price: number;
+  product?: {
+    _id?: string;
+    name?: string;
+    description?: string;
+    price?: number;
+    stock?: number;
+    condition?: 'A' | 'B' | 'C';
+    category?: 'celular' | 'laptop' | 'pc' | 'auriculares' | 'tablet';
+    image_urls?: string[];
+  };
+}
+
+export interface BackendOrderResponse {
+  _id: string;
+  total_amount: number;
+  status: 'pending' | 'paid' | 'processing' | 'shipped' | 'delivered' | 'failed';
+  createdAt: string;
+  updatedAt: string;
+  stripe_session_id?: string;
+  payment_intent_id?: string;
+  carrier?: string;
+  trackingNumber?: string;
+  shippingAddress?: ShippingAddressSummary;
+  items?: BackendOrderItemResponse[];
+}

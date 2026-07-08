@@ -2,7 +2,7 @@
 
 Base tecnica del servidor MCP de SafeTech para el issue `#187`, con transporte HTTP remoto y transporte local por `stdio`.
 
-## Alcance
+## Alcance base
 
 - Servidor MCP remoto independiente.
 - Servidor MCP local por `stdio` para pruebas con clientes MCP.
@@ -12,7 +12,7 @@ Base tecnica del servidor MCP de SafeTech para el issue `#187`, con transporte H
 - Logging y auditoria base.
 - Healthcheck del servicio.
 
-No expone tools de negocio en esta fase.
+La fase inicial del issue `#187` no debia exponer tools de negocio. El estado actual del repositorio ya incluye tools MCP de negocio sobre esa base y debe mantenerse alineado con los issues tecnicos de exposicion.
 
 ## Variables
 

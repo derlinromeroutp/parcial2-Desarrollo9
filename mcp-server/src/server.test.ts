@@ -5,6 +5,7 @@ import { createApp } from './server.js';
 import type { Authenticator, AuthContext } from './types.js';
 import { BackendApiClient, BackendApiError } from './services/backend-api.js';
 import { createLogger } from './utils/logger.js';
+import type { OrderSummary } from './types.js';
 
 const env = {
   PORT: 3100,
@@ -38,6 +39,8 @@ class FakeBackendApi extends BackendApiClient {
   shouldFailGetProduct = false;
   shouldNotFindProduct = false;
   shouldRejectProductId = false;
+  shouldRejectOrdersAuth = false;
+  lastOrdersToken?: string;
 
   constructor() {
     super('http://backend.test/api');
@@ -120,6 +123,68 @@ class FakeBackendApi extends BackendApiClient {
         primaryImageUrl: 'https://cdn.test/iphone.jpg',
         imageUrls: ['https://cdn.test/iphone.jpg', 'https://cdn.test/iphone-back.jpg'],
       },
+    };
+  }
+
+  override async getMyOrders(token: string, _requestId: string): Promise<{ data: OrderSummary[] }> {
+    this.lastOrdersToken = token;
+
+    if (this.shouldRejectOrdersAuth) {
+      throw new BackendApiError('Unauthorized', 401, {
+        error: 'Unauthorized: User ID not found',
+      });
+    }
+
+    return {
+      data: [
+        {
+          id: 'ord_1',
+          totalAmount: 1598,
+          status: 'paid',
+          createdAt: '2026-07-01T10:00:00.000Z',
+          updatedAt: '2026-07-01T10:05:00.000Z',
+          stripeSessionId: 'cs_test_123',
+          paymentIntentId: 'pi_test_123',
+          carrier: 'DHL',
+          trackingNumber: 'TRACK123',
+          shippingAddress: {
+            recipientName: 'Derlin Romero',
+            city: 'Panama',
+            country: 'PA',
+          },
+          items: [
+            {
+              id: 'item_1',
+              quantity: 1,
+              price: 699,
+              product: {
+                id: 'prod_1',
+                name: 'iPhone 13 Reacondicionado',
+                description: '128GB',
+                price: 699,
+                stock: 4,
+                condition: 'A' as const,
+                category: 'celular' as const,
+                primaryImageUrl: 'https://cdn.test/iphone.jpg',
+              },
+            },
+            {
+              id: 'item_2',
+              quantity: 1,
+              price: 899,
+              product: {
+                id: 'prod_2',
+                name: 'Laptop ThinkPad X1',
+                price: 899,
+                stock: 0,
+                condition: 'B' as const,
+                category: 'laptop' as const,
+                primaryImageUrl: 'https://cdn.test/thinkpad.jpg',
+              },
+            },
+          ],
+        },
+      ],
     };
   }
 }
@@ -219,10 +284,10 @@ test('mcp handshake works and exposes search_products tool', async () => {
   assert.equal(serverVersion?.name, 'SafeTech MCP Server');
 
   const tools = await client.listTools();
-  assert.equal(tools.tools.length, 2);
+  assert.equal(tools.tools.length, 3);
   assert.deepEqual(
     tools.tools.map((tool) => tool.name).sort(),
-    ['get_product', 'search_products'],
+    ['get_product', 'list_my_orders', 'search_products'],
   );
 
   const result = await client.callTool({
@@ -252,6 +317,133 @@ test('mcp handshake works and exposes search_products tool', async () => {
       name: 'iPhone',
       limit: 5,
     },
+  });
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('list_my_orders returns normalized orders for the authenticated user', async () => {
+  const backendApi = new FakeBackendApi();
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator(),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'list_my_orders',
+    arguments: {},
+  });
+
+  assert.equal(result.isError, undefined);
+  assert.equal(backendApi.lastOrdersToken, 'test-token');
+  assert.deepEqual(result.structuredContent, {
+    orders: [
+      {
+        id: 'ord_1',
+        totalAmount: 1598,
+        status: 'paid',
+        createdAt: '2026-07-01T10:00:00.000Z',
+        updatedAt: '2026-07-01T10:05:00.000Z',
+        stripeSessionId: 'cs_test_123',
+        paymentIntentId: 'pi_test_123',
+        carrier: 'DHL',
+        trackingNumber: 'TRACK123',
+        shippingAddress: {
+          recipientName: 'Derlin Romero',
+          city: 'Panama',
+          country: 'PA',
+        },
+        items: [
+          {
+            id: 'item_1',
+            quantity: 1,
+            price: 699,
+            product: {
+              id: 'prod_1',
+              name: 'iPhone 13 Reacondicionado',
+              description: '128GB',
+              price: 699,
+              stock: 4,
+              condition: 'A',
+              category: 'celular',
+              primaryImageUrl: 'https://cdn.test/iphone.jpg',
+            },
+          },
+          {
+            id: 'item_2',
+            quantity: 1,
+            price: 899,
+            product: {
+              id: 'prod_2',
+              name: 'Laptop ThinkPad X1',
+              price: 899,
+              stock: 0,
+              condition: 'B',
+              category: 'laptop',
+              primaryImageUrl: 'https://cdn.test/thinkpad.jpg',
+            },
+          },
+        ],
+      },
+    ],
+    count: 1,
+  });
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('list_my_orders rejects authenticated backend failures in a controlled way', async () => {
+  const backendApi = new FakeBackendApi();
+  backendApi.shouldRejectOrdersAuth = true;
+
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator(),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'list_my_orders',
+    arguments: {},
+  });
+
+  assert.equal(result.isError, true);
+  assert.deepEqual(result.structuredContent, {
+    code: 'AUTH_REQUIRED',
+    message: 'La sesion no es valida para consultar pedidos.',
   });
 
   await transport.terminateSession();
