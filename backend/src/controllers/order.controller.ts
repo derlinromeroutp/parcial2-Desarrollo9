@@ -2,8 +2,10 @@ import { Context } from 'hono';
 import Stripe from 'stripe';
 import { Order } from '../models/Order';
 import { OrderItem } from '../models/OrderItem';
-import { finalizePaidOrder } from '../services/order.service';
+import { User } from '../models/User';
+import { finalizePaidOrder, notifyPurchaseConfirmed } from '../services/order.service';
 import { isE2EPaymentIntent, isE2ETestMode } from '../lib/e2e';
+import { sendOrderStatusChangedEmail } from '../services/email.service';
 
 const getStripeClient = () => {
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
@@ -145,6 +147,10 @@ export const confirmOrderPayment = async (c: Context) => {
         false,
       );
 
+      if (!confirmation.wasAlreadyPaid) {
+        await notifyPurchaseConfirmed(userId, confirmation.lockedOrder);
+      }
+
       const paidOrder = await Order.findById(confirmation.lockedOrder._id).lean();
       const relatedItems = await OrderItem.find({ order_id: confirmation.lockedOrder._id }).populate('product_id').lean();
       const items = relatedItems.map((item) => ({
@@ -228,6 +234,10 @@ export const confirmOrderPayment = async (c: Context) => {
         );
       }
 
+      if (!confirmation.wasAlreadyPaid) {
+        await notifyPurchaseConfirmed(userId, confirmation.lockedOrder);
+      }
+
       const paidOrder = await Order.findById(confirmation.lockedOrder._id).lean();
       const relatedItems = await OrderItem.find({ order_id: confirmation.lockedOrder._id }).populate('product_id').lean();
       const items = relatedItems.map((item) => ({
@@ -268,11 +278,20 @@ export const updateShippingInfo = async (c: Context) => {
       return c.json({ error: 'Order not found' }, 404);
     }
 
+    const statusChanged = data.status !== undefined && data.status !== order.status;
+
     if (data.status !== undefined) order.status = data.status;
     if (data.carrier !== undefined) order.carrier = data.carrier;
     if (data.trackingNumber !== undefined) order.trackingNumber = data.trackingNumber;
 
     await order.save();
+
+    if (statusChanged) {
+      const owner = await User.findOne({ clerk_id: order.userId });
+      if (owner?.email) {
+        await sendOrderStatusChangedEmail(owner.email, order);
+      }
+    }
 
     return c.json(order);
   } catch (error) {

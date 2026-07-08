@@ -2,7 +2,7 @@ import { Context } from 'hono';
 import Stripe from 'stripe';
 import { User } from '../models/User';
 import { Order } from '../models/Order';
-import { finalizePaidOrder } from '../services/order.service';
+import { finalizePaidOrder, notifyPurchaseConfirmed } from '../services/order.service';
 
 export const stripeWebhookController = async (c: Context) => {
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
@@ -67,6 +67,8 @@ export const stripeWebhookController = async (c: Context) => {
           console.warn('[Stripe Webhook] MongoDB transactions unsupported, retrying without transaction.');
           await finalizePaidOrder(clerkUserId, orderId, paymentIntent.id, false);
         }
+
+        await notifyPurchaseConfirmed(clerkUserId, order);
 
         console.log('[Stripe Webhook] Order marked as paid:', orderId);
         break;

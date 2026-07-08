@@ -54,6 +54,8 @@ R2_SECRET_ACCESS_KEY=
 R2_ENDPOINT=
 R2_BUCKET_NAME=
 R2_PUBLIC_URL=
+RESEND_API_KEY=
+EMAIL_FROM=
 ```
 
 **`frontend/.env.local`**
@@ -79,6 +81,8 @@ All routes are mounted in `index.ts` under `/api/*`. Each feature follows the pa
 **Clerk sync**: `POST /api/webhooks/clerk` handles `user.created`, `user.updated`, and `user.deleted` to keep the local `User` collection in sync with Clerk.
 
 **File uploads** (`upload.controller.ts` + `r2.service.ts`): generates presigned R2 URLs for direct browser uploads.
+
+**Transactional emails** (`services/email.service.ts`): sends purchase confirmations, warranty-created, and warranty/order status-change notifications via the Resend HTTP API (`RESEND_API_KEY`/`EMAIL_FROM`). Without `RESEND_API_KEY` it logs to the console instead of sending. In `E2E_TEST_MODE` it captures messages in memory, inspectable via `GET /api/e2e/emails`.
 
 ### Frontend (`frontend/src/`)
 
