@@ -1,4 +1,5 @@
 export type SafeTechRole = 'user' | 'admin';
+export type ToolAccessLevel = 'public' | 'user' | 'admin';
 
 export interface AuthContext {
   token: string;

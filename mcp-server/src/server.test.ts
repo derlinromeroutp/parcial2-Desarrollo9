@@ -11,8 +11,13 @@ const env = {
   HOST: '127.0.0.1',
   MCP_SERVER_NAME: 'SafeTech MCP Server',
   MCP_SERVER_VERSION: '0.1.0-test',
+  MCP_PUBLIC_BASE_URL: 'https://mcp.test',
   BACKEND_API_URL: 'http://backend.test/api',
   CLERK_SECRET_KEY: 'test',
+  CLERK_PUBLISHABLE_KEY: 'pk_test_test-publishable-key',
+  OAUTH_ISSUER_URL: 'https://clever-gator-13.clerk.accounts.dev',
+  OAUTH_SCOPES: 'openid profile email offline_access',
+  OAUTH_RESOURCE_DOCUMENTATION_URL: 'https://docs.test/mcp',
   MCP_STDIO_USER_ID: 'local_stdio_user',
   MCP_STDIO_ROLE: 'admin' as const,
 };
@@ -93,6 +98,58 @@ test('health endpoint reports backend connectivity', async () => {
   const body = (await response.json()) as { status: string; backend: { status: string } };
   assert.equal(body.status, 'ok');
   assert.equal(body.backend.status, 'ok');
+});
+
+test('oauth protected resource metadata is published for remote clients', async () => {
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator(),
+    backendApi: new FakeBackendApi(),
+  });
+
+  const response = await app.fetch(
+    new Request('http://test.local/.well-known/oauth-protected-resource'),
+  );
+
+  assert.equal(response.status, 200);
+  const body = (await response.json()) as {
+    resource: string;
+    authorization_servers: string[];
+    scopes_supported: string[];
+    resource_documentation?: string;
+  };
+
+  assert.equal(body.resource, env.MCP_PUBLIC_BASE_URL);
+  assert.deepEqual(body.authorization_servers, [env.OAUTH_ISSUER_URL]);
+  assert.deepEqual(body.scopes_supported, ['openid', 'profile', 'email', 'offline_access']);
+  assert.equal(body.resource_documentation, env.OAUTH_RESOURCE_DOCUMENTATION_URL);
+});
+
+test('unauthenticated mcp requests advertise oauth discovery', async () => {
+  const failingAuthenticator: Authenticator = {
+    authenticate: async () => {
+      throw new Error('Missing bearer token');
+    },
+  };
+
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: failingAuthenticator,
+    backendApi: new FakeBackendApi(),
+  });
+
+  const response = await app.fetch(new Request('http://test.local/mcp'));
+  assert.equal(response.status, 500);
+
+  const header = response.headers.get('WWW-Authenticate');
+  assert.ok(header?.includes('/.well-known/oauth-protected-resource'));
+
+  const body = (await response.json()) as {
+    _meta?: { 'mcp/www_authenticate'?: string[] };
+  };
+  assert.ok(body._meta?.['mcp/www_authenticate']?.[0]?.includes('/.well-known/oauth-protected-resource'));
 });
 
 test('mcp handshake works and exposes search_products tool', async () => {

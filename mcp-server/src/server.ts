@@ -10,6 +10,10 @@ import { buildServer } from './bootstrap.js';
 import type { Logger } from './utils/logger.js';
 import { getRequestId } from './utils/request-context.js';
 import { AuthError } from './auth/clerk-authenticator.js';
+import {
+  buildProtectedResourceMetadata,
+  buildWwwAuthenticateHeader,
+} from './auth/oauth.js';
 
 interface AppDependencies {
   env: AppEnv;
@@ -23,6 +27,10 @@ export function createApp({ env, logger, authenticator, backendApi }: AppDepende
 
   const handler = createMcpHandler(({ authInfo }) =>
     buildServer({ env, logger, backendApi, authInfo }),
+  );
+
+  app.get('/.well-known/oauth-protected-resource', (c) =>
+    c.json(buildProtectedResourceMetadata(env)),
   );
 
   app.get('/health', async (c) => {
@@ -84,8 +92,16 @@ export function createApp({ env, logger, authenticator, backendApi }: AppDepende
             code: authError.code,
             message: authError.message,
           },
+          _meta: {
+            'mcp/www_authenticate': [
+              buildWwwAuthenticateHeader(env, authError.message),
+            ],
+          },
         },
         authError.status as ContentfulStatusCode,
+        {
+          'WWW-Authenticate': buildWwwAuthenticateHeader(env, authError.message),
+        },
       );
     }
   });
