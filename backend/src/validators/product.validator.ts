@@ -33,6 +33,7 @@ export const productFilterSchema = z
     maxPrice: z.coerce.number().min(0, 'maxPrice debe ser 0 o un valor positivo').optional(),
     available: z.enum(['true', 'false']).optional(),
     limit: z.coerce.number().int().min(1).max(50).optional(),
+    page: z.coerce.number().int().min(1).optional(),
   })
   .refine((data) => data.minPrice === undefined || data.maxPrice === undefined || data.minPrice <= data.maxPrice, {
     message: 'minPrice no puede ser mayor que maxPrice',

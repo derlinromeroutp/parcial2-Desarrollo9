@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useProducts } from '../hooks/useProducts';
+import { useProductsPaginated } from '../hooks/useProducts';
 import { useCartStore } from '../store/cart.store';
 import { SkeletonCard } from './ui/Skeleton';
 import { EmptyState } from './ui/EmptyState';
@@ -57,18 +57,18 @@ export const ProductList: React.FC = () => {
     [search, category, condition, priceIdx]
   );
 
-  const { data: products, isLoading, isError, error } = useProducts(filters);
+  const { data: result, isLoading, isError, error } = useProductsPaginated({
+    ...filters,
+    page,
+    limit: ITEMS_PER_PAGE,
+  });
+  const products = result?.data;
+  const totalPages = Math.max(1, Math.ceil((result?.pagination.total ?? 0) / ITEMS_PER_PAGE));
+  const paginatedProducts = products ?? [];
   const addItem = useCartStore((s) => s.addItem);
   const toggleDrawer = useCartStore((s) => s.toggleDrawer);
 
   useEffect(() => setPage(1), [filters]);
-
-  const totalPages = Math.ceil((products?.length ?? 0) / ITEMS_PER_PAGE);
-  const paginatedProducts = useMemo(() => {
-    if (!products) return [];
-    const start = (page - 1) * ITEMS_PER_PAGE;
-    return products.slice(start, start + ITEMS_PER_PAGE);
-  }, [products, page]);
 
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
@@ -102,8 +102,8 @@ export const ProductList: React.FC = () => {
     <div>
       <FilterBar category={category} setCategory={setCategory} condition={condition} setCondition={setCondition} priceIdx={priceIdx} setPriceIdx={setPriceIdx} search={search} setSearch={setSearch} />
 
-      {/* Productos destacados (solo si no hay filtros activos) */}
-      {!search && !category && !condition && priceIdx === 0 && (
+      {/* Productos destacados (solo si no hay filtros activos, en la primera pagina) */}
+      {!search && !category && !condition && priceIdx === 0 && page === 1 && (
         <div style={{ marginBottom: '3rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
             <h2 style={{ fontSize: '1.25rem', fontWeight: 400, color: 'var(--ink)', fontFamily: 'var(--font-display)', letterSpacing: '-0.01em' }}>Productos destacados</h2>

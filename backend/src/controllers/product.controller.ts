@@ -11,6 +11,7 @@ export const getProducts = async (c: Context) => {
       maxPrice?: number;
       available?: 'true' | 'false';
       limit?: number;
+      page?: number;
     };
 
     const hasFilters = Object.values(query).some((value) => value !== undefined);
@@ -33,11 +34,22 @@ export const getProducts = async (c: Context) => {
     if (query.available === 'true') filter.stock = { $gt: 0 };
     if (query.available === 'false') filter.stock = { $lte: 0 };
 
-    const products = await Product.find(filter)
-      .sort({ price: 1 })
-      .limit(query.limit ?? 20);
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
 
-    return c.json({ success: true, data: products });
+    const [products, total] = await Promise.all([
+      Product.find(filter)
+        .sort({ price: 1 })
+        .skip((page - 1) * limit)
+        .limit(limit),
+      Product.countDocuments(filter),
+    ]);
+
+    return c.json({
+      success: true,
+      data: products,
+      pagination: { page, limit, total },
+    });
   } catch (error: any) {
     return c.json({ success: false, message: error.message }, 500);
   }

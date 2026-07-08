@@ -28,6 +28,19 @@ export interface ProductFilters {
   condition?: string;
   minPrice?: number;
   maxPrice?: number;
+  page?: number;
+  limit?: number;
+}
+
+export interface ProductPagination {
+  page: number;
+  limit: number;
+  total: number;
+}
+
+export interface PaginatedProducts {
+  data: Product[];
+  pagination: ProductPagination;
 }
 
 function buildQueryString(filters?: ProductFilters): string {
@@ -42,6 +55,8 @@ function buildQueryString(filters?: ProductFilters): string {
   if (filters.maxPrice !== undefined && !Number.isNaN(filters.maxPrice)) {
     params.set('maxPrice', String(filters.maxPrice));
   }
+  if (filters.page !== undefined) params.set('page', String(filters.page));
+  if (filters.limit !== undefined) params.set('limit', String(filters.limit));
   const qs = params.toString();
   return qs ? `?${qs}` : '';
 }
@@ -57,6 +72,24 @@ export const productsService = {
     }
     const result = await response.json();
     return result.data || [];
+  },
+
+  // Usa page/limit del backend (HU-31); a diferencia de getAll(), no descarta
+  // la metadata de paginacion que necesita el catalogo para armar el paginador.
+  async getAllPaginated(filters?: ProductFilters, token?: string): Promise<PaginatedProducts> {
+    const response = await fetch(`${API_URL}/products${buildQueryString(filters)}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!response.ok) {
+      const result = await response.json().catch(() => ({}));
+      throw new Error(result?.message || result?.errors?.[0]?.message || 'Failed to fetch products');
+    }
+    const result = await response.json();
+    const data: Product[] = result.data || [];
+    return {
+      data,
+      pagination: result.pagination ?? { page: 1, limit: data.length, total: data.length },
+    };
   },
 
   async getById(id: string, token?: string): Promise<Product> {
