@@ -1,6 +1,8 @@
 import { Context } from 'hono';
 import { WarrantyReport } from '../models/WarrantyReport';
 import { Order } from '../models/Order';
+import { User } from '../models/User';
+import { sendWarrantyCreatedEmail, sendWarrantyStatusChangedEmail } from '../services/email.service';
 
 export const createWarrantyReport = async (c: Context) => {
   try {
@@ -53,6 +55,11 @@ export const createWarrantyReport = async (c: Context) => {
 
     await report.save();
 
+    const reporter = await User.findOne({ clerk_id: userId });
+    if (reporter?.email) {
+      await sendWarrantyCreatedEmail(reporter.email, report);
+    }
+
     return c.json({
       ticketId: report._id,
       status: report.status
@@ -95,9 +102,11 @@ export const updateWarrantyStatus = async (c: Context) => {
 
     if (!report) return c.json({ error: 'Report not found' }, 404);
 
+    let statusChanged = false;
     if (body.status) {
       const previousStatus = report.status;
       report.status = body.status;
+      statusChanged = previousStatus !== body.status;
       if (body.status === 'resolved' && (previousStatus !== 'resolved' || !report.resolvedAt)) {
         report.resolvedAt = new Date();
       } else if (body.status !== 'resolved') {
@@ -110,6 +119,14 @@ export const updateWarrantyStatus = async (c: Context) => {
     }
 
     await report.save();
+
+    if (statusChanged) {
+      const owner = await User.findOne({ clerk_id: report.userId });
+      if (owner?.email) {
+        await sendWarrantyStatusChangedEmail(owner.email, report);
+      }
+    }
+
     return c.json(report);
   } catch (error: any) {
     return c.json({ error: error.message }, 400);
@@ -125,6 +142,10 @@ export const assignTechnician = async (c: Context) => {
       return c.json({ error: 'Missing technicianId or technicianName' }, 400);
     }
 
+    const previous = await WarrantyReport.findById(id);
+    if (!previous) return c.json({ error: 'Report not found' }, 404);
+    const statusChanged = previous.status !== 'review';
+
     const report = await WarrantyReport.findByIdAndUpdate(
       id,
       {
@@ -137,6 +158,14 @@ export const assignTechnician = async (c: Context) => {
     );
 
     if (!report) return c.json({ error: 'Report not found' }, 404);
+
+    if (statusChanged) {
+      const owner = await User.findOne({ clerk_id: report.userId });
+      if (owner?.email) {
+        await sendWarrantyStatusChangedEmail(owner.email, report);
+      }
+    }
+
     return c.json(report);
   } catch (error: any) {
     return c.json({ error: error.message }, 400);
@@ -172,9 +201,11 @@ export const technicianUpdateWarranty = async (c: Context) => {
       return c.json({ error: 'Invalid status' }, 400);
     }
 
+    let statusChanged = false;
     if (body.status) {
       const previousStatus = report.status;
       report.status = body.status;
+      statusChanged = previousStatus !== body.status;
       if (body.status === 'resolved' && (previousStatus !== 'resolved' || !report.resolvedAt)) {
         report.resolvedAt = new Date();
       } else if (body.status !== 'resolved') {
@@ -183,6 +214,14 @@ export const technicianUpdateWarranty = async (c: Context) => {
     }
     if (body.repairNotes !== undefined) report.repairNotes = body.repairNotes;
     await report.save();
+
+    if (statusChanged) {
+      const owner = await User.findOne({ clerk_id: report.userId });
+      if (owner?.email) {
+        await sendWarrantyStatusChangedEmail(owner.email, report);
+      }
+    }
+
     return c.json(report);
   } catch (error: any) {
     return c.json({ error: error.message }, 400);
