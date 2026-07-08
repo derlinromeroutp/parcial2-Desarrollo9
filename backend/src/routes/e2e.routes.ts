@@ -6,6 +6,7 @@ import { WarrantyReport } from '../models/WarrantyReport';
 import { Technician } from '../models/Technician';
 import { User } from '../models/User';
 import { Address } from '../models/Address';
+import { InventoryMovement } from '../models/InventoryMovement';
 import { isE2ETestMode } from '../lib/e2e';
 import { clearSentEmails, getSentEmails } from '../services/email.service';
 
@@ -30,6 +31,7 @@ e2eRoutes.post('/reset', async (c) => {
     Technician.deleteMany({}),
     User.deleteMany({}),
     Address.deleteMany({}),
+    InventoryMovement.deleteMany({}),
   ]);
 
   await User.insertMany([
