@@ -20,6 +20,10 @@ Copiar `.env.example` y definir:
 
 - `BACKEND_API_URL`
 - `CLERK_SECRET_KEY`
+- `MCP_PUBLIC_BASE_URL`
+- `OAUTH_ISSUER_URL`
+- `OAUTH_SCOPES`
+- `OAUTH_RESOURCE_DOCUMENTATION_URL` opcional
 - `MCP_STDIO_USER_ID` opcional para modo local
 - `MCP_STDIO_ROLE` opcional para modo local (`user` o `admin`)
 
@@ -49,6 +53,16 @@ args = ["run", "start:stdio", "--prefix", "/ruta/absoluta/a/mcp-server"]
 ```
 
 En modo `stdio`, el servidor usa una identidad local definida por `MCP_STDIO_USER_ID` y `MCP_STDIO_ROLE`. Esto sirve para pruebas locales y no reemplaza la autenticacion Clerk del transporte HTTP remoto.
+
+## Autenticacion remota
+
+El servidor HTTP remoto mantiene compatibilidad con `Authorization: Bearer <token>` para pruebas manuales y, ademas, publica metadata OAuth del recurso protegido en:
+
+```text
+/.well-known/oauth-protected-resource
+```
+
+Ese endpoint permite que clientes MCP remotos descubran el issuer OAuth/OIDC configurado. En este proyecto, el issuer esperado es Clerk mediante `OAUTH_ISSUER_URL`.
 
 ## Despliegue
 

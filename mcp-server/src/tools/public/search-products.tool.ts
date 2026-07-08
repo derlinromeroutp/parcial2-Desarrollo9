@@ -6,6 +6,7 @@ import type { AppEnv } from '../../config/env.js';
 import type { ProductSummary } from '../../types.js';
 import type { Logger } from '../../utils/logger.js';
 import type { McpServer } from '@modelcontextprotocol/server';
+import { buildToolMeta } from '../access-control.js';
 
 const searchProductsInputSchema = z
   .object({
@@ -60,8 +61,10 @@ export function registerSearchProductsTool(
         openWorldHint: false,
       },
       _meta: {
-        issue: '#188',
-        source: `${env.BACKEND_API_URL}/products`,
+        ...buildToolMeta('user', {
+          issue: '#188',
+          source: `${env.BACKEND_API_URL}/products`,
+        }),
       },
     },
     async (input, ctx) => {
