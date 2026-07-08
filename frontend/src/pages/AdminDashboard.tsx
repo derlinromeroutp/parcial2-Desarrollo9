@@ -10,6 +10,7 @@ import type { Technician } from '../types/technician';
 import { useState } from 'react';
 import AdminSidebar from '../components/AdminSidebar';
 import StatsCards from '../components/StatsCards';
+import LowStockAlerts from '../components/LowStockAlerts';
 import ProductTable from '../components/ProductTable';
 import { Badge } from '../components/ui/Badge';
 import { SkeletonTableRow } from '../components/ui/Skeleton';
@@ -364,6 +365,7 @@ export default function AdminDashboard() {
                   Resumen general
                 </h1>
               </div>
+              <LowStockAlerts />
               <StatsCards orders={orders} warranties={warranties} />
             </div>
           )}

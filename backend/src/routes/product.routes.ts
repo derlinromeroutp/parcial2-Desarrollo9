@@ -3,12 +3,14 @@ import { zValidator } from '@hono/zod-validator';
 import {
   createProduct,
   deleteProduct,
+  getLowStockProducts,
   getProductById,
   getProducts,
   updateProduct,
 } from '../controllers/product.controller';
 import {
   createProductSchema,
+  lowStockQuerySchema,
   productFilterSchema,
   updateProductSchema,
 } from '../validators/product.validator';
@@ -26,6 +28,19 @@ productRoutes.get(
     }
   }),
   getProducts
+);
+
+// Productos con stock igual o por debajo de un umbral (alerta de stock bajo, solo admin)
+// Registrada antes de '/:id' para que "low-stock" no se interprete como un id.
+productRoutes.get(
+  '/low-stock',
+  adminAuthMiddleware,
+  zValidator('query', lowStockQuerySchema, (result, c) => {
+    if (!result.success) {
+      return c.json({ success: false, errors: result.error.errors }, 400);
+    }
+  }),
+  getLowStockProducts
 );
 
 // Obtener un producto por ID

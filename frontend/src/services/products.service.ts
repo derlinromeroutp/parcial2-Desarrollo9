@@ -92,6 +92,19 @@ export const productsService = {
     };
   },
 
+  async getLowStock(token: string, threshold?: number): Promise<{ threshold: number; data: Product[] }> {
+    const qs = threshold !== undefined ? `?threshold=${threshold}` : '';
+    const response = await fetch(`${API_URL}/products/low-stock${qs}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) {
+      const result = await response.json().catch(() => ({}));
+      throw new Error(result?.message || result?.errors?.[0]?.message || 'Failed to fetch low-stock products');
+    }
+    const result = await response.json();
+    return { threshold: result.threshold, data: result.data || [] };
+  },
+
   async getById(id: string, token?: string): Promise<Product> {
     const response = await fetch(`${API_URL}/products/${id}`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
