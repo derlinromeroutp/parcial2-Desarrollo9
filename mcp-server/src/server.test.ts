@@ -13,6 +13,8 @@ const env = {
   MCP_SERVER_VERSION: '0.1.0-test',
   BACKEND_API_URL: 'http://backend.test/api',
   CLERK_SECRET_KEY: 'test',
+  MCP_STDIO_USER_ID: 'local_stdio_user',
+  MCP_STDIO_ROLE: 'admin' as const,
 };
 
 class FakeAuthenticator implements Authenticator {

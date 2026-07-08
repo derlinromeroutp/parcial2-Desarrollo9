@@ -1,12 +1,12 @@
 import { Hono } from 'hono';
-import { createMcpHandler, McpServer } from '@modelcontextprotocol/server';
+import { createMcpHandler } from '@modelcontextprotocol/server';
 import type { AuthInfo } from '@modelcontextprotocol/server';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
 import { logAuditEvent } from './services/audit-log.js';
 import type { BackendApiClient } from './services/backend-api.js';
 import type { Authenticator, AuthContext } from './types.js';
 import type { AppEnv } from './config/env.js';
-import { registerSearchProductsTool } from './tools/public/search-products.tool.js';
+import { buildServer } from './bootstrap.js';
 import type { Logger } from './utils/logger.js';
 import { getRequestId } from './utils/request-context.js';
 import { AuthError } from './auth/clerk-authenticator.js';
@@ -93,23 +93,6 @@ export function createApp({ env, logger, authenticator, backendApi }: AppDepende
   return { app, handler };
 }
 
-function buildServer({
-  env,
-  logger,
-  backendApi,
-  authInfo,
-}: Pick<AppDependencies, 'env' | 'logger' | 'backendApi'> & { authInfo?: AuthInfo }) {
-  const server = new McpServer({
-    name: env.MCP_SERVER_NAME,
-    version: env.MCP_SERVER_VERSION,
-    description: buildInstructions(authInfo),
-  });
-
-  registerSearchProductsTool(server, { env, logger, backendApi });
-
-  return server;
-}
-
 function toAuthInfo(auth: AuthContext): AuthInfo {
   return {
     token: auth.token,
@@ -117,12 +100,6 @@ function toAuthInfo(auth: AuthContext): AuthInfo {
     scopes: ['mcp', `role:${auth.role}`],
     expiresAt: auth.expiresAt,
   };
-}
-
-function buildInstructions(authInfo?: AuthInfo) {
-  const role = authInfo?.scopes?.find((scope) => scope.startsWith('role:'))?.replace('role:', '') ?? 'unknown';
-
-  return `SafeTech MCP base server. Authenticated role: ${role}. This infrastructure issue does not expose business tools.`;
 }
 
 function normalizeAuthError(error: unknown): AuthError {
