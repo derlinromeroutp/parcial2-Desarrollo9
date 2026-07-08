@@ -253,3 +253,30 @@ export const confirmOrderPayment = async (c: Context) => {
     return c.json({ error: 'Failed to confirm payment' }, 500);
   }
 };
+
+export const updateShippingInfo = async (c: Context) => {
+  try {
+    const id = c.req.param('id');
+    const data = c.req.valid('json' as any) as {
+      status?: 'processing' | 'shipped' | 'delivered';
+      carrier?: string;
+      trackingNumber?: string;
+    };
+
+    const order = await Order.findById(id);
+    if (!order) {
+      return c.json({ error: 'Order not found' }, 404);
+    }
+
+    if (data.status !== undefined) order.status = data.status;
+    if (data.carrier !== undefined) order.carrier = data.carrier;
+    if (data.trackingNumber !== undefined) order.trackingNumber = data.trackingNumber;
+
+    await order.save();
+
+    return c.json(order);
+  } catch (error) {
+    console.error('Error updating shipping info:', error);
+    return c.json({ error: 'Failed to update shipping info' }, 500);
+  }
+};

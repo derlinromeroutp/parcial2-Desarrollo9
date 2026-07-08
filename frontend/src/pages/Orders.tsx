@@ -33,10 +33,13 @@ const pad = (n: number) => String(n).padStart(3, '0');
 
 // ── Status map ─────────────────────────────────────────────────────────────
 const ST = {
-  paid:      { label: 'Pagado',    glyph: '●', ink: '#065f46', bg: 'rgba(16,185,129,0.12)', rim: 'rgba(16,185,129,0.35)', bar: '#10b981' },
-  pending:   { label: 'Pendiente', glyph: '◐', ink: '#92400e', bg: 'rgba(245,158,11,0.12)', rim: 'rgba(245,158,11,0.35)', bar: '#f59e0b' },
-  failed:    { label: 'Fallido',   glyph: '✕', ink: '#991b1b', bg: 'rgba(239,68,68,0.12)',  rim: 'rgba(239,68,68,0.35)',  bar: '#ef4444' },
-  cancelled: { label: 'Cancelado', glyph: '○', ink: '#4b5563', bg: 'rgba(107,114,128,0.1)', rim: 'rgba(107,114,128,0.3)', bar: '#9ca3af' },
+  paid:       { label: 'Pagado',       glyph: '●', ink: '#065f46', bg: 'rgba(16,185,129,0.12)', rim: 'rgba(16,185,129,0.35)', bar: '#10b981' },
+  pending:    { label: 'Pendiente',    glyph: '◐', ink: '#92400e', bg: 'rgba(245,158,11,0.12)', rim: 'rgba(245,158,11,0.35)', bar: '#f59e0b' },
+  processing: { label: 'En preparación', glyph: '◐', ink: '#1e40af', bg: 'rgba(59,130,246,0.12)', rim: 'rgba(59,130,246,0.35)', bar: '#3b82f6' },
+  shipped:    { label: 'Enviado',      glyph: '➤', ink: '#3730a3', bg: 'rgba(99,102,241,0.12)', rim: 'rgba(99,102,241,0.35)', bar: '#6366f1' },
+  delivered:  { label: 'Entregado',    glyph: '✓', ink: '#065f46', bg: 'rgba(16,185,129,0.12)', rim: 'rgba(16,185,129,0.35)', bar: '#10b981' },
+  failed:     { label: 'Fallido',      glyph: '✕', ink: '#991b1b', bg: 'rgba(239,68,68,0.12)',  rim: 'rgba(239,68,68,0.35)',  bar: '#ef4444' },
+  cancelled:  { label: 'Cancelado',    glyph: '○', ink: '#4b5563', bg: 'rgba(107,114,128,0.1)', rim: 'rgba(107,114,128,0.3)', bar: '#9ca3af' },
 } as const;
 type StatusKey = keyof typeof ST;
 const getST = (s: string) => ST[(s as StatusKey)] ?? ST.cancelled;
@@ -80,7 +83,17 @@ function ArcProgress({ pct, color, size = 52 }: { pct: number; color: string; si
 
 // ── OrderType ──────────────────────────────────────────────────────────────
 type Item = { quantity: number; price: number; product?: { name?: string; image_urls?: string[] } };
-type OrderT = { _id: string; createdAt?: string; status: string; total_amount?: number; items: Item[] };
+type ShippingAddressT = { recipientName: string; street: string; city: string; state: string; zipCode: string; country: string };
+type OrderT = {
+  _id: string;
+  createdAt?: string;
+  status: string;
+  total_amount?: number;
+  items: Item[];
+  shippingAddress?: ShippingAddressT;
+  carrier?: string;
+  trackingNumber?: string;
+};
 
 // ── Order Card ─────────────────────────────────────────────────────────────
 const OrderCard: React.FC<{ order: OrderT; idx: number }> = ({ order, idx }) => {
@@ -235,6 +248,23 @@ const OrderCard: React.FC<{ order: OrderT; idx: number }> = ({ order, idx }) => 
               </div>
             ))}
           </div>
+
+          {(order.shippingAddress || order.carrier || order.trackingNumber) && (
+            <div className="oc-shipping">
+              {order.shippingAddress && (
+                <p className="oc-shipping-line">
+                  {order.shippingAddress.recipientName} — {order.shippingAddress.street}, {order.shippingAddress.city}, {order.shippingAddress.state}, {order.shippingAddress.zipCode}, {order.shippingAddress.country}
+                </p>
+              )}
+              {(order.carrier || order.trackingNumber) && (
+                <p className="oc-shipping-line">
+                  {order.carrier ? `Transportista: ${order.carrier}` : ''}
+                  {order.carrier && order.trackingNumber ? ' · ' : ''}
+                  {order.trackingNumber ? `Seguimiento: ${order.trackingNumber}` : ''}
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="oc-drawer-foot">
             <span className="oc-foot-label">Total del pedido</span>
@@ -885,6 +915,20 @@ const Orders: React.FC = () => {
           font-weight: 400;
           color: rgba(244,244,242,.85);
           flex-shrink: 0;
+        }
+
+        .oc-shipping {
+          padding: 1rem 2rem;
+          border-top: 1px solid rgba(244,244,242,.08);
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        .oc-shipping-line {
+          font-family: var(--st-font-sans);
+          font-size: .8rem;
+          color: rgba(244,244,242,.65);
+          margin: 0;
         }
 
         .oc-drawer-foot {
