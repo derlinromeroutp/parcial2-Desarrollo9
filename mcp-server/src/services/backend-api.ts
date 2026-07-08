@@ -1,4 +1,4 @@
-import type { BackendHealth } from '../types.js';
+import type { BackendHealth, ProductListResponse, ProductSummary } from '../types.js';
 
 export class BackendApiError extends Error {
   constructor(
@@ -20,6 +20,42 @@ export class BackendApiClient {
         'x-request-id': requestId,
       },
     });
+  }
+
+  async getProducts(
+    filters: { name?: string; limit?: number },
+    requestId: string,
+  ): Promise<{ data: ProductSummary[] }> {
+    const search = new URLSearchParams();
+
+    if (filters.name) {
+      search.set('name', filters.name);
+    }
+
+    if (filters.limit !== undefined) {
+      search.set('limit', String(filters.limit));
+    }
+
+    const path = search.size > 0 ? `/products?${search.toString()}` : '/products';
+    const response = await this.request<ProductListResponse>(path, {
+      method: 'GET',
+      headers: {
+        'x-request-id': requestId,
+      },
+    });
+
+    return {
+      data: response.data.map((product) => ({
+        id: product._id,
+        name: product.name,
+        description: product.description,
+        price: product.price,
+        stock: product.stock,
+        condition: product.condition,
+        category: product.category,
+        primaryImageUrl: product.image_urls?.[0],
+      })),
+    };
   }
 
   private async request<T>(path: string, init: RequestInit): Promise<T> {

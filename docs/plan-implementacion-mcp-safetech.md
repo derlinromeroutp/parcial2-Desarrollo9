@@ -156,15 +156,15 @@ Usar autenticacion de usuario final al conectar el MCP y, opcionalmente, credenc
 
 ### Reglas por categoria de tools
 
-#### Publicas
+#### De lectura autenticada
 
-No requieren sesion:
+Requieren sesion MCP valida, pero no rol especial. Pueden reutilizar endpoints backend publicos o de bajo riesgo:
 
 - `search_products`
 - `get_product`
 - `search_products_advanced`
 
-Nota: aunque puedan ser publicas, conviene mantener rate limit y sanitizacion de output.
+Nota: aunque el endpoint backend de alguna de estas tools pueda ser publico, en la infraestructura MCP actual el acceso al servidor requiere autenticacion. Si en el futuro se quieren tools MCP anonimas, eso debe resolverse como trabajo de infraestructura base.
 
 #### Privadas de usuario autenticado
 
@@ -551,7 +551,7 @@ Notas importantes:
 
 ## Definicion concreta de tools a exponer en la primera entrega
 
-### Publicos
+### De lectura autenticada
 
 #### `search_products`
 
@@ -559,18 +559,21 @@ Notas importantes:
 - Input minimo: `query?`
 - Input opcional: `name`, `limit`
 - Riesgo: bajo
+- Requiere autenticacion MCP, aunque el endpoint backend sea publico
 
 #### `get_product`
 
 - Fuente backend: `GET /api/products/:id`
 - Input: `productId`
 - Riesgo: bajo
+- Requiere autenticacion MCP, aunque el endpoint backend sea publico
 
 #### `search_products_advanced`
 
 - Fuente backend: `GET /api/products`
 - Input: `name?`, `category?`, `condition?`, `minPrice?`, `maxPrice?`, `available?`, `limit?`
 - Riesgo: bajo
+- Requiere autenticacion MCP, aunque el endpoint backend sea publico
 
 ### Privados de usuario
 
