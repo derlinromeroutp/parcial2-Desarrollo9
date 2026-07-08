@@ -23,7 +23,6 @@ services:
       - ./backend/.env:/app/.env
     environment:
       - PORT=3000
-      - MONGODB_URI=mongodb://mongodb:27017/safetech
       - NODE_ENV=development
     depends_on:
       mongodb:

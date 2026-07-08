@@ -1,4 +1,10 @@
-import type { BackendHealth, ProductListResponse, ProductSummary } from '../types.js';
+import type {
+  BackendHealth,
+  ProductDetail,
+  ProductDetailResponse,
+  ProductListResponse,
+  ProductSummary,
+} from '../types.js';
 
 export class BackendApiError extends Error {
   constructor(
@@ -55,6 +61,29 @@ export class BackendApiClient {
         category: product.category,
         primaryImageUrl: product.image_urls?.[0],
       })),
+    };
+  }
+
+  async getProduct(productId: string, requestId: string): Promise<{ data: ProductDetail }> {
+    const response = await this.request<ProductDetailResponse>(`/products/${productId}`, {
+      method: 'GET',
+      headers: {
+        'x-request-id': requestId,
+      },
+    });
+
+    return {
+      data: {
+        id: response.data._id,
+        name: response.data.name,
+        description: response.data.description,
+        price: response.data.price,
+        stock: response.data.stock,
+        condition: response.data.condition,
+        category: response.data.category,
+        primaryImageUrl: response.data.image_urls?.[0],
+        imageUrls: response.data.image_urls ?? [],
+      },
     };
   }
 

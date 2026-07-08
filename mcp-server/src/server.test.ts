@@ -35,6 +35,9 @@ class FakeAuthenticator implements Authenticator {
 
 class FakeBackendApi extends BackendApiClient {
   shouldFailProducts = false;
+  shouldFailGetProduct = false;
+  shouldNotFindProduct = false;
+  shouldRejectProductId = false;
 
   constructor() {
     super('http://backend.test/api');
@@ -80,6 +83,43 @@ class FakeBackendApi extends BackendApiClient {
 
     return {
       data: filters.name ? data.filter((product) => product.name.includes(filters.name!)) : data,
+    };
+  }
+
+  override async getProduct(productId: string) {
+    if (this.shouldRejectProductId) {
+      throw new BackendApiError('Invalid product id', 400, {
+        success: false,
+        message: 'ID de producto invalido',
+      });
+    }
+
+    if (this.shouldNotFindProduct) {
+      throw new BackendApiError('Product not found', 404, {
+        success: false,
+        message: 'Producto no encontrado',
+      });
+    }
+
+    if (this.shouldFailGetProduct) {
+      throw new BackendApiError('Unexpected backend error', 500, {
+        success: false,
+        message: 'Unexpected error',
+      });
+    }
+
+    return {
+      data: {
+        id: productId,
+        name: 'iPhone 13 Reacondicionado',
+        description: '128GB',
+        price: 699,
+        stock: 4,
+        condition: 'A' as const,
+        category: 'celular' as const,
+        primaryImageUrl: 'https://cdn.test/iphone.jpg',
+        imageUrls: ['https://cdn.test/iphone.jpg', 'https://cdn.test/iphone-back.jpg'],
+      },
     };
   }
 }
@@ -179,8 +219,11 @@ test('mcp handshake works and exposes search_products tool', async () => {
   assert.equal(serverVersion?.name, 'SafeTech MCP Server');
 
   const tools = await client.listTools();
-  assert.equal(tools.tools.length, 1);
-  assert.equal(tools.tools[0]?.name, 'search_products');
+  assert.equal(tools.tools.length, 2);
+  assert.deepEqual(
+    tools.tools.map((tool) => tool.name).sort(),
+    ['get_product', 'search_products'],
+  );
 
   const result = await client.callTool({
     name: 'search_products',
@@ -209,6 +252,179 @@ test('mcp handshake works and exposes search_products tool', async () => {
       name: 'iPhone',
       limit: 5,
     },
+  });
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('get_product returns normalized product detail', async () => {
+  const backendApi = new FakeBackendApi();
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator(),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'get_product',
+    arguments: {
+      id: '507f1f77bcf86cd799439011',
+    },
+  });
+
+  assert.equal(result.isError, undefined);
+  assert.deepEqual(result.structuredContent, {
+    id: '507f1f77bcf86cd799439011',
+    name: 'iPhone 13 Reacondicionado',
+    description: '128GB',
+    price: 699,
+    stock: 4,
+    condition: 'A',
+    category: 'celular',
+    primaryImageUrl: 'https://cdn.test/iphone.jpg',
+    imageUrls: ['https://cdn.test/iphone.jpg', 'https://cdn.test/iphone-back.jpg'],
+  });
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('get_product normalizes not found errors', async () => {
+  const backendApi = new FakeBackendApi();
+  backendApi.shouldNotFindProduct = true;
+
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator(),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'get_product',
+    arguments: {
+      id: '507f1f77bcf86cd799439099',
+    },
+  });
+
+  assert.equal(result.isError, true);
+  assert.deepEqual(result.structuredContent, {
+    code: 'PRODUCT_NOT_FOUND',
+    message: 'No se encontro un producto con el identificador indicado.',
+  });
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('get_product normalizes invalid id errors', async () => {
+  const backendApi = new FakeBackendApi();
+  backendApi.shouldRejectProductId = true;
+
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator(),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'get_product',
+    arguments: {
+      id: 'bad-id',
+    },
+  });
+
+  assert.equal(result.isError, true);
+  assert.deepEqual(result.structuredContent, {
+    code: 'INVALID_PRODUCT_ID',
+    message: 'El identificador del producto no es valido.',
+  });
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('get_product normalizes backend failures', async () => {
+  const backendApi = new FakeBackendApi();
+  backendApi.shouldFailGetProduct = true;
+
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator(),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'get_product',
+    arguments: {
+      id: '507f1f77bcf86cd799439011',
+    },
+  });
+
+  assert.equal(result.isError, true);
+  assert.deepEqual(result.structuredContent, {
+    code: 'BACKEND_500',
+    message: 'No fue posible obtener el detalle del producto en este momento.',
   });
 
   await transport.terminateSession();
