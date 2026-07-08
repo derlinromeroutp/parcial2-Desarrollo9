@@ -3,7 +3,7 @@ import test from 'node:test';
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import { createApp } from './server.js';
 import type { Authenticator, AuthContext } from './types.js';
-import { BackendApiClient } from './services/backend-api.js';
+import { BackendApiClient, BackendApiError } from './services/backend-api.js';
 import { createLogger } from './utils/logger.js';
 
 const env = {
@@ -27,6 +27,8 @@ class FakeAuthenticator implements Authenticator {
 }
 
 class FakeBackendApi extends BackendApiClient {
+  shouldFailProducts = false;
+
   constructor() {
     super('http://backend.test/api');
   }
@@ -36,6 +38,41 @@ class FakeBackendApi extends BackendApiClient {
       status: 'ok',
       timestamp: Date.now(),
       dbConnected: true,
+    };
+  }
+
+  override async getProducts(filters: { name?: string; limit?: number }) {
+    if (this.shouldFailProducts) {
+      throw new BackendApiError('Bad request', 400, {
+        success: false,
+        errors: [{ message: 'Invalid filters' }],
+      });
+    }
+
+    const data = [
+      {
+        id: 'prod_1',
+        name: 'iPhone 13 Reacondicionado',
+        description: '128GB',
+        price: 699,
+        stock: 4,
+        condition: 'A' as const,
+        category: 'celular' as const,
+        primaryImageUrl: 'https://cdn.test/iphone.jpg',
+      },
+      {
+        id: 'prod_2',
+        name: 'Laptop ThinkPad X1',
+        price: 899,
+        stock: 0,
+        condition: 'B' as const,
+        category: 'laptop' as const,
+        primaryImageUrl: 'https://cdn.test/thinkpad.jpg',
+      },
+    ];
+
+    return {
+      data: filters.name ? data.filter((product) => product.name.includes(filters.name!)) : data,
     };
   }
 }
@@ -56,12 +93,13 @@ test('health endpoint reports backend connectivity', async () => {
   assert.equal(body.backend.status, 'ok');
 });
 
-test('mcp handshake works and exposes no tools', async () => {
+test('mcp handshake works and exposes search_products tool', async () => {
+  const backendApi = new FakeBackendApi();
   const { app } = createApp({
     env,
     logger: createLogger(),
     authenticator: new FakeAuthenticator(),
-    backendApi: new FakeBackendApi(),
+    backendApi,
   });
 
   const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
@@ -82,7 +120,80 @@ test('mcp handshake works and exposes no tools', async () => {
   assert.equal(serverVersion?.name, 'SafeTech MCP Server');
 
   const tools = await client.listTools();
-  assert.deepEqual(tools.tools, []);
+  assert.equal(tools.tools.length, 1);
+  assert.equal(tools.tools[0]?.name, 'search_products');
+
+  const result = await client.callTool({
+    name: 'search_products',
+    arguments: {
+      query: 'iPhone',
+      limit: 5,
+    },
+  });
+
+  assert.equal(result.isError, undefined);
+  assert.deepEqual(result.structuredContent, {
+    products: [
+      {
+        id: 'prod_1',
+        name: 'iPhone 13 Reacondicionado',
+        description: '128GB',
+        price: 699,
+        stock: 4,
+        condition: 'A',
+        category: 'celular',
+        primaryImageUrl: 'https://cdn.test/iphone.jpg',
+      },
+    ],
+    count: 1,
+    appliedFilters: {
+      name: 'iPhone',
+      limit: 5,
+    },
+  });
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('search_products normalizes backend validation errors', async () => {
+  const backendApi = new FakeBackendApi();
+  backendApi.shouldFailProducts = true;
+
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator(),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'search_products',
+    arguments: {
+      name: 'bad-filter',
+      limit: 5,
+    },
+  });
+
+  assert.equal(result.isError, true);
+  assert.deepEqual(result.structuredContent, {
+    code: 'INVALID_BACKEND_REQUEST',
+    message: 'La busqueda no pudo ejecutarse por parametros invalidos.',
+  });
 
   await transport.terminateSession();
   await client.close();

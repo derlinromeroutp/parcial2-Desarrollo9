@@ -16,3 +16,31 @@ export interface BackendHealth {
   timestamp: number;
   dbConnected: boolean;
 }
+
+export interface ProductSummary {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  stock: number;
+  condition: 'A' | 'B' | 'C';
+  category: 'celular' | 'laptop' | 'pc' | 'auriculares' | 'tablet';
+  primaryImageUrl?: string;
+}
+
+export interface ProductListResponse {
+  success: boolean;
+  data: Array<{
+    _id: string;
+    name: string;
+    description?: string;
+    price: number;
+    stock: number;
+    condition: 'A' | 'B' | 'C';
+    category: 'celular' | 'laptop' | 'pc' | 'auriculares' | 'tablet';
+    image_urls?: string[];
+    createdAt?: string;
+    updatedAt?: string;
+    __v?: number;
+  }>;
+}
