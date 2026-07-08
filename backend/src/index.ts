@@ -11,6 +11,7 @@ import webhookRoutes from './routes/webhook.routes';
 import orderRoutes from './routes/order.routes';
 import authRoutes from './routes/auth.routes';
 import technicianRoutes from './routes/technician.routes';
+import addressRoutes from './routes/address.routes';
 import e2eRoutes from './routes/e2e.routes';
 import { isE2ETestMode } from './lib/e2e';
 
@@ -34,6 +35,7 @@ app.route('/api/webhooks', webhookRoutes);
 app.route('/api/orders', orderRoutes);
 app.route('/api/auth', authRoutes);
 app.route('/api/technicians', technicianRoutes);
+app.route('/api/addresses', addressRoutes);
 if (isE2ETestMode) {
   app.route('/api/e2e', e2eRoutes);
 }

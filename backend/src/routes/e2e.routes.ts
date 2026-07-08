@@ -5,6 +5,7 @@ import { OrderItem } from '../models/OrderItem';
 import { WarrantyReport } from '../models/WarrantyReport';
 import { Technician } from '../models/Technician';
 import { User } from '../models/User';
+import { Address } from '../models/Address';
 import { isE2ETestMode } from '../lib/e2e';
 
 const e2eRoutes = new Hono();
@@ -25,6 +26,7 @@ e2eRoutes.post('/reset', async (c) => {
     Product.deleteMany({}),
     Technician.deleteMany({}),
     User.deleteMany({}),
+    Address.deleteMany({}),
   ]);
 
   await User.insertMany([
