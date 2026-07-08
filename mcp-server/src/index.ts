@@ -23,6 +23,7 @@ serve(
       host: info.address,
       port: info.port,
       backendApiUrl: env.BACKEND_API_URL,
+      transport: 'http',
     });
   },
 );
