@@ -57,6 +57,7 @@ export default function ProductModal({ isOpen, onClose, onSubmit, product, isLoa
   const [condition,   setCondition]   = useState<'A' | 'B' | 'C'>('A');
   const [category,    setCategory]    = useState<'celular' | 'laptop' | 'pc' | 'auriculares' | 'tablet'>('celular');
   const [imageUrls,   setImageUrls]   = useState('');
+  const [stockReason, setStockReason] = useState('');
   const [error,       setError]       = useState('');
 
   useEffect(() => {
@@ -72,6 +73,7 @@ export default function ProductModal({ isOpen, onClose, onSubmit, product, isLoa
       setName(''); setDescription(''); setPrice('');
       setStock(''); setCondition('A'); setCategory('celular'); setImageUrls('');
     }
+    setStockReason('');
     setError('');
   }, [product, isOpen]);
 
@@ -95,9 +97,19 @@ export default function ProductModal({ isOpen, onClose, onSubmit, product, isLoa
     if (isNaN(stockNum) || stockNum < 0)    { setError('El stock debe ser 0 o mayor'); return; }
 
     const image_urls = imageUrls.split(',').map(u => u.trim()).filter(Boolean);
+    const stockChanged = Boolean(product) && stockNum !== product?.stock;
 
     try {
-      await onSubmit({ name: name.trim(), description: description.trim() || undefined, price: priceNum, stock: stockNum, condition, category, image_urls });
+      await onSubmit({
+        name: name.trim(),
+        description: description.trim() || undefined,
+        price: priceNum,
+        stock: stockNum,
+        condition,
+        category,
+        image_urls,
+        ...(stockChanged ? { reason: stockReason.trim() || undefined } : {}),
+      });
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al guardar producto');
@@ -268,6 +280,22 @@ export default function ProductModal({ isOpen, onClose, onSubmit, product, isLoa
               />
             </div>
           </div>
+
+          {/* Motivo del cambio de stock */}
+          {product && stock !== '' && parseInt(stock) !== product.stock && !isNaN(parseInt(stock)) && (
+            <div>
+              <label style={labelStyle}>Motivo del ajuste de stock</label>
+              <input
+                type="text"
+                value={stockReason}
+                onChange={e => setStockReason(e.target.value)}
+                placeholder="Ej: Reposición de proveedor, corrección de inventario…"
+                style={inputStyle}
+                onFocus={e => { e.target.style.borderColor = 'var(--accent)'; e.target.style.boxShadow = '0 0 0 3px var(--accent-light)'; }}
+                onBlur={e  => { e.target.style.borderColor = 'var(--line)'; e.target.style.boxShadow = 'none'; }}
+              />
+            </div>
+          )}
 
           {/* Condición */}
           <div>

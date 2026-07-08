@@ -5,6 +5,7 @@ import type { Product } from '../types/product';
 import type { UpdateProductDTO } from '../services/products.service';
 import { productsService } from '../services/products.service';
 import ProductModal from './ProductModal';
+import InventoryHistoryModal from './InventoryHistoryModal';
 import type { CreateProductDTO } from '../services/products.service';
 
 const ProductStats: React.FC<{ products: Product[] | undefined }> = ({ products }) => {
@@ -161,6 +162,7 @@ export default function ProductTable() {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [historyProduct, setHistoryProduct] = useState<Product | null>(null);
 
   const { data: products, isLoading } = useQuery<Product[]>({
     queryKey: ['admin-products'],
@@ -299,6 +301,21 @@ export default function ProductTable() {
                 <td className="actions">
                   <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                     <button
+                      onClick={() => setHistoryProduct(product)}
+                      title="Historial de inventario"
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: 'var(--ink2)',
+                        padding: '4px',
+                      }}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: 18, height: 18 }}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </button>
+                    <button
                       onClick={() => handleOpenEdit(product)}
                       title="Editar"
                       style={{
@@ -349,6 +366,12 @@ export default function ProductTable() {
         onSubmit={handleSubmit}
         product={selectedProduct}
         isLoading={createMutation.isPending || updateMutation.isPending}
+      />
+
+      <InventoryHistoryModal
+        productId={historyProduct?._id ?? null}
+        productName={historyProduct?.name}
+        onClose={() => setHistoryProduct(null)}
       />
     </>
   );
