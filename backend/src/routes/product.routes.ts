@@ -5,6 +5,7 @@ import {
   deleteProduct,
   getLowStockProducts,
   getProductById,
+  getProductInventoryMovements,
   getProducts,
   updateProduct,
 } from '../controllers/product.controller';
@@ -45,6 +46,9 @@ productRoutes.get(
 
 // Obtener un producto por ID
 productRoutes.get('/:id', getProductById);
+
+// Historial de movimientos de inventario de un producto (solo admin)
+productRoutes.get('/:id/inventory-movements', adminAuthMiddleware, getProductInventoryMovements);
 
 // Crear un producto con validación de Zod (solo admin)
 productRoutes.post(

@@ -20,6 +20,20 @@ export interface UpdateProductDTO {
   condition?: 'A' | 'B' | 'C';
   category?: 'celular' | 'laptop' | 'pc' | 'auriculares' | 'tablet';
   image_urls?: string[];
+  // Motivo del ajuste de stock (HU-36), para el historial de movimientos de inventario.
+  reason?: string;
+}
+
+export interface InventoryMovement {
+  _id: string;
+  productId: string;
+  type: 'restock' | 'manual_adjustment' | 'sale';
+  quantityChange: number;
+  previousStock: number;
+  newStock: number;
+  reason: string;
+  performedBy: string;
+  createdAt: string;
 }
 
 export interface ProductFilters {
@@ -103,6 +117,18 @@ export const productsService = {
     }
     const result = await response.json();
     return { threshold: result.threshold, data: result.data || [] };
+  },
+
+  async getInventoryMovements(id: string, token: string): Promise<InventoryMovement[]> {
+    const response = await fetch(`${API_URL}/products/${id}/inventory-movements`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) {
+      const result = await response.json().catch(() => ({}));
+      throw new Error(result?.message || result?.errors?.[0]?.message || 'Failed to fetch inventory movements');
+    }
+    const result = await response.json();
+    return result.data || [];
   },
 
   async getById(id: string, token?: string): Promise<Product> {

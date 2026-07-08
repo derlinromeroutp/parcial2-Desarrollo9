@@ -1,5 +1,7 @@
 import { Context } from 'hono';
 import { Product } from '../models/Product';
+import { InventoryMovement } from '../models/InventoryMovement';
+import { recordInventoryMovement } from '../services/inventory.service';
 
 export const getProducts = async (c: Context) => {
   try {
@@ -74,8 +76,21 @@ export const createProduct = async (c: Context) => {
   try {
     // Validated by zod-validator middleware
     const data = c.req.valid('json' as any);
-    
-    const newProduct = await Product.create(data);
+    const userId = c.get('userId');
+
+    const newProduct = (await Product.create(data)) as unknown as { _id: unknown; stock: number };
+
+    if (newProduct.stock > 0) {
+      await recordInventoryMovement({
+        productId: newProduct._id as any,
+        type: 'restock',
+        previousStock: 0,
+        newStock: newProduct.stock,
+        reason: 'Alta de producto',
+        performedBy: userId ?? 'system',
+      });
+    }
+
     return c.json({ success: true, data: newProduct }, 201);
   } catch (error: any) {
     return c.json({ success: false, message: error.message }, 500);
@@ -86,18 +101,54 @@ export const updateProduct = async (c: Context) => {
   try {
     const id = c.req.param('id');
     // Validated by zod-validator middleware
-    const data = c.req.valid('json' as any);
-    
-    const updatedProduct = await Product.findByIdAndUpdate(id, data, {
+    const data = c.req.valid('json' as any) as { stock?: number; reason?: string; [key: string]: unknown };
+    const userId = c.get('userId');
+
+    const previousProduct = await Product.findById(id);
+    if (!previousProduct) {
+      return c.json({ success: false, message: 'Producto no encontrado' }, 404);
+    }
+
+    const { reason, ...updateData } = data;
+
+    const updatedProduct = await Product.findByIdAndUpdate(id, updateData, {
       new: true,
       runValidators: true,
     });
-    
+
     if (!updatedProduct) {
       return c.json({ success: false, message: 'Producto no encontrado' }, 404);
     }
-    
+
+    if (data.stock !== undefined && data.stock !== previousProduct.stock) {
+      await recordInventoryMovement({
+        productId: updatedProduct._id,
+        type: 'manual_adjustment',
+        previousStock: previousProduct.stock,
+        newStock: updatedProduct.stock,
+        reason: reason?.trim() || 'Ajuste manual de stock',
+        performedBy: userId ?? 'system',
+      });
+    }
+
     return c.json({ success: true, data: updatedProduct });
+  } catch (error: any) {
+    return c.json({ success: false, message: error.message }, 500);
+  }
+};
+
+export const getProductInventoryMovements = async (c: Context) => {
+  try {
+    const id = c.req.param('id');
+
+    const product = await Product.findById(id);
+    if (!product) {
+      return c.json({ success: false, message: 'Producto no encontrado' }, 404);
+    }
+
+    const movements = await InventoryMovement.find({ productId: id }).sort({ createdAt: -1 });
+
+    return c.json({ success: true, data: movements });
   } catch (error: any) {
     return c.json({ success: false, message: error.message }, 500);
   }

@@ -22,7 +22,11 @@ export const createProductSchema = z.object({
 // Se construye desde `productFields` (sin el `.default(0)` de stock) en vez de
 // `createProductSchema.partial()`: partial() no elimina los default() internos,
 // asi que un update parcial sin `stock` terminaria reseteandolo a 0.
-export const updateProductSchema = z.object(productFields).partial();
+// `reason` (HU-36) es el motivo del ajuste de stock, para el historial de
+// movimientos de inventario; no es un campo del producto en si.
+export const updateProductSchema = z.object(productFields).partial().extend({
+  reason: z.string().min(1).optional(),
+});
 
 export const productFilterSchema = z
   .object({
