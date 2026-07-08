@@ -9,7 +9,11 @@ import { createLogger } from './utils/logger.js';
 const env = loadEnv();
 const logger = createLogger();
 const backendApi = new BackendApiClient(env.BACKEND_API_URL);
-const authenticator = new ClerkAuthenticator(env.CLERK_SECRET_KEY, logger);
+const authenticator = new ClerkAuthenticator(
+  env.CLERK_SECRET_KEY,
+  env.CLERK_PUBLISHABLE_KEY,
+  logger,
+);
 const { app } = createApp({ env, logger, authenticator, backendApi });
 
 serve(

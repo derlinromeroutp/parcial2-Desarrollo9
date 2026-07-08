@@ -20,6 +20,7 @@ Copiar `.env.example` y definir:
 
 - `BACKEND_API_URL`
 - `CLERK_SECRET_KEY`
+- `CLERK_PUBLISHABLE_KEY`
 - `MCP_PUBLIC_BASE_URL`
 - `OAUTH_ISSUER_URL`
 - `OAUTH_SCOPES`

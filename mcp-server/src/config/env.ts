@@ -8,6 +8,7 @@ const envSchema = z.object({
   MCP_PUBLIC_BASE_URL: z.string().url().default('http://localhost:3100'),
   BACKEND_API_URL: z.string().url(),
   CLERK_SECRET_KEY: z.string().min(1),
+  CLERK_PUBLISHABLE_KEY: z.string().min(1),
   OAUTH_ISSUER_URL: z.string().url().default('https://clever-gator-13.clerk.accounts.dev'),
   OAUTH_SCOPES: z.string().default('openid profile email offline_access'),
   OAUTH_RESOURCE_DOCUMENTATION_URL: z.string().url().optional(),

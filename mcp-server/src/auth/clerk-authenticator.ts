@@ -17,9 +17,13 @@ export class ClerkAuthenticator implements Authenticator {
 
   constructor(
     private readonly clerkSecretKey: string,
+    clerkPublishableKey: string,
     private readonly logger: Logger,
   ) {
-    this.clerk = createClerkClient({ secretKey: this.clerkSecretKey });
+    this.clerk = createClerkClient({
+      secretKey: this.clerkSecretKey,
+      publishableKey: clerkPublishableKey,
+    });
   }
 
   async authenticate(request: Request, requestId: string): Promise<AuthContext> {

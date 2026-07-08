@@ -14,6 +14,7 @@ const env = {
   MCP_PUBLIC_BASE_URL: 'https://mcp.test',
   BACKEND_API_URL: 'http://backend.test/api',
   CLERK_SECRET_KEY: 'test',
+  CLERK_PUBLISHABLE_KEY: 'pk_test_test-publishable-key',
   OAUTH_ISSUER_URL: 'https://clever-gator-13.clerk.accounts.dev',
   OAUTH_SCOPES: 'openid profile email offline_access',
   OAUTH_RESOURCE_DOCUMENTATION_URL: 'https://docs.test/mcp',
