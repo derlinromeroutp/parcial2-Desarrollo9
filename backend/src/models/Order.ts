@@ -8,6 +8,18 @@ const orderSchema = new Schema({
   stripe_session_id: { type: String, index: true },
   // New field — used by embedded Payment Element flow.
   payment_intent_id: { type: String, index: true },
+  // Snapshot de la direccion de entrega seleccionada al momento del checkout
+  // (no una referencia viva a Address, para que la orden no cambie si el
+  // usuario despues edita o borra esa direccion guardada).
+  shippingAddress: {
+    recipientName: { type: String },
+    phone: { type: String },
+    street: { type: String },
+    city: { type: String },
+    state: { type: String },
+    zipCode: { type: String },
+    country: { type: String },
+  },
   items: [{
     product: { type: Schema.Types.ObjectId, ref: 'Product' },
     quantity: { type: Number, required: true },

@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { Product } from '../models/Product';
 import { Order } from '../models/Order';
 import { OrderItem } from '../models/OrderItem';
+import { Address } from '../models/Address';
 import { Types } from 'mongoose';
 import { isE2ETestMode } from '../lib/e2e';
 
@@ -53,6 +54,33 @@ export const createPaymentIntentController = async (c: Context) => {
     const invalidId = cartItems.find((item) => !Types.ObjectId.isValid(item.productId));
     if (invalidId) {
       return c.json({ error: `Invalid productId format: ${invalidId.productId}` }, 400);
+    }
+
+    // Direccion de entrega guardada (HU-32): opcional; si se envia, debe
+    // pertenecer al usuario autenticado. Se guarda como snapshot en la
+    // orden, no como referencia viva a la Address.
+    const addressId = body.addressId as string | undefined;
+    let shippingAddress: Record<string, string> | undefined;
+
+    if (addressId !== undefined) {
+      if (typeof addressId !== 'string' || !Types.ObjectId.isValid(addressId)) {
+        return c.json({ error: 'Invalid addressId format' }, 400);
+      }
+
+      const address = await Address.findOne({ _id: addressId, userId });
+      if (!address) {
+        return c.json({ error: 'Direccion de entrega no encontrada' }, 400);
+      }
+
+      shippingAddress = {
+        recipientName: address.recipientName,
+        phone: address.phone,
+        street: address.street,
+        city: address.city,
+        state: address.state,
+        zipCode: address.zipCode,
+        country: address.country,
+      };
     }
 
     const productIds = cartItems.map((item) => new Types.ObjectId(item.productId));
@@ -142,6 +170,7 @@ export const createPaymentIntentController = async (c: Context) => {
           total_amount: totalAmount,
           status: 'pending',
           payment_intent_id: e2ePaymentIntentId,
+          shippingAddress,
           items: validItems.map((item) => ({
             product: item.product._id,
             quantity: item.quantity,
@@ -160,6 +189,7 @@ export const createPaymentIntentController = async (c: Context) => {
       } else {
         order.total_amount = totalAmount;
         order.payment_intent_id = e2ePaymentIntentId;
+        if (shippingAddress) order.shippingAddress = shippingAddress;
         await order.save();
       }
 
@@ -224,6 +254,7 @@ export const createPaymentIntentController = async (c: Context) => {
         total_amount: totalAmount,
         status: 'pending',
         payment_intent_id: paymentIntent.id,
+        shippingAddress,
         items: validItems.map((item) => ({
           product: item.product._id,
           quantity: item.quantity,
@@ -243,6 +274,7 @@ export const createPaymentIntentController = async (c: Context) => {
       // Reusing an existing pending order — keep amount + PI in sync.
       order.total_amount = totalAmount;
       order.payment_intent_id = paymentIntent.id;
+      if (shippingAddress) order.shippingAddress = shippingAddress;
       await order.save();
     }
 
