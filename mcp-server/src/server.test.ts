@@ -5,7 +5,7 @@ import { createApp } from './server.js';
 import type { Authenticator, AuthContext } from './types.js';
 import { BackendApiClient, BackendApiError } from './services/backend-api.js';
 import { createLogger } from './utils/logger.js';
-import type { OrderSummary } from './types.js';
+import type { OrderSummary, WarrantySummary } from './types.js';
 
 const env = {
   PORT: 3100,
@@ -40,7 +40,9 @@ class FakeBackendApi extends BackendApiClient {
   shouldNotFindProduct = false;
   shouldRejectProductId = false;
   shouldRejectOrdersAuth = false;
+  shouldRejectWarrantiesAuth = false;
   lastOrdersToken?: string;
+  lastWarrantiesToken?: string;
 
   constructor() {
     super('http://backend.test/api');
@@ -187,6 +189,41 @@ class FakeBackendApi extends BackendApiClient {
       ],
     };
   }
+
+  override async getMyWarranties(
+    token: string,
+    _requestId: string,
+  ): Promise<{ data: WarrantySummary[] }> {
+    this.lastWarrantiesToken = token;
+
+    if (this.shouldRejectWarrantiesAuth) {
+      throw new BackendApiError('Unauthorized', 401, {
+        error: 'Unauthorized: User ID not found',
+      });
+    }
+
+    return {
+      data: [
+        {
+          id: 'wr_1',
+          status: 'review',
+          description: '[battery] La bateria se descarga demasiado rapido',
+          evidenceUrls: ['https://cdn.test/warranty-1.jpg'],
+          createdAt: '2026-07-02T09:00:00.000Z',
+          updatedAt: '2026-07-03T12:00:00.000Z',
+          technicianId: 'tech_1',
+          technicianName: 'Maria Gomez',
+          order: {
+            id: 'ord_1',
+            totalAmount: 699,
+            status: 'paid',
+            createdAt: '2026-07-01T10:00:00.000Z',
+            updatedAt: '2026-07-01T10:05:00.000Z',
+          },
+        },
+      ],
+    };
+  }
 }
 
 test('health endpoint reports backend connectivity', async () => {
@@ -284,10 +321,10 @@ test('mcp handshake works and exposes search_products tool', async () => {
   assert.equal(serverVersion?.name, 'SafeTech MCP Server');
 
   const tools = await client.listTools();
-  assert.equal(tools.tools.length, 3);
+  assert.equal(tools.tools.length, 4);
   assert.deepEqual(
     tools.tools.map((tool) => tool.name).sort(),
-    ['get_product', 'list_my_orders', 'search_products'],
+    ['get_product', 'list_my_orders', 'list_my_warranties', 'search_products'],
   );
 
   const result = await client.callTool({
@@ -317,6 +354,103 @@ test('mcp handshake works and exposes search_products tool', async () => {
       name: 'iPhone',
       limit: 5,
     },
+  });
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('list_my_warranties returns normalized warranties for the authenticated user', async () => {
+  const backendApi = new FakeBackendApi();
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator(),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'list_my_warranties',
+    arguments: {},
+  });
+
+  assert.equal(result.isError, undefined);
+  assert.equal(backendApi.lastWarrantiesToken, 'test-token');
+  assert.deepEqual(result.structuredContent, {
+    warranties: [
+      {
+        id: 'wr_1',
+        status: 'review',
+        description: '[battery] La bateria se descarga demasiado rapido',
+        evidenceUrls: ['https://cdn.test/warranty-1.jpg'],
+        createdAt: '2026-07-02T09:00:00.000Z',
+        updatedAt: '2026-07-03T12:00:00.000Z',
+        technicianId: 'tech_1',
+        technicianName: 'Maria Gomez',
+        order: {
+          id: 'ord_1',
+          totalAmount: 699,
+          status: 'paid',
+          createdAt: '2026-07-01T10:00:00.000Z',
+          updatedAt: '2026-07-01T10:05:00.000Z',
+        },
+      },
+    ],
+    count: 1,
+  });
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('list_my_warranties rejects authenticated backend failures in a controlled way', async () => {
+  const backendApi = new FakeBackendApi();
+  backendApi.shouldRejectWarrantiesAuth = true;
+
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator(),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'list_my_warranties',
+    arguments: {},
+  });
+
+  assert.equal(result.isError, true);
+  assert.deepEqual(result.structuredContent, {
+    code: 'AUTH_REQUIRED',
+    message: 'La sesion no es valida para consultar garantias.',
   });
 
   await transport.terminateSession();

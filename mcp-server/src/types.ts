@@ -138,3 +138,45 @@ export interface BackendOrderResponse {
   shippingAddress?: ShippingAddressSummary;
   items?: BackendOrderItemResponse[];
 }
+
+export interface WarrantyOrderSummary {
+  id: string;
+  totalAmount?: number;
+  status?: 'pending' | 'paid' | 'processing' | 'shipped' | 'delivered' | 'failed';
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface WarrantySummary {
+  id: string;
+  status: 'pending' | 'review' | 'resolved' | 'rejected' | 'refunded';
+  description: string;
+  evidenceUrls: string[];
+  createdAt: string;
+  updatedAt?: string;
+  resolvedAt?: string;
+  technicianId?: string;
+  technicianName?: string;
+  order: WarrantyOrderSummary;
+}
+
+export interface BackendWarrantyResponse {
+  _id: string;
+  status: 'pending' | 'review' | 'resolved' | 'rejected' | 'refunded';
+  description: string;
+  evidenceUrls?: string[];
+  createdAt: string;
+  updatedAt?: string;
+  resolvedAt?: string;
+  technicianId?: string;
+  technicianName?: string;
+  orderId:
+    | string
+    | {
+        _id?: string;
+        total_amount?: number;
+        status?: 'pending' | 'paid' | 'processing' | 'shipped' | 'delivered' | 'failed';
+        createdAt?: string;
+        updatedAt?: string;
+      };
+}
