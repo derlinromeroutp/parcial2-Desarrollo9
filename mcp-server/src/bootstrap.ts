@@ -5,6 +5,7 @@ import type { BackendApiClient } from './services/backend-api.js';
 import { registerSearchProductsTool } from './tools/public/search-products.tool.js';
 import { registerGetProductTool } from './tools/public/get-product.tool.js';
 import { registerListMyOrdersTool } from './tools/user/list-my-orders.tool.js';
+import { registerListMyWarrantiesTool } from './tools/user/list-my-warranties.tool.js';
 import type { Logger } from './utils/logger.js';
 
 interface ServerDependencies {
@@ -24,6 +25,7 @@ export function buildServer({ env, logger, backendApi, authInfo }: ServerDepende
   registerSearchProductsTool(server, { env, logger, backendApi });
   registerGetProductTool(server, { env, logger, backendApi });
   registerListMyOrdersTool(server, { env, logger, backendApi });
+  registerListMyWarrantiesTool(server, { env, logger, backendApi });
 
   return server;
 }

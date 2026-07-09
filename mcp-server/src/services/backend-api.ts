@@ -1,11 +1,13 @@
 import type {
   BackendOrderResponse,
+  BackendWarrantyResponse,
   BackendHealth,
   OrderSummary,
   ProductDetail,
   ProductDetailResponse,
   ProductListResponse,
   ProductSummary,
+  WarrantySummary,
 } from '../types.js';
 
 export class BackendApiError extends Error {
@@ -135,6 +137,31 @@ export class BackendApiClient {
     };
   }
 
+  async getMyWarranties(token: string, requestId: string): Promise<{ data: WarrantySummary[] }> {
+    const response = await this.request<BackendWarrantyResponse[]>('/warranties/mine', {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'x-request-id': requestId,
+      },
+    });
+
+    return {
+      data: response.map((warranty) => ({
+        id: warranty._id,
+        status: warranty.status,
+        description: warranty.description,
+        evidenceUrls: warranty.evidenceUrls ?? [],
+        createdAt: warranty.createdAt,
+        ...(warranty.updatedAt ? { updatedAt: warranty.updatedAt } : {}),
+        ...(warranty.resolvedAt ? { resolvedAt: warranty.resolvedAt } : {}),
+        ...(warranty.technicianId ? { technicianId: warranty.technicianId } : {}),
+        ...(warranty.technicianName ? { technicianName: warranty.technicianName } : {}),
+        order: normalizeWarrantyOrder(warranty.orderId),
+      })),
+    };
+  }
+
   private async request<T>(path: string, init: RequestInit): Promise<T> {
     const response = await fetch(`${this.baseUrl}${path}`, init);
     const text = await response.text();
@@ -154,4 +181,20 @@ function safeJsonParse(value: string): unknown {
   } catch {
     return value;
   }
+}
+
+function normalizeWarrantyOrder(order: BackendWarrantyResponse['orderId']) {
+  if (typeof order === 'string') {
+    return {
+      id: order,
+    };
+  }
+
+  return {
+    id: order._id ?? '',
+    ...(order.total_amount !== undefined ? { totalAmount: order.total_amount } : {}),
+    ...(order.status ? { status: order.status } : {}),
+    ...(order.createdAt ? { createdAt: order.createdAt } : {}),
+    ...(order.updatedAt ? { updatedAt: order.updatedAt } : {}),
+  };
 }
