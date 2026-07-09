@@ -1,11 +1,20 @@
 import { useQuery } from '@tanstack/react-query';
 import { productsService } from '../services/products.service';
 import type { Product } from '../types/product';
+import type { PaginatedProducts, ProductFilters } from '../services/products.service';
 
-export const useProducts = () => {
+export const useProducts = (filters?: ProductFilters) => {
   return useQuery<Product[], Error>({
-    queryKey: ['products'],
-    queryFn: () => productsService.getAll(),
+    queryKey: ['products', filters],
+    queryFn: () => productsService.getAll(filters),
+  });
+};
+
+export const useProductsPaginated = (filters?: ProductFilters) => {
+  return useQuery<PaginatedProducts, Error>({
+    queryKey: ['products', 'paginated', filters],
+    queryFn: () => productsService.getAllPaginated(filters),
+    placeholderData: (previousData) => previousData,
   });
 };
 

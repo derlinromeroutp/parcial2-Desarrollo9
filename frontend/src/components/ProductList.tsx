@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { useProducts } from '../hooks/useProducts';
+import { useProductsPaginated } from '../hooks/useProducts';
 import { useCartStore } from '../store/cart.store';
 import { SkeletonCard } from './ui/Skeleton';
 import { EmptyState } from './ui/EmptyState';
@@ -16,6 +16,13 @@ const CATEGORIES = [
   { label: 'Tablets', value: 'tablet' },
 ];
 
+const CONDITIONS = [
+  { label: 'Todas', value: '' },
+  { label: 'Cond. A', value: 'A' },
+  { label: 'Cond. B', value: 'B' },
+  { label: 'Cond. C', value: 'C' },
+];
+
 const PRICE_RANGES = [
   { label: 'Cualquier precio', min: 0, max: Infinity },
   { label: 'Menos de $200', min: 0, max: 200 },
@@ -24,37 +31,44 @@ const PRICE_RANGES = [
   { label: 'Más de $1000', min: 1000, max: Infinity },
 ];
 
-export const ProductList: React.FC = () => {
-  const { data: products, isLoading, isError, error } = useProducts();
-  const addItem = useCartStore((s) => s.addItem);
-  const toggleDrawer = useCartStore((s) => s.toggleDrawer);
+function priceRangeToFilters(priceIdx: number): { minPrice?: number; maxPrice?: number } {
+  if (priceIdx === 0) return {};
+  const range = PRICE_RANGES[priceIdx];
+  return {
+    ...(range.min > 0 && { minPrice: range.min }),
+    ...(range.max !== Infinity && { maxPrice: range.max }),
+  };
+}
 
+export const ProductList: React.FC = () => {
   const [category, setCategory] = useState('');
+  const [condition, setCondition] = useState('');
   const [priceIdx, setPriceIdx] = useState(0);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
 
-  const filtered = useMemo(() => {
-    if (!products) return [];
-    const range = PRICE_RANGES[priceIdx];
-    const searchLower = search.toLowerCase().trim();
-    return products.filter((p) => {
-      const catOk = !category || p.category === category;
-      const priceOk = p.price >= range.min && p.price < range.max;
-      const searchOk = !searchLower ||
-        p.name.toLowerCase().includes(searchLower) ||
-        p.description?.toLowerCase().includes(searchLower);
-      return catOk && priceOk && searchOk;
-    });
-  }, [products, category, priceIdx, search]);
+  const filters = useMemo(
+    () => ({
+      name: search.trim() || undefined,
+      category: category || undefined,
+      condition: condition || undefined,
+      ...priceRangeToFilters(priceIdx),
+    }),
+    [search, category, condition, priceIdx]
+  );
 
-  useEffect(() => setPage(1), [category, priceIdx, search]);
+  const { data: result, isLoading, isError, error } = useProductsPaginated({
+    ...filters,
+    page,
+    limit: ITEMS_PER_PAGE,
+  });
+  const products = result?.data;
+  const totalPages = Math.max(1, Math.ceil((result?.pagination.total ?? 0) / ITEMS_PER_PAGE));
+  const paginatedProducts = products ?? [];
+  const addItem = useCartStore((s) => s.addItem);
+  const toggleDrawer = useCartStore((s) => s.toggleDrawer);
 
-  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
-  const paginatedProducts = useMemo(() => {
-    const start = (page - 1) * ITEMS_PER_PAGE;
-    return filtered.slice(start, start + ITEMS_PER_PAGE);
-  }, [filtered, page]);
+  useEffect(() => setPage(1), [filters]);
 
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
@@ -65,9 +79,9 @@ export const ProductList: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div>
-        <FilterBar category={category} setCategory={setCategory} priceIdx={priceIdx} setPriceIdx={setPriceIdx} search={search} setSearch={setSearch} disabled />
-        <div className="products-grid">
+        <div>
+          <FilterBar category={category} setCategory={setCategory} condition={condition} setCondition={setCondition} priceIdx={priceIdx} setPriceIdx={setPriceIdx} search={search} setSearch={setSearch} disabled />
+          <div className="products-grid">
           {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
         </div>
       </div>
@@ -86,29 +100,29 @@ export const ProductList: React.FC = () => {
 
   return (
     <div>
-      <FilterBar category={category} setCategory={setCategory} priceIdx={priceIdx} setPriceIdx={setPriceIdx} search={search} setSearch={setSearch} />
+      <FilterBar category={category} setCategory={setCategory} condition={condition} setCondition={setCondition} priceIdx={priceIdx} setPriceIdx={setPriceIdx} search={search} setSearch={setSearch} />
 
-      {/* Productos destacados (solo si no hay filtros activos) */}
-      {!search && !category && priceIdx === 0 && (
+      {/* Productos destacados (solo si no hay filtros activos, en la primera pagina) */}
+      {!search && !category && !condition && priceIdx === 0 && page === 1 && (
         <div style={{ marginBottom: '3rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
             <h2 style={{ fontSize: '1.25rem', fontWeight: 400, color: 'var(--ink)', fontFamily: 'var(--font-display)', letterSpacing: '-0.01em' }}>Productos destacados</h2>
             <div style={{ flex: 1, height: '1px', background: 'var(--line)' }} />
           </div>
           <div className="products-grid">
-            {filtered.filter(p => p.condition === 'A').slice(0, 4).map((product) => (
+            {products?.filter(p => p.condition === 'A').slice(0, 4).map((product) => (
               <ProductCard key={product._id} product={product} onAdd={() => { addItem(product); toggleDrawer(); }} featured />
             ))}
           </div>
         </div>
       )}
 
-      {filtered.length === 0 ? (
+      {products?.length === 0 ? (
         <EmptyState
           icon={<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 15.803 7.5 7.5 0 0016.803 15.803z" /></svg>}
           title="Sin resultados"
           description="Ningún producto coincide con los filtros seleccionados."
-          cta={<button className="btn-outline" onClick={() => { setCategory(''); setPriceIdx(0); setSearch(''); }}>Limpiar filtros</button>}
+          cta={<button className="btn-outline" onClick={() => { setCategory(''); setCondition(''); setPriceIdx(0); setSearch(''); }}>Limpiar filtros</button>}
         />
       ) : (
         <>
@@ -298,6 +312,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAdd, featured }) =
 interface FilterBarProps {
   category: string;
   setCategory: (v: string) => void;
+  condition: string;
+  setCondition: (v: string) => void;
   priceIdx: number;
   setPriceIdx: (v: number) => void;
   search: string;
@@ -305,14 +321,16 @@ interface FilterBarProps {
   disabled?: boolean;
 }
 
-const FilterBar: React.FC<FilterBarProps> = ({ category, setCategory, priceIdx, setPriceIdx, search, setSearch, disabled }) => {
+const FilterBar: React.FC<FilterBarProps> = ({ category, setCategory, condition, setCondition, priceIdx, setPriceIdx, search, setSearch, disabled }) => {
   const activeCount =
     (category ? 1 : 0) +
+    (condition ? 1 : 0) +
     (priceIdx !== 0 ? 1 : 0) +
     (search.trim() ? 1 : 0);
 
   const handleClearAll = () => {
     setCategory('');
+    setCondition('');
     setPriceIdx(0);
     setSearch('');
   };
@@ -392,6 +410,27 @@ const FilterBar: React.FC<FilterBarProps> = ({ category, setCategory, priceIdx, 
                   className={`filter-chip${active ? ' is-active' : ''}`}
                 >
                   {cat.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="filter-group">
+          <span className="filter-group__label">Condición</span>
+          <div className="filter-chips" role="group" aria-label="Filtrar por condición">
+            {CONDITIONS.map((cond) => {
+              const active = condition === cond.value;
+              return (
+                <button
+                  key={cond.value || 'all-cond'}
+                  type="button"
+                  onClick={() => setCondition(cond.value)}
+                  disabled={disabled}
+                  aria-pressed={active}
+                  className={`filter-chip${active ? ' is-active' : ''}`}
+                >
+                  {cond.label}
                 </button>
               );
             })}

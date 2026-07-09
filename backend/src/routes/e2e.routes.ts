@@ -5,7 +5,10 @@ import { OrderItem } from '../models/OrderItem';
 import { WarrantyReport } from '../models/WarrantyReport';
 import { Technician } from '../models/Technician';
 import { User } from '../models/User';
+import { Address } from '../models/Address';
+import { InventoryMovement } from '../models/InventoryMovement';
 import { isE2ETestMode } from '../lib/e2e';
+import { clearSentEmails, getSentEmails } from '../services/email.service';
 
 const e2eRoutes = new Hono();
 
@@ -18,6 +21,8 @@ e2eRoutes.use('*', async (c, next) => {
 });
 
 e2eRoutes.post('/reset', async (c) => {
+  clearSentEmails();
+
   await Promise.all([
     WarrantyReport.deleteMany({}),
     OrderItem.deleteMany({}),
@@ -25,6 +30,8 @@ e2eRoutes.post('/reset', async (c) => {
     Product.deleteMany({}),
     Technician.deleteMany({}),
     User.deleteMany({}),
+    Address.deleteMany({}),
+    InventoryMovement.deleteMany({}),
   ]);
 
   await User.insertMany([
@@ -93,6 +100,12 @@ e2eRoutes.post('/reset', async (c) => {
       laptop: laptop._id,
     },
   });
+});
+
+// Inspeccion de correos "enviados" durante E2E_TEST_MODE (HU-34), para poder
+// verificar desde los tests que se dispararon sin depender de un proveedor real.
+e2eRoutes.get('/emails', (c) => {
+  return c.json({ emails: getSentEmails() });
 });
 
 export default e2eRoutes;

@@ -2,10 +2,14 @@ import mongoose from 'mongoose';
 import { Order } from '../models/Order';
 import { OrderItem } from '../models/OrderItem';
 import { Product } from '../models/Product';
+import { User } from '../models/User';
+import { sendPurchaseConfirmationEmail } from './email.service';
+import { recordInventoryMovement } from './inventory.service';
 
 export interface FinalizeResult {
   lockedOrder: any;
   stockWarnings: Array<{ productId: string; reason: string }>;
+  wasAlreadyPaid: boolean;
 }
 
 export const finalizePaidOrder = async (
@@ -32,7 +36,7 @@ export const finalizePaidOrder = async (
       if (session) {
         await session.commitTransaction();
       }
-      return { lockedOrder, stockWarnings: [] };
+      return { lockedOrder, stockWarnings: [], wasAlreadyPaid: true };
     }
 
     const orderItemsQuery = OrderItem.find({ order_id: lockedOrder._id });
@@ -40,18 +44,30 @@ export const finalizePaidOrder = async (
     const stockWarnings: Array<{ productId: string; reason: string }> = [];
 
     for (const item of orderItems) {
-      const updateQuery = Product.updateOne(
+      const updateQuery = Product.findOneAndUpdate(
         { _id: item.product_id, stock: { $gte: item.quantity } },
         { $inc: { stock: -item.quantity } },
+        { new: true },
       );
-      const result = session ? await updateQuery.session(session) : await updateQuery;
+      const updatedProduct = session ? await updateQuery.session(session) : await updateQuery;
 
-      if (result.modifiedCount === 0) {
+      if (!updatedProduct) {
         stockWarnings.push({
           productId: String(item.product_id),
           reason: 'insufficient_stock_or_missing_product',
         });
+        continue;
       }
+
+      await recordInventoryMovement({
+        productId: item.product_id,
+        type: 'sale',
+        previousStock: updatedProduct.stock + item.quantity,
+        newStock: updatedProduct.stock,
+        reason: `Venta confirmada (orden #${String(lockedOrder._id).slice(-6)})`,
+        performedBy: userId,
+        session: session ?? undefined,
+      });
     }
 
     lockedOrder.status = 'paid';
@@ -63,7 +79,7 @@ export const finalizePaidOrder = async (
       await lockedOrder.save();
     }
 
-    return { lockedOrder, stockWarnings };
+    return { lockedOrder, stockWarnings, wasAlreadyPaid: false };
   } catch (error) {
     if (session) {
       try {
@@ -77,5 +93,19 @@ export const finalizePaidOrder = async (
     if (session) {
       session.endSession();
     }
+  }
+};
+
+export const notifyPurchaseConfirmed = async (userId: string, order: { _id: unknown; total_amount: number }) => {
+  // Se llama despues de que la transaccion de pago ya se confirmo (fuera del
+  // try/catch de finalizePaidOrder): un fallo aca no debe revertir un pago
+  // ya procesado ni devolver 500 sobre una orden que en realidad quedo paga.
+  try {
+    const user = await User.findOne({ clerk_id: userId });
+    if (user?.email) {
+      await sendPurchaseConfirmationEmail(user.email, order);
+    }
+  } catch (error) {
+    console.error('[Order] Error al enviar el correo de confirmacion de compra:', error);
   }
 };

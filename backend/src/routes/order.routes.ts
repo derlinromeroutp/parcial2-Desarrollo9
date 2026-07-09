@@ -1,6 +1,8 @@
 import { Hono } from 'hono';
-import { getMyOrders, getOrderBySession, getAllOrders, confirmOrderPayment } from '../controllers/order.controller';
+import { zValidator } from '@hono/zod-validator';
+import { getMyOrders, getOrderBySession, getAllOrders, confirmOrderPayment, updateShippingInfo } from '../controllers/order.controller';
 import { clerkAuthMiddleware, adminAuthMiddleware } from '../middlewares/auth.middleware';
+import { updateShippingSchema } from '../validators/order.validator';
 
 const orderRouter = new Hono();
 
@@ -8,5 +10,17 @@ orderRouter.get('/mine', clerkAuthMiddleware, getMyOrders);
 orderRouter.get('/by-session/:sessionId', clerkAuthMiddleware, getOrderBySession);
 orderRouter.post('/confirm-payment', clerkAuthMiddleware, confirmOrderPayment);
 orderRouter.get('/', adminAuthMiddleware, getAllOrders);
+
+// Actualizar info de envio y tracking de una orden (solo admin)
+orderRouter.put(
+  '/:id/shipping',
+  adminAuthMiddleware,
+  zValidator('json', updateShippingSchema, (result, c) => {
+    if (!result.success) {
+      return c.json({ success: false, errors: result.error.errors }, 400);
+    }
+  }),
+  updateShippingInfo
+);
 
 export default orderRouter;

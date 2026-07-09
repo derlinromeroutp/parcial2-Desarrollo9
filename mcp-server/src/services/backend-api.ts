@@ -1,0 +1,200 @@
+import type {
+  BackendOrderResponse,
+  BackendWarrantyResponse,
+  BackendHealth,
+  OrderSummary,
+  ProductDetail,
+  ProductDetailResponse,
+  ProductListResponse,
+  ProductSummary,
+  WarrantySummary,
+} from '../types.js';
+
+export class BackendApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+    public readonly body: unknown,
+  ) {
+    super(message);
+  }
+}
+
+export class BackendApiClient {
+  constructor(private readonly baseUrl: string) {}
+
+  async getHealth(requestId: string): Promise<BackendHealth> {
+    return this.request<BackendHealth>('/health', {
+      method: 'GET',
+      headers: {
+        'x-request-id': requestId,
+      },
+    });
+  }
+
+  async getProducts(
+    filters: { name?: string; limit?: number },
+    requestId: string,
+  ): Promise<{ data: ProductSummary[] }> {
+    const search = new URLSearchParams();
+
+    if (filters.name) {
+      search.set('name', filters.name);
+    }
+
+    if (filters.limit !== undefined) {
+      search.set('limit', String(filters.limit));
+    }
+
+    const path = search.size > 0 ? `/products?${search.toString()}` : '/products';
+    const response = await this.request<ProductListResponse>(path, {
+      method: 'GET',
+      headers: {
+        'x-request-id': requestId,
+      },
+    });
+
+    return {
+      data: response.data.map((product) => ({
+        id: product._id,
+        name: product.name,
+        description: product.description,
+        price: product.price,
+        stock: product.stock,
+        condition: product.condition,
+        category: product.category,
+        primaryImageUrl: product.image_urls?.[0],
+      })),
+    };
+  }
+
+  async getProduct(productId: string, requestId: string): Promise<{ data: ProductDetail }> {
+    const response = await this.request<ProductDetailResponse>(`/products/${productId}`, {
+      method: 'GET',
+      headers: {
+        'x-request-id': requestId,
+      },
+    });
+
+    return {
+      data: {
+        id: response.data._id,
+        name: response.data.name,
+        description: response.data.description,
+        price: response.data.price,
+        stock: response.data.stock,
+        condition: response.data.condition,
+        category: response.data.category,
+        primaryImageUrl: response.data.image_urls?.[0],
+        imageUrls: response.data.image_urls ?? [],
+      },
+    };
+  }
+
+  async getMyOrders(token: string, requestId: string): Promise<{ data: OrderSummary[] }> {
+    const response = await this.request<BackendOrderResponse[]>('/orders/mine', {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'x-request-id': requestId,
+      },
+    });
+
+    return {
+      data: response.map((order) => ({
+        id: order._id,
+        totalAmount: order.total_amount,
+        status: order.status,
+        createdAt: order.createdAt,
+        updatedAt: order.updatedAt,
+        ...(order.stripe_session_id ? { stripeSessionId: order.stripe_session_id } : {}),
+        ...(order.payment_intent_id ? { paymentIntentId: order.payment_intent_id } : {}),
+        ...(order.carrier ? { carrier: order.carrier } : {}),
+        ...(order.trackingNumber ? { trackingNumber: order.trackingNumber } : {}),
+        ...(order.shippingAddress ? { shippingAddress: order.shippingAddress } : {}),
+        items: (order.items ?? []).map((item) => ({
+          id: item._id,
+          quantity: item.quantity,
+          price: item.price,
+          ...(item.product?._id
+            ? {
+                product: {
+                  id: item.product._id,
+                  ...(item.product.name ? { name: item.product.name } : {}),
+                  ...(item.product.description ? { description: item.product.description } : {}),
+                  ...(item.product.price !== undefined ? { price: item.product.price } : {}),
+                  ...(item.product.stock !== undefined ? { stock: item.product.stock } : {}),
+                  ...(item.product.condition ? { condition: item.product.condition } : {}),
+                  ...(item.product.category ? { category: item.product.category } : {}),
+                  ...(item.product.image_urls?.[0]
+                    ? { primaryImageUrl: item.product.image_urls[0] }
+                    : {}),
+                },
+              }
+            : {}),
+        })),
+      })),
+    };
+  }
+
+  async getMyWarranties(token: string, requestId: string): Promise<{ data: WarrantySummary[] }> {
+    const response = await this.request<BackendWarrantyResponse[]>('/warranties/mine', {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'x-request-id': requestId,
+      },
+    });
+
+    return {
+      data: response.map((warranty) => ({
+        id: warranty._id,
+        status: warranty.status,
+        description: warranty.description,
+        evidenceUrls: warranty.evidenceUrls ?? [],
+        createdAt: warranty.createdAt,
+        ...(warranty.updatedAt ? { updatedAt: warranty.updatedAt } : {}),
+        ...(warranty.resolvedAt ? { resolvedAt: warranty.resolvedAt } : {}),
+        ...(warranty.technicianId ? { technicianId: warranty.technicianId } : {}),
+        ...(warranty.technicianName ? { technicianName: warranty.technicianName } : {}),
+        order: normalizeWarrantyOrder(warranty.orderId),
+      })),
+    };
+  }
+
+  private async request<T>(path: string, init: RequestInit): Promise<T> {
+    const response = await fetch(`${this.baseUrl}${path}`, init);
+    const text = await response.text();
+    const body = text ? safeJsonParse(text) : null;
+
+    if (!response.ok) {
+      throw new BackendApiError(`Backend request failed for ${path}`, response.status, body);
+    }
+
+    return body as T;
+  }
+}
+
+function safeJsonParse(value: string): unknown {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+}
+
+function normalizeWarrantyOrder(order: BackendWarrantyResponse['orderId']) {
+  if (typeof order === 'string') {
+    return {
+      id: order,
+    };
+  }
+
+  return {
+    id: order._id ?? '',
+    ...(order.total_amount !== undefined ? { totalAmount: order.total_amount } : {}),
+    ...(order.status ? { status: order.status } : {}),
+    ...(order.createdAt ? { createdAt: order.createdAt } : {}),
+    ...(order.updatedAt ? { updatedAt: order.updatedAt } : {}),
+  };
+}

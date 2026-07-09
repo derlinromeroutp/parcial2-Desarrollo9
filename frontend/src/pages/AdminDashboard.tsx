@@ -1,3 +1,4 @@
+import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../lib/auth';
 import { warrantyService } from '../services/warranty.service';
@@ -9,6 +10,7 @@ import type { Technician } from '../types/technician';
 import { useState } from 'react';
 import AdminSidebar from '../components/AdminSidebar';
 import StatsCards from '../components/StatsCards';
+import LowStockAlerts from '../components/LowStockAlerts';
 import ProductTable from '../components/ProductTable';
 import { Badge } from '../components/ui/Badge';
 import { SkeletonTableRow } from '../components/ui/Skeleton';
@@ -18,22 +20,26 @@ type SectionType = 'dashboard' | 'orders' | 'warranties' | 'products' | 'technic
 const PAGE_SIZE = 10;
 
 const statusVariant: Record<string, 'success' | 'warning' | 'error' | 'neutral'> = {
-  paid:      'success',
-  pending:   'warning',
-  review:    'neutral',
-  resolved:  'success',
-  rejected:  'error',
-  refunded:  'error',
-  shipped:   'neutral',
+  paid:       'success',
+  pending:    'warning',
+  review:     'neutral',
+  resolved:   'success',
+  rejected:   'error',
+  refunded:   'error',
+  processing: 'neutral',
+  shipped:    'neutral',
+  delivered:  'success',
 };
 const statusLabel: Record<string, string> = {
-  paid:      'Pagado',
-  pending:   'Pendiente',
-  review:    'En revisión',
-  resolved:  'Resuelto',
-  rejected:  'Rechazado',
-  refunded:  'Reembolsado',
-  shipped:   'Enviado',
+  paid:       'Pagado',
+  pending:    'Pendiente',
+  review:     'En revisión',
+  resolved:   'Resuelto',
+  rejected:   'Rechazado',
+  refunded:   'Reembolsado',
+  processing: 'En preparación',
+  shipped:    'Enviado',
+  delivered:  'Entregado',
 };
 
 const formatDate = (d: string | Date) =>
@@ -271,6 +277,27 @@ export default function AdminDashboard() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['technicians'] }),
   });
 
+  const deactivateTechnicianMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const token = await getToken();
+      if (!token) throw new Error('No token');
+      return technicianService.deleteTechnician(id, token);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['technicians'] }),
+  });
+
+  const updateShippingMutation = useMutation({
+    mutationFn: async ({ orderId, data }: { orderId: string; data: { status?: 'processing' | 'shipped' | 'delivered'; carrier?: string; trackingNumber?: string } }) => {
+      const token = await getToken();
+      if (!token) throw new Error('No token');
+      return ordersService.updateShipping(orderId, data, token);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-orders'] }),
+  });
+
+  const [managingOrderId, setManagingOrderId] = useState<string | null>(null);
+  const [shippingForm, setShippingForm] = useState<{ status: '' | 'processing' | 'shipped' | 'delivered'; carrier: string; trackingNumber: string }>({ status: '', carrier: '', trackingNumber: '' });
+
   const handleSectionChange = (section: string) => {
     setActiveSection(section as SectionType);
     setOrdersPage(1);
@@ -338,6 +365,7 @@ export default function AdminDashboard() {
                   Resumen general
                 </h1>
               </div>
+              <LowStockAlerts />
               <StatsCards orders={orders} warranties={warranties} />
             </div>
           )}
@@ -355,21 +383,23 @@ export default function AdminDashboard() {
                       <th>Total</th>
                       <th>Items</th>
                       <th>Estado</th>
+                      <th>Envío</th>
                     </tr>
                   </thead>
                   <tbody>
                     {ordersLoading
-                      ? Array.from({ length: 6 }).map((_, i) => <SkeletonTableRow key={i} cols={5} />)
+                      ? Array.from({ length: 6 }).map((_, i) => <SkeletonTableRow key={i} cols={6} />)
                       : pagedOrders.length === 0
                         ? (
                           <tr>
-                            <td colSpan={5} style={{ padding: '3rem', textAlign: 'center', color: 'var(--ink3)', fontSize: '0.9rem' }}>
+                            <td colSpan={6} style={{ padding: '3rem', textAlign: 'center', color: 'var(--ink3)', fontSize: '0.9rem' }}>
                               No hay órdenes registradas.
                             </td>
                           </tr>
                         )
                         : pagedOrders.map((order) => (
-                          <tr key={order._id}>
+                          <React.Fragment key={order._id}>
+                          <tr>
                             <td style={{ fontWeight: 500 }}>{formatDate(order.createdAt)}</td>
                             <td style={{ color: 'var(--ink2)', fontSize: '0.85rem' }}>
                               {(order as any).userDoc?.email || order.userId || '—'}
@@ -387,7 +417,76 @@ export default function AdminDashboard() {
                                 {statusLabel[order.status] ?? order.status}
                               </Badge>
                             </td>
+                            <td>
+                              <button
+                                type="button"
+                                className="btn-outline"
+                                style={{ padding: '4px 10px', fontSize: '0.75rem' }}
+                                onClick={() => {
+                                  if (managingOrderId === order._id) {
+                                    setManagingOrderId(null);
+                                    return;
+                                  }
+                                  setManagingOrderId(order._id);
+                                  setShippingForm({
+                                    status: (['processing', 'shipped', 'delivered'].includes(order.status) ? order.status : '') as '' | 'processing' | 'shipped' | 'delivered',
+                                    carrier: order.carrier ?? '',
+                                    trackingNumber: order.trackingNumber ?? '',
+                                  });
+                                }}
+                              >
+                                {order.carrier || order.trackingNumber ? 'Editar envío' : 'Gestionar envío'}
+                              </button>
+                            </td>
                           </tr>
+                          {managingOrderId === order._id && (
+                            <tr>
+                              <td colSpan={6} style={{ background: 'var(--gray-light)', padding: '1rem' }}>
+                                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                                  <select
+                                    className="input"
+                                    value={shippingForm.status}
+                                    onChange={(e) => setShippingForm((f) => ({ ...f, status: e.target.value as typeof f.status }))}
+                                  >
+                                    <option value="">Sin cambio de estado</option>
+                                    <option value="processing">En preparación</option>
+                                    <option value="shipped">Enviado</option>
+                                    <option value="delivered">Entregado</option>
+                                  </select>
+                                  <input
+                                    className="input"
+                                    placeholder="Transportista"
+                                    value={shippingForm.carrier}
+                                    onChange={(e) => setShippingForm((f) => ({ ...f, carrier: e.target.value }))}
+                                  />
+                                  <input
+                                    className="input"
+                                    placeholder="Numero de seguimiento"
+                                    value={shippingForm.trackingNumber}
+                                    onChange={(e) => setShippingForm((f) => ({ ...f, trackingNumber: e.target.value }))}
+                                  />
+                                  <button
+                                    type="button"
+                                    className="btn-primary"
+                                    disabled={updateShippingMutation.isPending}
+                                    onClick={() => {
+                                      const data: { status?: 'processing' | 'shipped' | 'delivered'; carrier?: string; trackingNumber?: string } = {};
+                                      if (shippingForm.status) data.status = shippingForm.status;
+                                      if (shippingForm.carrier.trim()) data.carrier = shippingForm.carrier.trim();
+                                      if (shippingForm.trackingNumber.trim()) data.trackingNumber = shippingForm.trackingNumber.trim();
+                                      updateShippingMutation.mutate(
+                                        { orderId: order._id, data },
+                                        { onSuccess: () => setManagingOrderId(null) },
+                                      );
+                                    }}
+                                  >
+                                    {updateShippingMutation.isPending ? 'Guardando...' : 'Guardar'}
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                          </React.Fragment>
                         ))
                     }
                   </tbody>
@@ -492,15 +591,16 @@ export default function AdminDashboard() {
                       <th>Email</th>
                       <th>Teléfono</th>
                       <th>Estado</th>
+                      <th>Acciones</th>
                     </tr>
                   </thead>
                   <tbody>
                     {techniciansLoading
-                      ? Array.from({ length: 4 }).map((_, i) => <SkeletonTableRow key={i} cols={4} />)
+                      ? Array.from({ length: 4 }).map((_, i) => <SkeletonTableRow key={i} cols={5} />)
                       : pagedTechnicians.length === 0
                         ? (
                           <tr>
-                            <td colSpan={4} style={{ padding: '3rem', textAlign: 'center', color: 'var(--ink3)', fontSize: '0.9rem' }}>
+                            <td colSpan={5} style={{ padding: '3rem', textAlign: 'center', color: 'var(--ink3)', fontSize: '0.9rem' }}>
                               No hay técnicos registrados.
                             </td>
                           </tr>
@@ -514,6 +614,32 @@ export default function AdminDashboard() {
                               <Badge variant={tech.active ? 'success' : 'neutral'}>
                                 {tech.active ? 'Activo' : 'Inactivo'}
                               </Badge>
+                            </td>
+                            <td className="actions">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const confirmed = window.confirm(`¿Desactivar a ${tech.name}?`);
+                                  if (!confirmed) return;
+                                  deactivateTechnicianMutation.mutate(tech._id);
+                                }}
+                                disabled={deactivateTechnicianMutation.isPending}
+                                style={{
+                                  padding: '7px 12px',
+                                  border: '1px solid var(--line)',
+                                  borderRadius: 'var(--radius-ui)',
+                                  background: 'var(--white)',
+                                  color: 'var(--ink)',
+                                  fontSize: '0.78rem',
+                                  fontWeight: 500,
+                                  fontFamily: 'var(--font-sans)',
+                                  cursor: deactivateTechnicianMutation.isPending ? 'not-allowed' : 'pointer',
+                                  opacity: deactivateTechnicianMutation.isPending ? 0.6 : 1,
+                                }}
+                                title={`Desactivar a ${tech.name}`}
+                              >
+                                {deactivateTechnicianMutation.isPending ? 'Desactivando…' : 'Desactivar'}
+                              </button>
                             </td>
                           </tr>
                         ))
