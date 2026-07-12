@@ -1,4 +1,6 @@
 import type {
+  CreateWarrantyClaimInput,
+  CreateWarrantyClaimResult,
   BackendOrderResponse,
   BackendWarrantyResponse,
   BackendHealth,
@@ -159,6 +161,29 @@ export class BackendApiClient {
         ...(warranty.technicianName ? { technicianName: warranty.technicianName } : {}),
         order: normalizeWarrantyOrder(warranty.orderId),
       })),
+    };
+  }
+
+  async createWarrantyClaim(
+    token: string,
+    input: CreateWarrantyClaimInput,
+    requestId: string,
+  ): Promise<{ data: CreateWarrantyClaimResult }> {
+    const response = await this.request<CreateWarrantyClaimResult>('/warranties', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        'x-request-id': requestId,
+      },
+      body: JSON.stringify(input),
+    });
+
+    return {
+      data: {
+        ticketId: response.ticketId,
+        status: response.status,
+      },
     };
   }
 

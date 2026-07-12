@@ -5,7 +5,12 @@ import { createApp } from './server.js';
 import type { Authenticator, AuthContext } from './types.js';
 import { BackendApiClient, BackendApiError } from './services/backend-api.js';
 import { createLogger } from './utils/logger.js';
-import type { OrderSummary, WarrantySummary } from './types.js';
+import type {
+  CreateWarrantyClaimInput,
+  CreateWarrantyClaimResult,
+  OrderSummary,
+  WarrantySummary,
+} from './types.js';
 
 const env = {
   PORT: 3100,
@@ -41,8 +46,15 @@ class FakeBackendApi extends BackendApiClient {
   shouldRejectProductId = false;
   shouldRejectOrdersAuth = false;
   shouldRejectWarrantiesAuth = false;
+  shouldRejectCreateWarrantyAuth = false;
+  shouldRejectCreateWarrantyForbidden = false;
+  shouldRejectCreateWarrantyNotFound = false;
+  shouldRejectCreateWarrantyConflict = false;
+  shouldRejectCreateWarrantyInvalid = false;
   lastOrdersToken?: string;
   lastWarrantiesToken?: string;
+  lastCreateWarrantyToken?: string;
+  lastCreateWarrantyInput?: CreateWarrantyClaimInput;
 
   constructor() {
     super('http://backend.test/api');
@@ -224,6 +236,52 @@ class FakeBackendApi extends BackendApiClient {
       ],
     };
   }
+
+  override async createWarrantyClaim(
+    token: string,
+    input: CreateWarrantyClaimInput,
+    _requestId: string,
+  ): Promise<{ data: CreateWarrantyClaimResult }> {
+    this.lastCreateWarrantyToken = token;
+    this.lastCreateWarrantyInput = input;
+
+    if (this.shouldRejectCreateWarrantyAuth) {
+      throw new BackendApiError('Unauthorized', 401, {
+        error: 'Unauthorized: User ID not found',
+      });
+    }
+
+    if (this.shouldRejectCreateWarrantyForbidden) {
+      throw new BackendApiError('Forbidden', 403, {
+        error: 'No autorizado: La orden no pertenece a este usuario',
+      });
+    }
+
+    if (this.shouldRejectCreateWarrantyNotFound) {
+      throw new BackendApiError('Not found', 404, {
+        error: 'Orden no encontrada',
+      });
+    }
+
+    if (this.shouldRejectCreateWarrantyConflict) {
+      throw new BackendApiError('Conflict', 409, {
+        error: 'Ya registraste una garantia para esta orden',
+      });
+    }
+
+    if (this.shouldRejectCreateWarrantyInvalid) {
+      throw new BackendApiError('Bad request', 400, {
+        error: 'Garantía Expirada. Plazo Legal agotado',
+      });
+    }
+
+    return {
+      data: {
+        ticketId: 'wr_new_1',
+        status: 'pending',
+      },
+    };
+  }
 }
 
 test('health endpoint reports backend connectivity', async () => {
@@ -321,10 +379,10 @@ test('mcp handshake works and exposes search_products tool', async () => {
   assert.equal(serverVersion?.name, 'SafeTech MCP Server');
 
   const tools = await client.listTools();
-  assert.equal(tools.tools.length, 4);
+  assert.equal(tools.tools.length, 5);
   assert.deepEqual(
     tools.tools.map((tool) => tool.name).sort(),
-    ['get_product', 'list_my_orders', 'list_my_warranties', 'search_products'],
+    ['create_warranty_claim', 'get_product', 'list_my_orders', 'list_my_warranties', 'search_products'],
   );
 
   const result = await client.callTool({
@@ -451,6 +509,146 @@ test('list_my_warranties rejects authenticated backend failures in a controlled 
   assert.deepEqual(result.structuredContent, {
     code: 'AUTH_REQUIRED',
     message: 'La sesion no es valida para consultar garantias.',
+  });
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('create_warranty_claim creates a warranty claim for the authenticated user', async () => {
+  const backendApi = new FakeBackendApi();
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator(),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'create_warranty_claim',
+    arguments: {
+      orderId: '507f191e810c19729de860ea',
+      reason: 'battery',
+      description: 'La bateria se descarga demasiado rapido.',
+      evidenceUrls: ['https://cdn.test/warranty-new-1.jpg'],
+    },
+  });
+
+  assert.equal(result.isError, undefined);
+  assert.equal(backendApi.lastCreateWarrantyToken, 'test-token');
+  assert.deepEqual(backendApi.lastCreateWarrantyInput, {
+    orderId: '507f191e810c19729de860ea',
+    reason: 'battery',
+    description: 'La bateria se descarga demasiado rapido.',
+    evidenceUrls: ['https://cdn.test/warranty-new-1.jpg'],
+  });
+  assert.deepEqual(result.structuredContent, {
+    ticketId: 'wr_new_1',
+    status: 'pending',
+  });
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('create_warranty_claim rejects warranty claims for third-party orders in a controlled way', async () => {
+  const backendApi = new FakeBackendApi();
+  backendApi.shouldRejectCreateWarrantyForbidden = true;
+
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator(),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'create_warranty_claim',
+    arguments: {
+      orderId: '507f191e810c19729de860ea',
+      reason: 'battery',
+      description: 'La bateria se descarga demasiado rapido.',
+      evidenceUrls: ['https://cdn.test/warranty-new-1.jpg'],
+    },
+  });
+
+  assert.equal(result.isError, true);
+  assert.deepEqual(result.structuredContent, {
+    code: 'FORBIDDEN',
+    message: 'No puedes crear un reclamo sobre una orden que no te pertenece.',
+  });
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('create_warranty_claim normalizes backend validation failures in a controlled way', async () => {
+  const backendApi = new FakeBackendApi();
+  backendApi.shouldRejectCreateWarrantyInvalid = true;
+
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator(),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'create_warranty_claim',
+    arguments: {
+      orderId: '507f191e810c19729de860ea',
+      reason: 'battery',
+      description: 'La bateria se descarga demasiado rapido.',
+      evidenceUrls: ['https://cdn.test/warranty-new-1.jpg'],
+    },
+  });
+
+  assert.equal(result.isError, true);
+  assert.deepEqual(result.structuredContent, {
+    code: 'INVALID_WARRANTY_CLAIM',
+    message: 'Garantía Expirada. Plazo Legal agotado',
   });
 
   await transport.terminateSession();

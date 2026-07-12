@@ -6,6 +6,7 @@ import { registerSearchProductsTool } from './tools/public/search-products.tool.
 import { registerGetProductTool } from './tools/public/get-product.tool.js';
 import { registerListMyOrdersTool } from './tools/user/list-my-orders.tool.js';
 import { registerListMyWarrantiesTool } from './tools/user/list-my-warranties.tool.js';
+import { registerCreateWarrantyClaimTool } from './tools/user/create-warranty-claim.tool.js';
 import type { Logger } from './utils/logger.js';
 
 interface ServerDependencies {
@@ -26,6 +27,7 @@ export function buildServer({ env, logger, backendApi, authInfo }: ServerDepende
   registerGetProductTool(server, { env, logger, backendApi });
   registerListMyOrdersTool(server, { env, logger, backendApi });
   registerListMyWarrantiesTool(server, { env, logger, backendApi });
+  registerCreateWarrantyClaimTool(server, { env, logger, backendApi });
 
   return server;
 }
