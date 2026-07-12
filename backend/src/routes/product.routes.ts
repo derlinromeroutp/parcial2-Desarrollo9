@@ -3,6 +3,7 @@ import { zValidator } from '@hono/zod-validator';
 import {
   createProduct,
   deleteProduct,
+  getBestSellingProducts,
   getLowStockProducts,
   getProductById,
   getProductInventoryMovements,
@@ -11,6 +12,7 @@ import {
 } from '../controllers/product.controller';
 import {
   createProductSchema,
+  bestSellersQuerySchema,
   lowStockQuerySchema,
   productFilterSchema,
   updateProductSchema,
@@ -42,6 +44,16 @@ productRoutes.get(
     }
   }),
   getLowStockProducts
+);
+
+productRoutes.get(
+  '/best-sellers',
+  zValidator('query', bestSellersQuerySchema, (result, c) => {
+    if (!result.success) {
+      return c.json({ success: false, errors: result.error.errors }, 400);
+    }
+  }),
+  getBestSellingProducts
 );
 
 // Obtener un producto por ID

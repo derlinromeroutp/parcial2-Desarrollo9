@@ -47,3 +47,7 @@ export const productFilterSchema = z
 export const lowStockQuerySchema = z.object({
   threshold: z.coerce.number().int().min(0, 'threshold debe ser 0 o un entero positivo').optional(),
 });
+
+export const bestSellersQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1, 'limit debe ser al menos 1').max(12, 'limit no puede superar 12').optional(),
+});

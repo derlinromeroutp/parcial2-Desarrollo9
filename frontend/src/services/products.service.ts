@@ -1,4 +1,4 @@
-import type { Product } from '../types/product';
+import type { BestSellerProduct, Product } from '../types/product';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -139,6 +139,16 @@ export const productsService = {
     const result = await response.json();
     // Backend returns { success, data: product }; older callers may have relied on raw shape.
     return (result?.data ?? result) as Product;
+  },
+
+  async getBestSellers(limit = 4): Promise<BestSellerProduct[]> {
+    const response = await fetch(`${API_URL}/products/best-sellers?limit=${limit}`);
+    if (!response.ok) {
+      const result = await response.json().catch(() => ({}));
+      throw new Error(result?.message || result?.errors?.[0]?.message || 'Failed to fetch best sellers');
+    }
+    const result = await response.json();
+    return result.data || [];
   },
 
   async create(data: CreateProductDTO, token: string): Promise<Product> {
