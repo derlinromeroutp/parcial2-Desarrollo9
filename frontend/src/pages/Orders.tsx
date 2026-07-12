@@ -3,6 +3,8 @@ import { useOrders } from '../hooks/useOrders';
 import { Link } from 'react-router-dom';
 import { Skeleton } from '../components/ui/Skeleton';
 import { SignInButton, useAuth } from '../lib/auth';
+import { useCartStore } from '../store/cart.store';
+import type { Product } from '../types/product';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 const isWithin90Days = (d?: string) =>
@@ -82,7 +84,7 @@ function ArcProgress({ pct, color, size = 52 }: { pct: number; color: string; si
 }
 
 // ── OrderType ──────────────────────────────────────────────────────────────
-type Item = { quantity: number; price: number; product?: { name?: string; image_urls?: string[] } };
+type Item = { quantity: number; price: number; product?: Product | null };
 type ShippingAddressT = { recipientName: string; street: string; city: string; state: string; zipCode: string; country: string };
 type OrderT = {
   _id: string;
@@ -101,6 +103,9 @@ const OrderCard: React.FC<{ order: OrderT; idx: number }> = ({ order, idx }) => 
   const [hover, setHover] = useState(false);
   const bodyRef           = useRef<HTMLDivElement>(null);
   const [h, setH]         = useState(0);
+  const addItem           = useCartStore(s => s.addItem);
+  const [reorderMsg, setReorderMsg] = useState<string | null>(null);
+  const [reorderKind, setReorderKind] = useState<'ok' | 'warn'>('ok');
 
   const st         = getST(order.status);
   const canWarr    = order.status === 'paid' && isWithin90Days(order.createdAt);
@@ -114,6 +119,31 @@ const OrderCard: React.FC<{ order: OrderT; idx: number }> = ({ order, idx }) => 
   useEffect(() => {
     if (bodyRef.current) setH(bodyRef.current.scrollHeight);
   }, [open]);
+
+  const handleReorder = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    let added = 0;
+    let skipped = 0;
+    order.items.forEach(item => {
+      if (!item.product || item.product.stock <= 0) {
+        skipped++;
+        return;
+      }
+      addItem(item.product as Product, item.quantity);
+      added++;
+    });
+    if (skipped === 0 && added > 0) {
+      setReorderKind('ok');
+      setReorderMsg(`${added} artículo${added !== 1 ? 's' : ''} agregado${added !== 1 ? 's' : ''} al carrito`);
+    } else if (added === 0) {
+      setReorderKind('warn');
+      setReorderMsg('Ningún artículo disponible para volver a comprar');
+    } else {
+      setReorderKind('warn');
+      setReorderMsg(`${added} agregado${added !== 1 ? 's' : ''}, ${skipped} no disponible${skipped !== 1 ? 's' : ''}`);
+    }
+    setTimeout(() => setReorderMsg(null), 3500);
+  };
 
   return (
     <article
@@ -222,14 +252,31 @@ const OrderCard: React.FC<{ order: OrderT; idx: number }> = ({ order, idx }) => 
         <div ref={bodyRef} className="oc-drawer-inner">
           <div className="oc-drawer-header">
             <span>Artículos del pedido</span>
-            {canWarr && (
-              <Link to={`/warranties/new?orderId=${order._id}`}
-                onClick={e => e.stopPropagation()}
-                className="oc-warranty-link">
-                Registrar garantía →
-              </Link>
-            )}
+            <div className="oc-drawer-actions">
+              {canWarr && (
+                <Link to={`/warranties/new?orderId=${order._id}`}
+                  onClick={e => e.stopPropagation()}
+                  className="oc-warranty-link">
+                  Registrar garantía →
+                </Link>
+              )}
+              <button
+                className="oc-reorder-btn"
+                onClick={handleReorder}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="1 4 1 10 7 10" /><path d="M3.51 15a9 9 0 102.13-9.36L1 10" />
+                </svg>
+                Volver a comprar
+              </button>
+            </div>
           </div>
+
+          {reorderMsg && (
+            <div className={`oc-reorder-toast ${reorderKind === 'ok' ? 'oc-reorder-toast--ok' : 'oc-reorder-toast--warn'}`}>
+              {reorderMsg}
+            </div>
+          )}
 
           <div className="oc-items">
             {order.items.map((item, i) => (
@@ -864,6 +911,54 @@ const Orders: React.FC = () => {
         .oc-warranty-link:hover {
           background: rgba(244,244,242,.08);
           color: var(--st-bone);
+        }
+
+        .oc-drawer-actions {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .oc-reorder-btn {
+          display: inline-flex; align-items: center; gap: 6px;
+          font-family: var(--st-font-sans);
+          font-size: .72rem;
+          font-weight: 500;
+          letter-spacing: .3px;
+          color: rgba(244,244,242,.7);
+          text-decoration: none;
+          padding: 5px 14px;
+          border: 1px solid rgba(244,244,242,.2);
+          border-radius: var(--st-radius-pill);
+          background: transparent;
+          cursor: pointer;
+          transition: all .2s;
+          text-transform: none;
+          white-space: nowrap;
+        }
+        .oc-reorder-btn:hover {
+          background: rgba(244,244,242,.08);
+          color: var(--st-bone);
+        }
+
+        .oc-reorder-toast {
+          margin: 0 2rem;
+          padding: 10px 16px;
+          border-radius: var(--st-radius-xs);
+          font-family: var(--st-font-sans);
+          font-size: .78rem;
+          font-weight: 500;
+          animation: slideUpFade .3s var(--st-ease) both;
+          margin-bottom: 8px;
+        }
+        .oc-reorder-toast--ok {
+          background: rgba(16,185,129,.15);
+          color: #6ee7b7;
+          border: 1px solid rgba(16,185,129,.3);
+        }
+        .oc-reorder-toast--warn {
+          background: rgba(245,158,11,.15);
+          color: #fcd34d;
+          border: 1px solid rgba(245,158,11,.3);
         }
 
         .oc-items {
