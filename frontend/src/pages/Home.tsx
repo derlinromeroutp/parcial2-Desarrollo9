@@ -1,4 +1,5 @@
 import { ProductList } from '../components/ProductList';
+import { BestSellersSection } from '../components/BestSellersSection';
 
 export default function Home() {
   return (
@@ -37,6 +38,8 @@ export default function Home() {
           </p>
         </div>
       </section>
+
+      <BestSellersSection />
 
       {/* Productos */}
       <section style={{ padding: '3rem 0 5rem', background: 'var(--white)' }}>

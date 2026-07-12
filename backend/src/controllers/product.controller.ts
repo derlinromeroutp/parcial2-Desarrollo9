@@ -1,6 +1,7 @@
 import { Context } from 'hono';
 import mongoose from 'mongoose';
 import { Product } from '../models/Product';
+import { Order } from '../models/Order';
 import { InventoryMovement } from '../models/InventoryMovement';
 import { recordInventoryMovement } from '../services/inventory.service';
 
@@ -169,6 +170,57 @@ export const getLowStockProducts = async (c: Context) => {
     const products = await Product.find({ stock: { $lte: effectiveThreshold } }).sort({ stock: 1 });
 
     return c.json({ success: true, threshold: effectiveThreshold, data: products });
+  } catch (error: any) {
+    return c.json({ success: false, message: error.message }, 500);
+  }
+};
+
+export const getBestSellingProducts = async (c: Context) => {
+  try {
+    const { limit } = c.req.valid('query' as any) as { limit?: number };
+    const effectiveLimit = limit ?? 4;
+    const productCollection = Product.collection.name;
+
+    const bestSellers = await Order.aggregate([
+      { $match: { status: 'paid' } },
+      { $unwind: '$items' },
+      {
+        $group: {
+          _id: '$items.product',
+          unitsSold: { $sum: '$items.quantity' },
+          totalRevenue: { $sum: { $multiply: ['$items.price', '$items.quantity'] } },
+        },
+      },
+      { $sort: { unitsSold: -1, totalRevenue: -1 } },
+      { $limit: effectiveLimit },
+      {
+        $lookup: {
+          from: productCollection,
+          localField: '_id',
+          foreignField: '_id',
+          as: 'product',
+        },
+      },
+      { $unwind: '$product' },
+      {
+        $project: {
+          _id: '$product._id',
+          name: '$product.name',
+          description: '$product.description',
+          price: '$product.price',
+          stock: '$product.stock',
+          condition: '$product.condition',
+          category: '$product.category',
+          image_urls: '$product.image_urls',
+          createdAt: '$product.createdAt',
+          updatedAt: '$product.updatedAt',
+          unitsSold: 1,
+          totalRevenue: 1,
+        },
+      },
+    ]);
+
+    return c.json({ success: true, data: bestSellers });
   } catch (error: any) {
     return c.json({ success: false, message: error.message }, 500);
   }

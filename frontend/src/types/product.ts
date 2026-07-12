@@ -10,3 +10,8 @@ export interface Product {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface BestSellerProduct extends Product {
+  unitsSold: number;
+  totalRevenue?: number;
+}
