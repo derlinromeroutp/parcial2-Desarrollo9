@@ -35,6 +35,7 @@ const ProductDetail: React.FC = () => {
 
   const [activeImg, setActiveImg] = useState(0);
   const [added, setAdded] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   if (isLoading) {
     return (
@@ -89,6 +90,19 @@ const ProductDetail: React.FC = () => {
     toggleDrawer();
     setAdded(true);
     setTimeout(() => setAdded(false), 1800);
+  };
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: product.name, url });
+      } catch { /* user cancelled */ }
+    } else {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   return (
@@ -328,6 +342,27 @@ const ProductDetail: React.FC = () => {
                 }}
               >
                 {isOutOfStock ? 'Agotado' : added ? 'Añadido al carrito' : 'Añadir al carrito'}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleShare}
+                className="btn-outline"
+                style={{
+                  width: '100%',
+                  padding: '13px 24px',
+                  fontSize: '0.875rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                }}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+                </svg>
+                {copied ? 'Enlace copiado' : 'Compartir'}
               </button>
 
               <Link
