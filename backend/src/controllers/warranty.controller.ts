@@ -2,6 +2,7 @@ import { Context } from 'hono';
 import { WarrantyReport } from '../models/WarrantyReport';
 import { Order } from '../models/Order';
 import { User } from '../models/User';
+import { Technician } from '../models/Technician';
 import { sendWarrantyCreatedEmail, sendWarrantyStatusChangedEmail } from '../services/email.service';
 
 export const createWarrantyReport = async (c: Context) => {
@@ -138,9 +139,21 @@ export const assignTechnician = async (c: Context) => {
     const { id } = c.req.param();
     const { technicianId, technicianName } = await c.req.json();
 
-    if (!technicianId || !technicianName) {
-      return c.json({ error: 'Missing technicianId or technicianName' }, 400);
+    if (!technicianId) {
+      return c.json({ error: 'Missing technicianId' }, 400);
     }
+
+    const technician = await Technician.findById(technicianId);
+
+    if (!technician) {
+      return c.json({ error: 'Technician not found' }, 404);
+    }
+
+    if (technician.active !== true) {
+      return c.json({ error: 'Technician is inactive' }, 409);
+    }
+
+    const resolvedTechnicianName = technician.name || technicianName;
 
     const previous = await WarrantyReport.findById(id);
     if (!previous) return c.json({ error: 'Report not found' }, 404);
@@ -150,7 +163,7 @@ export const assignTechnician = async (c: Context) => {
       id,
       {
         technicianId,
-        technicianName,
+        technicianName: resolvedTechnicianName,
         status: 'review',
         resolvedAt: undefined
       },

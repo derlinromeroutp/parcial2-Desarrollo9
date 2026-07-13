@@ -79,14 +79,14 @@ export const warrantyService = {
     return response.json();
   },
 
-  async assignTechnician(id: string, technicianId: string, technicianName: string, token: string): Promise<IWarranty> {
+  async assignTechnician(id: string, technicianId: string, token: string): Promise<IWarranty> {
     const response = await fetch(`${API_URL}/warranties/${id}/assign`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`
       },
-      body: JSON.stringify({ technicianId, technicianName }),
+      body: JSON.stringify({ technicianId }),
     });
 
     if (!response.ok) throw new Error('Failed to assign technician');

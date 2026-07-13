@@ -177,7 +177,26 @@ export interface UpdateWarrantyStatusInput {
   repairNotes?: string;
 }
 
+export interface AssignTechnicianInput {
+  technicianId: string;
+}
+
 export interface UpdateWarrantyStatusResult {
+  id: string;
+  orderId: string;
+  userId: string;
+  status: 'pending' | 'review' | 'resolved' | 'rejected' | 'refunded';
+  description: string;
+  evidenceUrls: string[];
+  repairNotes?: string;
+  technicianId?: string;
+  technicianName?: string;
+  createdAt: string;
+  updatedAt?: string;
+  resolvedAt?: string;
+}
+
+export interface AssignTechnicianResult {
   id: string;
   orderId: string;
   userId: string;
@@ -214,6 +233,21 @@ export interface BackendWarrantyResponse {
 }
 
 export interface BackendWarrantyStatusResponse {
+  _id: string;
+  orderId: string;
+  userId: string;
+  status: 'pending' | 'review' | 'resolved' | 'rejected' | 'refunded';
+  description: string;
+  evidenceUrls?: string[];
+  repairNotes?: string;
+  technicianId?: string;
+  technicianName?: string;
+  createdAt: string;
+  updatedAt?: string;
+  resolvedAt?: string;
+}
+
+export interface BackendAssignTechnicianResponse {
   _id: string;
   orderId: string;
   userId: string;
