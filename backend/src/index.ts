@@ -3,6 +3,9 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { connectDB } from './db/connection';
 import { errorHandler, notFoundHandler } from './middlewares/error.middleware';
+import { requestIdMiddleware, requestLogger } from './lib/logger';
+import { metricsMiddleware, metricsHandler } from './lib/metrics';
+import { alerting } from './lib/alerting';
 import healthRoutes from './routes/health.routes';
 import productRoutes from './routes/product.routes';
 import checkoutRoutes from './routes/checkout.routes';
@@ -23,12 +26,18 @@ const app = new Hono();
 app.use('/*', cors());
 app.use('/*', requestIdMiddleware);
 app.use('/*', requestLogger);
+app.use('/*', metricsMiddleware);
 
 // Attempt to connect to DB
 connectDB();
 
 // Metrics endpoint
 app.get('/api/metrics', metricsHandler);
+
+// Alerting endpoint
+app.get('/api/alerts', (c) => {
+  return c.json({ alerts: alerting.getActiveAlerts() });
+});
 
 // Register routes
 app.route('/api/health', healthRoutes);

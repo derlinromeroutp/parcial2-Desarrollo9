@@ -1,5 +1,7 @@
 import { Context } from 'hono';
 import { StatusCode } from 'hono/utils/http-status';
+import { logger } from '../lib/logger';
+import { alerting } from '../lib/alerting';
 
 export class AppError extends Error {
   public statusCode: number;
@@ -13,7 +15,10 @@ export class AppError extends Error {
 }
 
 export const errorHandler = (err: Error, c: Context) => {
-  console.error(`[Error] ${err.message}`, err.stack);
+  const requestId = c.get('requestId') as string;
+  logger.error('unhandled:error', { requestId, method: c.req.method, path: c.req.path }, err);
+
+  alerting.recordError(c.req.path);
 
   if (err instanceof AppError) {
     return c.json(
