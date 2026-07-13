@@ -16,6 +16,7 @@ import ProductDetail from './pages/ProductDetail';
 import Nosotros from './pages/Nosotros';
 import Contacto from './pages/Contacto';
 import MyWarranties from './pages/MyWarranties';
+import Wishlist from './pages/Wishlist';
 import { ProtectedAdminRoute, ProtectedTechnicianRoute } from './components/AdminRoute';
 import TechnicianDashboard from './pages/TechnicianDashboard';
 
@@ -48,6 +49,12 @@ function App() {
             path="/orders"
             element={
               <WithNav><Orders /></WithNav>
+            }
+          />
+          <Route
+            path="/wishlist"
+            element={
+              <WithNav><Wishlist /></WithNav>
             }
           />
           <Route
