@@ -6,6 +6,8 @@ import type {
   CreateWarrantyClaimResult,
   CreateProductInput,
   CreateProductResult,
+  UpdateProductInput,
+  UpdateProductResult,
   BackendOrderResponse,
   BackendWarrantyStatusResponse,
   BackendWarrantyResponse,
@@ -122,6 +124,46 @@ export class BackendApiClient {
         condition: input.condition,
         category: input.category,
         ...(input.imageUrls !== undefined ? { image_urls: input.imageUrls } : {}),
+      }),
+    });
+
+    return {
+      data: {
+        id: response.data._id,
+        name: response.data.name,
+        description: response.data.description,
+        price: response.data.price,
+        stock: response.data.stock,
+        condition: response.data.condition,
+        category: response.data.category,
+        primaryImageUrl: response.data.image_urls?.[0],
+        imageUrls: response.data.image_urls ?? [],
+      },
+    };
+  }
+
+  async updateProduct(
+    token: string,
+    productId: string,
+    input: UpdateProductInput,
+    requestId: string,
+  ): Promise<{ data: UpdateProductResult }> {
+    const response = await this.request<ProductCreateResponse>(`/products/${productId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        'x-request-id': requestId,
+      },
+      body: JSON.stringify({
+        ...(input.name !== undefined ? { name: input.name } : {}),
+        ...(input.description !== undefined ? { description: input.description } : {}),
+        ...(input.price !== undefined ? { price: input.price } : {}),
+        ...(input.stock !== undefined ? { stock: input.stock } : {}),
+        ...(input.condition !== undefined ? { condition: input.condition } : {}),
+        ...(input.category !== undefined ? { category: input.category } : {}),
+        ...(input.imageUrls !== undefined ? { image_urls: input.imageUrls } : {}),
+        ...(input.reason !== undefined ? { reason: input.reason } : {}),
       }),
     });
 
