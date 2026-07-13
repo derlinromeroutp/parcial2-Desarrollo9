@@ -8,6 +8,7 @@ interface AuditEvent {
   outcome: 'success' | 'error';
   durationMs: number;
   errorCode?: string;
+  metadata?: Record<string, unknown>;
 }
 
 export function logAuditEvent(logger: Logger, event: AuditEvent) {

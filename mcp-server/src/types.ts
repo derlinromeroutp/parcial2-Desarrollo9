@@ -172,6 +172,26 @@ export interface CreateWarrantyClaimResult {
   status: 'pending' | 'review' | 'resolved' | 'rejected' | 'refunded';
 }
 
+export interface UpdateWarrantyStatusInput {
+  status: 'review' | 'resolved' | 'rejected' | 'refunded';
+  repairNotes?: string;
+}
+
+export interface UpdateWarrantyStatusResult {
+  id: string;
+  orderId: string;
+  userId: string;
+  status: 'pending' | 'review' | 'resolved' | 'rejected' | 'refunded';
+  description: string;
+  evidenceUrls: string[];
+  repairNotes?: string;
+  technicianId?: string;
+  technicianName?: string;
+  createdAt: string;
+  updatedAt?: string;
+  resolvedAt?: string;
+}
+
 export interface BackendWarrantyResponse {
   _id: string;
   status: 'pending' | 'review' | 'resolved' | 'rejected' | 'refunded';
@@ -191,4 +211,19 @@ export interface BackendWarrantyResponse {
         createdAt?: string;
         updatedAt?: string;
       };
+}
+
+export interface BackendWarrantyStatusResponse {
+  _id: string;
+  orderId: string;
+  userId: string;
+  status: 'pending' | 'review' | 'resolved' | 'rejected' | 'refunded';
+  description: string;
+  evidenceUrls?: string[];
+  repairNotes?: string;
+  technicianId?: string;
+  technicianName?: string;
+  createdAt: string;
+  updatedAt?: string;
+  resolvedAt?: string;
 }
