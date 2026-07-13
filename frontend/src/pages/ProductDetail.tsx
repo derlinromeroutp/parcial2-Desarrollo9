@@ -4,6 +4,8 @@ import { useProduct } from '../hooks/useProducts';
 import { useCartStore } from '../store/cart.store';
 import { SkeletonCard } from '../components/ui/Skeleton';
 import { EmptyState } from '../components/ui/EmptyState';
+import { useWishlistCheck, useAddToWishlist, useRemoveFromWishlist } from '../hooks/useWishlist';
+import { useAuth } from '../lib/auth';
 
 const CATEGORY_LABEL: Record<string, string> = {
   celular: 'Celular',
@@ -32,6 +34,11 @@ const ProductDetail: React.FC = () => {
 
   const addItem = useCartStore((s) => s.addItem);
   const toggleDrawer = useCartStore((s) => s.toggleDrawer);
+
+  const { isSignedIn } = useAuth();
+  const { data: isWishlisted } = useWishlistCheck(id);
+  const addWishlist = useAddToWishlist();
+  const removeWishlist = useRemoveFromWishlist();
 
   const [activeImg, setActiveImg] = useState(0);
   const [added, setAdded] = useState(false);
@@ -102,6 +109,15 @@ const ProductDetail: React.FC = () => {
       await navigator.clipboard.writeText(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleToggleWishlist = () => {
+    if (!id) return;
+    if (isWishlisted) {
+      removeWishlist.mutate(id);
+    } else {
+      addWishlist.mutate(id);
     }
   };
 
@@ -364,6 +380,28 @@ const ProductDetail: React.FC = () => {
                 </svg>
                 {copied ? 'Enlace copiado' : 'Compartir'}
               </button>
+
+              {isSignedIn && (
+                <button
+                  type="button"
+                  onClick={handleToggleWishlist}
+                  className="btn-outline"
+                  style={{
+                    width: '100%',
+                    padding: '13px 24px',
+                    fontSize: '0.875rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                  }}
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill={isWishlisted ? '#ef4444' : 'none'} stroke={isWishlisted ? '#ef4444' : 'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z" />
+                  </svg>
+                  {isWishlisted ? 'En mi lista de deseos' : 'Agregar a mi lista'}
+                </button>
+              )}
 
               <Link
                 to="/home"
