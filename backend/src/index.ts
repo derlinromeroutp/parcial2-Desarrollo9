@@ -2,6 +2,9 @@ import 'dotenv/config';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { connectDB } from './db/connection';
+import { errorHandler, notFoundHandler } from './middlewares/error.middleware';
+import { requestIdMiddleware, requestLogger } from './lib/logger';
+import { metricsMiddleware, metricsHandler } from './lib/metrics';
 import healthRoutes from './routes/health.routes';
 import productRoutes from './routes/product.routes';
 import checkoutRoutes from './routes/checkout.routes';
@@ -16,15 +19,19 @@ import wishlistRoutes from './routes/wishlist.routes';
 import e2eRoutes from './routes/e2e.routes';
 import { isE2ETestMode } from './lib/e2e';
 
-console.log('[DEBUG] CLERK_SECRET_KEY:', process.env.CLERK_SECRET_KEY);
-
 const app = new Hono();
 
 // Global Middlewares
 app.use('/*', cors());
+app.use('/*', requestIdMiddleware);
+app.use('/*', requestLogger);
+app.use('/*', metricsMiddleware);
 
 // Attempt to connect to DB
 connectDB();
+
+// Metrics endpoint
+app.get('/api/metrics', metricsHandler);
 
 // Register routes
 app.route('/api/health', healthRoutes);
@@ -41,6 +48,10 @@ app.route('/api/wishlist', wishlistRoutes);
 if (isE2ETestMode) {
   app.route('/api/e2e', e2eRoutes);
 }
+
+// Global error handler
+app.onError(errorHandler);
+app.notFound(notFoundHandler);
 
 export default {
   port: process.env.PORT || 3000,
