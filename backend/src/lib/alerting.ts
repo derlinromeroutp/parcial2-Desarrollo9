@@ -27,6 +27,14 @@ export const alerting = {
     dbHealthy = healthy;
   },
 
+  resetForTests() {
+    dbHealthy = true;
+    errorWindow = [];
+    checkoutErrorWindow = [];
+    webhookErrorWindow = [];
+    state.lastTriggered = {};
+  },
+
   recordError(path: string) {
     const now = Date.now();
     errorWindow.push(now);
