@@ -6,6 +6,7 @@ import {
   removeFromWishlist,
   updateWishlistNote,
   checkWishlistItem,
+  getWishlistSuggestions,
 } from '../controllers/wishlist.controller';
 import { clerkAuthMiddleware } from '../middlewares/auth.middleware';
 import { addToWishlistSchema, updateNoteSchema } from '../validators/wishlist.validator';
@@ -13,6 +14,8 @@ import { addToWishlistSchema, updateNoteSchema } from '../validators/wishlist.va
 const wishlistRoutes = new Hono();
 
 wishlistRoutes.get('/mine', clerkAuthMiddleware, getMyWishlist);
+
+wishlistRoutes.get('/suggestions', clerkAuthMiddleware, getWishlistSuggestions);
 
 wishlistRoutes.get('/check/:productId', clerkAuthMiddleware, checkWishlistItem);
 

@@ -1,11 +1,19 @@
 import axios from 'axios';
 import type { WishlistItem } from '../types/wishlist';
+import type { Product } from '../types/product';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 export const wishlistService = {
   getMyWishlist: async (token: string): Promise<WishlistItem[]> => {
     const { data } = await axios.get(`${API_URL}/wishlist/mine`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return data;
+  },
+
+  getSuggestions: async (token: string): Promise<Product[]> => {
+    const { data } = await axios.get(`${API_URL}/wishlist/suggestions`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return data;

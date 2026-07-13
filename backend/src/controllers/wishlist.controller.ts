@@ -2,6 +2,37 @@ import { Context } from 'hono';
 import { WishlistItem } from '../models/WishlistItem';
 import { Product } from '../models/Product';
 
+const getWishlistSuggestions = async (c: Context) => {
+  try {
+    const userId = c.get('userId');
+    if (!userId) return c.json({ error: 'Unauthorized' }, 401);
+
+    const wishlistItems = await WishlistItem.find({ userId }).lean();
+    if (wishlistItems.length === 0) return c.json([]);
+
+    const wishlistedProductIds = wishlistItems.map(i => i.product);
+    const categories = [...new Set(wishlistItems.map(i => i.product).filter(Boolean))];
+
+    const categoryDocs = await Product.find({ _id: { $in: wishlistedProductIds } }).select('category').lean();
+    const uniqueCategories = [...new Set(categoryDocs.map(p => p.category))];
+
+    if (uniqueCategories.length === 0) return c.json([]);
+
+    const suggestions = await Product.find({
+      _id: { $nin: wishlistedProductIds },
+      category: { $in: uniqueCategories },
+      stock: { $gt: 0 },
+    })
+      .limit(8)
+      .lean();
+
+    return c.json(suggestions);
+  } catch (error) {
+    console.error('Error fetching suggestions:', error);
+    return c.json({ error: 'Failed to fetch suggestions' }, 500);
+  }
+};
+
 export const getMyWishlist = async (c: Context) => {
   try {
     const userId = c.get('userId');
@@ -81,6 +112,8 @@ export const updateWishlistNote = async (c: Context) => {
     return c.json({ error: 'Failed to update note' }, 500);
   }
 };
+
+export { getWishlistSuggestions };
 
 export const checkWishlistItem = async (c: Context) => {
   try {

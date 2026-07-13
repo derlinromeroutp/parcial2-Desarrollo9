@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useWishlist, useRemoveFromWishlist, useUpdateWishlistNote } from '../hooks/useWishlist';
+import { useWishlist, useRemoveFromWishlist, useUpdateWishlistNote, useWishlistSuggestions } from '../hooks/useWishlist';
 import { useCartStore } from '../store/cart.store';
 import { SignInButton, useAuth } from '../lib/auth';
 import { Skeleton } from '../components/ui/Skeleton';
@@ -16,6 +16,7 @@ const CATEGORY_LABEL: Record<string, string> = {
 const Wishlist: React.FC = () => {
   const { isLoaded, isSignedIn } = useAuth();
   const { data: items, isLoading, isError } = useWishlist();
+  const { data: suggestions } = useWishlistSuggestions();
   const removeMutation = useRemoveFromWishlist();
   const updateNoteMutation = useUpdateWishlistNote();
   const addItem = useCartStore(s => s.addItem);
@@ -167,6 +168,30 @@ const Wishlist: React.FC = () => {
               ))}
             </div>
           )}
+
+          {!isLoading && !isError && suggestions && suggestions.length > 0 && (
+            <div className="wl-suggestions">
+              <h2 className="wl-suggestions-title">Sugeridos para ti</h2>
+              <p className="wl-suggestions-sub">Basados en los productos de tu lista de deseos</p>
+              <div className="wl-suggestions-grid">
+                {suggestions.map(product => (
+                  <Link to={`/product/${product._id}`} key={product._id} className="wl-sug-card">
+                    <div className="wl-sug-img">
+                      <img
+                        src={product.image_urls?.[0] || `https://picsum.photos/seed/${product._id}/300/300`}
+                        alt={product.name}
+                      />
+                    </div>
+                    <div className="wl-sug-body">
+                      <p className="wl-sug-cat">{CATEGORY_LABEL[product.category] ?? product.category}</p>
+                      <p className="wl-sug-name">{product.name}</p>
+                      <p className="wl-sug-price">{fmt(product.price)}</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </main>
 
@@ -209,6 +234,20 @@ const Wishlist: React.FC = () => {
         .wl-empty p { font-family: var(--font-sans); font-size: .875rem; color: var(--ink3); max-width: 300px; line-height: 1.65; }
         .wl-cta { margin-top: 1.25rem; display: inline-flex; align-items: center; gap: 8px; padding: 13px 26px; background: var(--ink); color: var(--bone); font-family: var(--font-sans); font-size: .82rem; font-weight: 500; letter-spacing: .3px; text-decoration: none; border-radius: var(--radius-pill); border: 1px solid var(--ink); transition: all .25s; }
         .wl-cta:hover { background: #333; transform: translateY(-2px); box-shadow: 0 10px 28px rgba(46,45,43,.25); }
+
+        .wl-suggestions { margin-top: 4rem; padding-top: 3rem; border-top: 1px solid var(--line); }
+        .wl-suggestions-title { font-family: var(--font-display); font-size: clamp(1.3rem, 2.5vw, 1.75rem); font-weight: 400; color: var(--ink); letter-spacing: -.02em; margin-bottom: .35rem; }
+        .wl-suggestions-sub { font-family: var(--font-sans); font-size: .82rem; color: var(--ink3); margin-bottom: 1.5rem; }
+        .wl-suggestions-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
+        .wl-sug-card { background: var(--bone); border: 1px solid var(--line); border-radius: var(--radius-sm); overflow: hidden; text-decoration: none; transition: box-shadow .3s, transform .3s; }
+        .wl-sug-card:hover { box-shadow: 0 8px 30px rgba(46,45,43,.08); transform: translateY(-2px); }
+        .wl-sug-img { aspect-ratio: 1; overflow: hidden; }
+        .wl-sug-img img { width: 100%; height: 100%; object-fit: cover; transition: transform .4s; }
+        .wl-sug-card:hover .wl-sug-img img { transform: scale(1.04); }
+        .wl-sug-body { padding: .875rem 1rem 1rem; }
+        .wl-sug-cat { font-family: var(--font-mono); font-size: .55rem; font-weight: 500; text-transform: uppercase; letter-spacing: 1.5px; color: var(--ink3); margin-bottom: 4px; }
+        .wl-sug-name { font-family: var(--font-display); font-size: .9rem; font-weight: 500; color: var(--ink); line-height: 1.3; margin-bottom: 6px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .wl-sug-price { font-family: var(--font-display); font-size: 1rem; font-weight: 700; color: var(--ink); }
       `}</style>
     </div>
   );
