@@ -8,6 +8,8 @@ import { createLogger } from './utils/logger.js';
 import type {
   AssignTechnicianInput,
   AssignTechnicianResult,
+  CreateProductInput,
+  CreateProductResult,
   CreateWarrantyClaimInput,
   CreateWarrantyClaimResult,
   OrderSummary,
@@ -67,10 +69,15 @@ class FakeBackendApi extends BackendApiClient {
   shouldRejectAssignTechnicianTechnicianNotFound = false;
   shouldRejectAssignTechnicianTechnicianInactive = false;
   shouldRejectAssignTechnicianInvalid = false;
+  shouldRejectCreateProductAuth = false;
+  shouldRejectCreateProductForbidden = false;
+  shouldRejectCreateProductInvalid = false;
   lastOrdersToken?: string;
   lastWarrantiesToken?: string;
   lastCreateWarrantyToken?: string;
   lastCreateWarrantyInput?: CreateWarrantyClaimInput;
+  lastCreateProductToken?: string;
+  lastCreateProductInput?: CreateProductInput;
   lastUpdateWarrantyToken?: string;
   lastUpdateWarrantyId?: string;
   lastUpdateWarrantyInput?: UpdateWarrantyStatusInput;
@@ -158,6 +165,48 @@ class FakeBackendApi extends BackendApiClient {
         category: 'celular' as const,
         primaryImageUrl: 'https://cdn.test/iphone.jpg',
         imageUrls: ['https://cdn.test/iphone.jpg', 'https://cdn.test/iphone-back.jpg'],
+      },
+    };
+  }
+
+  override async createProduct(
+    token: string,
+    input: CreateProductInput,
+    _requestId: string,
+  ): Promise<{ data: CreateProductResult }> {
+    this.lastCreateProductToken = token;
+    this.lastCreateProductInput = input;
+
+    if (this.shouldRejectCreateProductAuth) {
+      throw new BackendApiError('Unauthorized', 401, {
+        error: 'Unauthorized',
+      });
+    }
+
+    if (this.shouldRejectCreateProductForbidden) {
+      throw new BackendApiError('Forbidden', 403, {
+        error: 'Forbidden',
+      });
+    }
+
+    if (this.shouldRejectCreateProductInvalid) {
+      throw new BackendApiError('Bad request', 400, {
+        success: false,
+        message: 'La categoría es inválida',
+      });
+    }
+
+    return {
+      data: {
+        id: '6870f1e2a1234567890ab222',
+        name: input.name,
+        ...(input.description !== undefined ? { description: input.description } : {}),
+        price: input.price,
+        stock: input.stock ?? 0,
+        condition: input.condition,
+        category: input.category,
+        primaryImageUrl: input.imageUrls?.[0],
+        imageUrls: input.imageUrls ?? [],
       },
     };
   }
@@ -517,10 +566,10 @@ test('mcp handshake works and exposes search_products tool', async () => {
   assert.equal(serverVersion?.name, 'SafeTech MCP Server');
 
   const tools = await client.listTools();
-  assert.equal(tools.tools.length, 7);
+  assert.equal(tools.tools.length, 8);
   assert.deepEqual(
     tools.tools.map((tool) => tool.name).sort(),
-    ['assign_technician', 'create_warranty_claim', 'get_product', 'list_my_orders', 'list_my_warranties', 'search_products', 'update_warranty_status'],
+    ['assign_technician', 'create_product', 'create_warranty_claim', 'get_product', 'list_my_orders', 'list_my_warranties', 'search_products', 'update_warranty_status'],
   );
 
   const result = await client.callTool({
@@ -608,6 +657,158 @@ test('update_warranty_status updates a warranty for an admin user', async () => 
     createdAt: '2026-07-02T09:00:00.000Z',
     updatedAt: '2026-07-03T12:00:00.000Z',
     resolvedAt: '2026-07-03T12:00:00.000Z',
+  });
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('create_product creates a product for an admin user', async () => {
+  const backendApi = new FakeBackendApi();
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator('admin'),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'create_product',
+    arguments: {
+      name: 'MacBook Pro 14 Reacondicionado',
+      description: 'M3 Pro, 18GB RAM, 512GB SSD',
+      price: 1899,
+      stock: 3,
+      condition: 'A',
+      category: 'laptop',
+      imageUrls: ['https://cdn.test/macbook-front.jpg', 'https://cdn.test/macbook-side.jpg'],
+    },
+  });
+
+  assert.equal(result.isError, undefined);
+  assert.equal(backendApi.lastCreateProductToken, 'test-token');
+  assert.deepEqual(backendApi.lastCreateProductInput, {
+    name: 'MacBook Pro 14 Reacondicionado',
+    description: 'M3 Pro, 18GB RAM, 512GB SSD',
+    price: 1899,
+    stock: 3,
+    condition: 'A',
+    category: 'laptop',
+    imageUrls: ['https://cdn.test/macbook-front.jpg', 'https://cdn.test/macbook-side.jpg'],
+  });
+  assert.deepEqual(result.structuredContent, {
+    id: '6870f1e2a1234567890ab222',
+    name: 'MacBook Pro 14 Reacondicionado',
+    description: 'M3 Pro, 18GB RAM, 512GB SSD',
+    price: 1899,
+    stock: 3,
+    condition: 'A',
+    category: 'laptop',
+    primaryImageUrl: 'https://cdn.test/macbook-front.jpg',
+    imageUrls: ['https://cdn.test/macbook-front.jpg', 'https://cdn.test/macbook-side.jpg'],
+  });
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('create_product rejects non-admin users before calling the backend', async () => {
+  const backendApi = new FakeBackendApi();
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator('user'),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'create_product',
+    arguments: {
+      name: 'MacBook Pro 14 Reacondicionado',
+      price: 1899,
+      condition: 'A',
+      category: 'laptop',
+    },
+  });
+
+  assert.equal(result.isError, true);
+  assert.equal(backendApi.lastCreateProductToken, undefined);
+  assert.deepEqual(result.structuredContent, {
+    code: 'FORBIDDEN',
+    message: 'Solo un administrador puede crear productos.',
+  });
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('create_product normalizes backend validation failures', async () => {
+  const backendApi = new FakeBackendApi();
+  backendApi.shouldRejectCreateProductInvalid = true;
+
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator('admin'),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'create_product',
+    arguments: {
+      name: 'MacBook Pro 14 Reacondicionado',
+      price: 1899,
+      condition: 'A',
+      category: 'laptop',
+    },
+  });
+
+  assert.equal(result.isError, true);
+  assert.deepEqual(result.structuredContent, {
+    code: 'INVALID_PRODUCT_INPUT',
+    message: 'La categoría es inválida',
   });
 
   await transport.terminateSession();

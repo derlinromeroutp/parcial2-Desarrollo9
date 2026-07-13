@@ -4,10 +4,13 @@ import type {
   BackendAssignTechnicianResponse,
   CreateWarrantyClaimInput,
   CreateWarrantyClaimResult,
+  CreateProductInput,
+  CreateProductResult,
   BackendOrderResponse,
   BackendWarrantyStatusResponse,
   BackendWarrantyResponse,
   BackendHealth,
+  ProductCreateResponse,
   OrderSummary,
   ProductDetail,
   ProductDetailResponse,
@@ -82,6 +85,44 @@ export class BackendApiClient {
       headers: {
         'x-request-id': requestId,
       },
+    });
+
+    return {
+      data: {
+        id: response.data._id,
+        name: response.data.name,
+        description: response.data.description,
+        price: response.data.price,
+        stock: response.data.stock,
+        condition: response.data.condition,
+        category: response.data.category,
+        primaryImageUrl: response.data.image_urls?.[0],
+        imageUrls: response.data.image_urls ?? [],
+      },
+    };
+  }
+
+  async createProduct(
+    token: string,
+    input: CreateProductInput,
+    requestId: string,
+  ): Promise<{ data: CreateProductResult }> {
+    const response = await this.request<ProductCreateResponse>('/products', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        'x-request-id': requestId,
+      },
+      body: JSON.stringify({
+        name: input.name,
+        ...(input.description !== undefined ? { description: input.description } : {}),
+        price: input.price,
+        ...(input.stock !== undefined ? { stock: input.stock } : {}),
+        condition: input.condition,
+        category: input.category,
+        ...(input.imageUrls !== undefined ? { image_urls: input.imageUrls } : {}),
+      }),
     });
 
     return {
