@@ -1,4 +1,4 @@
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 export interface CreatePaymentIntentResponse {
   clientSecret: string;
@@ -13,7 +13,7 @@ export const checkoutService = {
     token: string,
     addressId?: string,
   ): Promise<CreatePaymentIntentResponse> => {
-    const response = await fetch(`${BACKEND_URL}/api/checkout`, {
+    const response = await fetch(`${API_URL}/checkout`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
