@@ -160,6 +160,18 @@ export interface WarrantySummary {
   order: WarrantyOrderSummary;
 }
 
+export interface CreateWarrantyClaimInput {
+  orderId: string;
+  reason: string;
+  description: string;
+  evidenceUrls?: string[];
+}
+
+export interface CreateWarrantyClaimResult {
+  ticketId: string;
+  status: 'pending' | 'review' | 'resolved' | 'rejected' | 'refunded';
+}
+
 export interface BackendWarrantyResponse {
   _id: string;
   status: 'pending' | 'review' | 'resolved' | 'rejected' | 'refunded';
