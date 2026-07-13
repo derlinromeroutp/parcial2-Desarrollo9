@@ -5,6 +5,17 @@ export async function resetE2EState(request: APIRequestContext) {
   if (!response.ok()) {
     throw new Error(`Unable to reset e2e state: ${response.status()} ${await response.text()}`);
   }
+
+  return response.json() as Promise<{
+    ok: boolean;
+    productIds: {
+      phone: string;
+      laptop: string;
+    };
+    technicianIds: {
+      primary: string;
+    };
+  }>;
 }
 
 export async function signInAs(page: Page, role: 'user' | 'admin') {

@@ -6,6 +6,7 @@ const USER_AUTH = { Authorization: 'Bearer mock:user:e2e-user' };
 const ADMIN_AUTH = { Authorization: 'Bearer mock:admin:e2e-admin' };
 
 const SHOPPER_EMAIL = 'shopper@safetech.test';
+let seededTechnicianId = '';
 
 async function getEmails(request: import('@playwright/test').APIRequestContext) {
   const response = await request.get(`${API_URL}/e2e/emails`);
@@ -25,7 +26,8 @@ async function getSeededWarrantyId(request: import('@playwright/test').APIReques
 }
 
 test.beforeEach(async ({ request }) => {
-  await resetE2EState(request);
+  const seed = await resetE2EState(request);
+  seededTechnicianId = seed.technicianIds.primary;
 });
 
 test('no hay correos pendientes justo despues del reset', async ({ request }) => {
@@ -151,7 +153,7 @@ test('envia un correo cuando un admin asigna un tecnico (pending -> review)', as
 
   const response = await request.put(`${API_URL}/warranties/${warrantyId}/assign`, {
     headers: ADMIN_AUTH,
-    data: { technicianId: 'tech-1', technicianName: 'Tecnico de Prueba' },
+    data: { technicianId: seededTechnicianId },
   });
   expect(response.status()).toBe(200);
   expect((await response.json()).status).toBe('review');
