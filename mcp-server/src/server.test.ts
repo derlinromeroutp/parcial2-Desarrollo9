@@ -9,6 +9,8 @@ import type {
   CreateWarrantyClaimInput,
   CreateWarrantyClaimResult,
   OrderSummary,
+  UpdateWarrantyStatusInput,
+  UpdateWarrantyStatusResult,
   WarrantySummary,
 } from './types.js';
 
@@ -29,11 +31,13 @@ const env = {
 };
 
 class FakeAuthenticator implements Authenticator {
+  constructor(private readonly role: AuthContext['role'] = 'admin') {}
+
   async authenticate(): Promise<AuthContext> {
     return {
       token: 'test-token',
       userId: 'user_test',
-      role: 'admin',
+      role: this.role,
       expiresAt: Math.floor(Date.now() / 1000) + 60,
     };
   }
@@ -51,10 +55,17 @@ class FakeBackendApi extends BackendApiClient {
   shouldRejectCreateWarrantyNotFound = false;
   shouldRejectCreateWarrantyConflict = false;
   shouldRejectCreateWarrantyInvalid = false;
+  shouldRejectUpdateWarrantyAuth = false;
+  shouldRejectUpdateWarrantyForbidden = false;
+  shouldRejectUpdateWarrantyNotFound = false;
+  shouldRejectUpdateWarrantyInvalid = false;
   lastOrdersToken?: string;
   lastWarrantiesToken?: string;
   lastCreateWarrantyToken?: string;
   lastCreateWarrantyInput?: CreateWarrantyClaimInput;
+  lastUpdateWarrantyToken?: string;
+  lastUpdateWarrantyId?: string;
+  lastUpdateWarrantyInput?: UpdateWarrantyStatusInput;
 
   constructor() {
     super('http://backend.test/api');
@@ -282,6 +293,60 @@ class FakeBackendApi extends BackendApiClient {
       },
     };
   }
+
+  override async updateWarrantyStatus(
+    token: string,
+    warrantyId: string,
+    input: UpdateWarrantyStatusInput,
+    _requestId: string,
+  ): Promise<{ data: UpdateWarrantyStatusResult }> {
+    this.lastUpdateWarrantyToken = token;
+    this.lastUpdateWarrantyId = warrantyId;
+    this.lastUpdateWarrantyInput = input;
+
+    if (this.shouldRejectUpdateWarrantyAuth) {
+      throw new BackendApiError('Unauthorized', 401, {
+        error: 'Unauthorized: Token verification failed',
+      });
+    }
+
+    if (this.shouldRejectUpdateWarrantyForbidden) {
+      throw new BackendApiError('Forbidden', 403, {
+        error: 'Forbidden: Insufficient privileges',
+      });
+    }
+
+    if (this.shouldRejectUpdateWarrantyNotFound) {
+      throw new BackendApiError('Not found', 404, {
+        error: 'Report not found',
+      });
+    }
+
+    if (this.shouldRejectUpdateWarrantyInvalid) {
+      throw new BackendApiError('Bad request', 400, {
+        error: 'Invalid status transition',
+      });
+    }
+
+    return {
+      data: {
+        id: warrantyId,
+        orderId: '6870f1e2a1234567890abcde',
+        userId: 'user_owner_1',
+        status: input.status,
+        description: '[battery] La bateria no carga correctamente',
+        evidenceUrls: ['https://cdn.test/evidence-1.jpg'],
+        ...(input.repairNotes !== undefined ? { repairNotes: input.repairNotes } : {}),
+        technicianId: 'tech_1',
+        technicianName: 'Maria Gomez',
+        createdAt: '2026-07-02T09:00:00.000Z',
+        updatedAt: '2026-07-03T12:00:00.000Z',
+        ...(input.status === 'resolved'
+          ? { resolvedAt: '2026-07-03T12:00:00.000Z' }
+          : {}),
+      },
+    };
+  }
 }
 
 test('health endpoint reports backend connectivity', async () => {
@@ -379,10 +444,10 @@ test('mcp handshake works and exposes search_products tool', async () => {
   assert.equal(serverVersion?.name, 'SafeTech MCP Server');
 
   const tools = await client.listTools();
-  assert.equal(tools.tools.length, 5);
+  assert.equal(tools.tools.length, 6);
   assert.deepEqual(
     tools.tools.map((tool) => tool.name).sort(),
-    ['create_warranty_claim', 'get_product', 'list_my_orders', 'list_my_warranties', 'search_products'],
+    ['create_warranty_claim', 'get_product', 'list_my_orders', 'list_my_warranties', 'search_products', 'update_warranty_status'],
   );
 
   const result = await client.callTool({
@@ -412,6 +477,149 @@ test('mcp handshake works and exposes search_products tool', async () => {
       name: 'iPhone',
       limit: 5,
     },
+  });
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('update_warranty_status updates a warranty for an admin user', async () => {
+  const backendApi = new FakeBackendApi();
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator('admin'),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'update_warranty_status',
+    arguments: {
+      warrantyId: '6870f1e2a1234567890abcdf',
+      status: 'resolved',
+      repairNotes: 'Battery module replaced',
+    },
+  });
+
+  assert.equal(result.isError, undefined);
+  assert.equal(backendApi.lastUpdateWarrantyToken, 'test-token');
+  assert.equal(backendApi.lastUpdateWarrantyId, '6870f1e2a1234567890abcdf');
+  assert.deepEqual(backendApi.lastUpdateWarrantyInput, {
+    status: 'resolved',
+    repairNotes: 'Battery module replaced',
+  });
+  assert.deepEqual(result.structuredContent, {
+    id: '6870f1e2a1234567890abcdf',
+    orderId: '6870f1e2a1234567890abcde',
+    userId: 'user_owner_1',
+    status: 'resolved',
+    description: '[battery] La bateria no carga correctamente',
+    evidenceUrls: ['https://cdn.test/evidence-1.jpg'],
+    repairNotes: 'Battery module replaced',
+    technicianId: 'tech_1',
+    technicianName: 'Maria Gomez',
+    createdAt: '2026-07-02T09:00:00.000Z',
+    updatedAt: '2026-07-03T12:00:00.000Z',
+    resolvedAt: '2026-07-03T12:00:00.000Z',
+  });
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('update_warranty_status rejects non-admin users before calling the backend', async () => {
+  const backendApi = new FakeBackendApi();
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator('user'),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'update_warranty_status',
+    arguments: {
+      warrantyId: '6870f1e2a1234567890abcdf',
+      status: 'review',
+    },
+  });
+
+  assert.equal(result.isError, true);
+  assert.equal(backendApi.lastUpdateWarrantyToken, undefined);
+  assert.deepEqual(result.structuredContent, {
+    code: 'FORBIDDEN',
+    message: 'Solo un administrador puede actualizar el estado de una garantia.',
+  });
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('update_warranty_status normalizes backend validation failures', async () => {
+  const backendApi = new FakeBackendApi();
+  backendApi.shouldRejectUpdateWarrantyInvalid = true;
+
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator('admin'),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'update_warranty_status',
+    arguments: {
+      warrantyId: '6870f1e2a1234567890abcdf',
+      status: 'rejected',
+    },
+  });
+
+  assert.equal(result.isError, true);
+  assert.deepEqual(result.structuredContent, {
+    code: 'INVALID_WARRANTY_UPDATE',
+    message: 'Invalid status transition',
   });
 
   await transport.terminateSession();

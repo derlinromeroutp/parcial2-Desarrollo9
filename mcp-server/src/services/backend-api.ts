@@ -2,6 +2,7 @@ import type {
   CreateWarrantyClaimInput,
   CreateWarrantyClaimResult,
   BackendOrderResponse,
+  BackendWarrantyStatusResponse,
   BackendWarrantyResponse,
   BackendHealth,
   OrderSummary,
@@ -9,6 +10,8 @@ import type {
   ProductDetailResponse,
   ProductListResponse,
   ProductSummary,
+  UpdateWarrantyStatusInput,
+  UpdateWarrantyStatusResult,
   WarrantySummary,
 } from '../types.js';
 
@@ -183,6 +186,43 @@ export class BackendApiClient {
       data: {
         ticketId: response.ticketId,
         status: response.status,
+      },
+    };
+  }
+
+  async updateWarrantyStatus(
+    token: string,
+    warrantyId: string,
+    input: UpdateWarrantyStatusInput,
+    requestId: string,
+  ): Promise<{ data: UpdateWarrantyStatusResult }> {
+    const response = await this.request<BackendWarrantyStatusResponse>(
+      `/warranties/${warrantyId}/status`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          'x-request-id': requestId,
+        },
+        body: JSON.stringify(input),
+      },
+    );
+
+    return {
+      data: {
+        id: response._id,
+        orderId: response.orderId,
+        userId: response.userId,
+        status: response.status,
+        description: response.description,
+        evidenceUrls: response.evidenceUrls ?? [],
+        ...(response.repairNotes !== undefined ? { repairNotes: response.repairNotes } : {}),
+        ...(response.technicianId ? { technicianId: response.technicianId } : {}),
+        ...(response.technicianName ? { technicianName: response.technicianName } : {}),
+        createdAt: response.createdAt,
+        ...(response.updatedAt ? { updatedAt: response.updatedAt } : {}),
+        ...(response.resolvedAt ? { resolvedAt: response.resolvedAt } : {}),
       },
     };
   }
