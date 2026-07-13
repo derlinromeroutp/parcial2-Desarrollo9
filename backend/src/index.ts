@@ -2,6 +2,8 @@ import 'dotenv/config';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { connectDB } from './db/connection';
+import { errorHandler, notFoundHandler } from './middlewares/error.middleware';
+import { requestIdMiddleware, requestLogger } from './lib/logger';
 import healthRoutes from './routes/health.routes';
 import productRoutes from './routes/product.routes';
 import checkoutRoutes from './routes/checkout.routes';
@@ -22,6 +24,8 @@ const app = new Hono();
 
 // Global Middlewares
 app.use('/*', cors());
+app.use('/*', requestIdMiddleware);
+app.use('/*', requestLogger);
 
 // Attempt to connect to DB
 connectDB();
