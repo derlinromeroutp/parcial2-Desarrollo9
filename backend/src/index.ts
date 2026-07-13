@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { connectDB } from './db/connection';
+import { errorHandler, notFoundHandler } from './middlewares/error.middleware';
 import healthRoutes from './routes/health.routes';
 import productRoutes from './routes/product.routes';
 import checkoutRoutes from './routes/checkout.routes';
@@ -15,8 +16,6 @@ import addressRoutes from './routes/address.routes';
 import wishlistRoutes from './routes/wishlist.routes';
 import e2eRoutes from './routes/e2e.routes';
 import { isE2ETestMode } from './lib/e2e';
-
-console.log('[DEBUG] CLERK_SECRET_KEY:', process.env.CLERK_SECRET_KEY);
 
 const app = new Hono();
 
@@ -41,6 +40,10 @@ app.route('/api/wishlist', wishlistRoutes);
 if (isE2ETestMode) {
   app.route('/api/e2e', e2eRoutes);
 }
+
+// Global error handler (must be after routes)
+app.onError(errorHandler);
+app.notFound(notFoundHandler);
 
 export default {
   port: process.env.PORT || 3000,
