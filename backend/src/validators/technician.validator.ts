@@ -9,7 +9,7 @@ export const createTechnicianSchema = z.object({
 
 export const assignTechnicianSchema = z.object({
   technicianId: z.string().min(1, 'El ID del técnico es requerido'),
-  technicianName: z.string().min(1, 'El nombre del técnico es requerido'),
+  technicianName: z.string().min(1, 'El nombre del técnico es requerido').optional(),
 });
 
 export const techUpdateWarrantySchema = z.object({

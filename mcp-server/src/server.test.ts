@@ -6,6 +6,8 @@ import type { Authenticator, AuthContext } from './types.js';
 import { BackendApiClient, BackendApiError } from './services/backend-api.js';
 import { createLogger } from './utils/logger.js';
 import type {
+  AssignTechnicianInput,
+  AssignTechnicianResult,
   CreateWarrantyClaimInput,
   CreateWarrantyClaimResult,
   OrderSummary,
@@ -59,6 +61,12 @@ class FakeBackendApi extends BackendApiClient {
   shouldRejectUpdateWarrantyForbidden = false;
   shouldRejectUpdateWarrantyNotFound = false;
   shouldRejectUpdateWarrantyInvalid = false;
+  shouldRejectAssignTechnicianAuth = false;
+  shouldRejectAssignTechnicianForbidden = false;
+  shouldRejectAssignTechnicianNotFound = false;
+  shouldRejectAssignTechnicianTechnicianNotFound = false;
+  shouldRejectAssignTechnicianTechnicianInactive = false;
+  shouldRejectAssignTechnicianInvalid = false;
   lastOrdersToken?: string;
   lastWarrantiesToken?: string;
   lastCreateWarrantyToken?: string;
@@ -66,6 +74,9 @@ class FakeBackendApi extends BackendApiClient {
   lastUpdateWarrantyToken?: string;
   lastUpdateWarrantyId?: string;
   lastUpdateWarrantyInput?: UpdateWarrantyStatusInput;
+  lastAssignTechnicianToken?: string;
+  lastAssignTechnicianId?: string;
+  lastAssignTechnicianInput?: AssignTechnicianInput;
 
   constructor() {
     super('http://backend.test/api');
@@ -347,6 +358,68 @@ class FakeBackendApi extends BackendApiClient {
       },
     };
   }
+
+  override async assignTechnician(
+    token: string,
+    warrantyId: string,
+    input: AssignTechnicianInput,
+    _requestId: string,
+  ): Promise<{ data: AssignTechnicianResult }> {
+    this.lastAssignTechnicianToken = token;
+    this.lastAssignTechnicianId = warrantyId;
+    this.lastAssignTechnicianInput = input;
+
+    if (this.shouldRejectAssignTechnicianAuth) {
+      throw new BackendApiError('Unauthorized', 401, {
+        error: 'Unauthorized: Token verification failed',
+      });
+    }
+
+    if (this.shouldRejectAssignTechnicianForbidden) {
+      throw new BackendApiError('Forbidden', 403, {
+        error: 'Forbidden: Insufficient privileges',
+      });
+    }
+
+    if (this.shouldRejectAssignTechnicianTechnicianNotFound) {
+      throw new BackendApiError('Not found', 404, {
+        error: 'Technician not found',
+      });
+    }
+
+    if (this.shouldRejectAssignTechnicianTechnicianInactive) {
+      throw new BackendApiError('Conflict', 409, {
+        error: 'Technician is inactive',
+      });
+    }
+
+    if (this.shouldRejectAssignTechnicianNotFound) {
+      throw new BackendApiError('Not found', 404, {
+        error: 'Report not found',
+      });
+    }
+
+    if (this.shouldRejectAssignTechnicianInvalid) {
+      throw new BackendApiError('Bad request', 400, {
+        error: 'Missing technicianId',
+      });
+    }
+
+    return {
+      data: {
+        id: warrantyId,
+        orderId: '6870f1e2a1234567890abcde',
+        userId: 'user_owner_1',
+        status: 'review',
+        description: '[battery] La bateria no carga correctamente',
+        evidenceUrls: ['https://cdn.test/evidence-1.jpg'],
+        technicianId: input.technicianId,
+        technicianName: 'Maria Gomez',
+        createdAt: '2026-07-02T09:00:00.000Z',
+        updatedAt: '2026-07-03T12:00:00.000Z',
+      },
+    };
+  }
 }
 
 test('health endpoint reports backend connectivity', async () => {
@@ -444,10 +517,10 @@ test('mcp handshake works and exposes search_products tool', async () => {
   assert.equal(serverVersion?.name, 'SafeTech MCP Server');
 
   const tools = await client.listTools();
-  assert.equal(tools.tools.length, 6);
+  assert.equal(tools.tools.length, 7);
   assert.deepEqual(
     tools.tools.map((tool) => tool.name).sort(),
-    ['create_warranty_claim', 'get_product', 'list_my_orders', 'list_my_warranties', 'search_products', 'update_warranty_status'],
+    ['assign_technician', 'create_warranty_claim', 'get_product', 'list_my_orders', 'list_my_warranties', 'search_products', 'update_warranty_status'],
   );
 
   const result = await client.callTool({
@@ -620,6 +693,231 @@ test('update_warranty_status normalizes backend validation failures', async () =
   assert.deepEqual(result.structuredContent, {
     code: 'INVALID_WARRANTY_UPDATE',
     message: 'Invalid status transition',
+  });
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('assign_technician assigns a technician for an admin user', async () => {
+  const backendApi = new FakeBackendApi();
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator('admin'),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'assign_technician',
+    arguments: {
+      warrantyId: '6870f1e2a1234567890abcdf',
+      technicianId: '6870f1e2a1234567890ab111',
+    },
+  });
+
+  assert.equal(result.isError, undefined);
+  assert.equal(backendApi.lastAssignTechnicianToken, 'test-token');
+  assert.equal(backendApi.lastAssignTechnicianId, '6870f1e2a1234567890abcdf');
+  assert.deepEqual(backendApi.lastAssignTechnicianInput, {
+    technicianId: '6870f1e2a1234567890ab111',
+  });
+  assert.deepEqual(result.structuredContent, {
+    id: '6870f1e2a1234567890abcdf',
+    orderId: '6870f1e2a1234567890abcde',
+    userId: 'user_owner_1',
+    status: 'review',
+    description: '[battery] La bateria no carga correctamente',
+    evidenceUrls: ['https://cdn.test/evidence-1.jpg'],
+    technicianId: '6870f1e2a1234567890ab111',
+    technicianName: 'Maria Gomez',
+    createdAt: '2026-07-02T09:00:00.000Z',
+    updatedAt: '2026-07-03T12:00:00.000Z',
+  });
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('assign_technician rejects non-admin users before calling the backend', async () => {
+  const backendApi = new FakeBackendApi();
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator('user'),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'assign_technician',
+    arguments: {
+      warrantyId: '6870f1e2a1234567890abcdf',
+      technicianId: '6870f1e2a1234567890ab111',
+    },
+  });
+
+  assert.equal(result.isError, true);
+  assert.equal(backendApi.lastAssignTechnicianToken, undefined);
+  assert.deepEqual(result.structuredContent, {
+    code: 'FORBIDDEN',
+    message: 'Solo un administrador puede asignar tecnicos a garantias.',
+  });
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('assign_technician normalizes a missing technician backend failure', async () => {
+  const backendApi = new FakeBackendApi();
+  backendApi.shouldRejectAssignTechnicianTechnicianNotFound = true;
+
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator('admin'),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'assign_technician',
+    arguments: {
+      warrantyId: '6870f1e2a1234567890abcdf',
+      technicianId: '6870f1e2a1234567890ab111',
+    },
+  });
+
+  assert.equal(result.isError, true);
+  assert.deepEqual(result.structuredContent, {
+    code: 'TECHNICIAN_NOT_FOUND',
+    message: 'No se encontro el tecnico indicado.',
+  });
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('assign_technician normalizes an inactive technician backend failure', async () => {
+  const backendApi = new FakeBackendApi();
+  backendApi.shouldRejectAssignTechnicianTechnicianInactive = true;
+
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator('admin'),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'assign_technician',
+    arguments: {
+      warrantyId: '6870f1e2a1234567890abcdf',
+      technicianId: '6870f1e2a1234567890ab111',
+    },
+  });
+
+  assert.equal(result.isError, true);
+  assert.deepEqual(result.structuredContent, {
+    code: 'TECHNICIAN_INACTIVE',
+    message: 'El tecnico indicado existe, pero esta inactivo.',
+  });
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('assign_technician normalizes a missing warranty backend failure', async () => {
+  const backendApi = new FakeBackendApi();
+  backendApi.shouldRejectAssignTechnicianNotFound = true;
+
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator('admin'),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'assign_technician',
+    arguments: {
+      warrantyId: '6870f1e2a1234567890abcdf',
+      technicianId: '6870f1e2a1234567890ab111',
+    },
+  });
+
+  assert.equal(result.isError, true);
+  assert.deepEqual(result.structuredContent, {
+    code: 'WARRANTY_NOT_FOUND',
+    message: 'No se encontro la garantia indicada.',
   });
 
   await transport.terminateSession();

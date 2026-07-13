@@ -260,10 +260,10 @@ export default function AdminDashboard() {
   });
 
   const assignTechMutation = useMutation({
-    mutationFn: async ({ id, technicianId, technicianName }: { id: string; technicianId: string; technicianName: string }) => {
+    mutationFn: async ({ id, technicianId }: { id: string; technicianId: string }) => {
       const token = await getToken();
       if (!token) throw new Error('No token');
-      return warrantyService.assignTechnician(id, technicianId, technicianName, token);
+      return warrantyService.assignTechnician(id, technicianId, token);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-warranties'] }),
   });
@@ -546,7 +546,7 @@ export default function AdminDashboard() {
                                 value={w.technicianId || ''}
                                 onChange={(e) => {
                                   const tech = technicians?.find((t) => t._id === e.target.value);
-                                  if (tech) assignTechMutation.mutate({ id: w._id, technicianId: tech._id, technicianName: tech.name });
+                                  if (tech) assignTechMutation.mutate({ id: w._id, technicianId: tech._id });
                                 }}
                                 disabled={assignTechMutation.isPending || w.status !== 'pending'}
                                 style={{ minWidth: 140 }}

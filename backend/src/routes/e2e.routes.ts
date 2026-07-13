@@ -99,6 +99,9 @@ e2eRoutes.post('/reset', async (c) => {
       phone: phone._id,
       laptop: laptop._id,
     },
+    technicianIds: {
+      primary: technician._id,
+    },
   });
 });
 

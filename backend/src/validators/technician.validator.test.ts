@@ -29,6 +29,11 @@ describe('assignTechnicianSchema', () => {
     expect(result.success).toBe(true);
   });
 
+  test('accepts a technician assignment with only technicianId', () => {
+    const result = assignTechnicianSchema.safeParse({ technicianId: 'tech_1' });
+    expect(result.success).toBe(true);
+  });
+
   test('rejects a missing technicianId', () => {
     const result = assignTechnicianSchema.safeParse({ technicianName: 'Juan' });
     expect(result.success).toBe(false);
