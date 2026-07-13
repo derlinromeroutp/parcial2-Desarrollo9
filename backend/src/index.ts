@@ -27,6 +27,9 @@ app.use('/*', requestLogger);
 // Attempt to connect to DB
 connectDB();
 
+// Metrics endpoint
+app.get('/api/metrics', metricsHandler);
+
 // Register routes
 app.route('/api/health', healthRoutes);
 app.route('/api/products', productRoutes);
