@@ -21,6 +21,8 @@ const app = new Hono();
 
 // Global Middlewares
 app.use('/*', cors());
+app.use('/*', requestIdMiddleware);
+app.use('/*', requestLogger);
 
 // Attempt to connect to DB
 connectDB();
