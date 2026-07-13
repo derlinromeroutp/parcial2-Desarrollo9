@@ -9,6 +9,7 @@ import { registerListMyWarrantiesTool } from './tools/user/list-my-warranties.to
 import { registerCreateWarrantyClaimTool } from './tools/user/create-warranty-claim.tool.js';
 import { registerUpdateWarrantyStatusTool } from './tools/admin/update-warranty-status.tool.js';
 import { registerAssignTechnicianTool } from './tools/admin/assign-technician.tool.js';
+import { registerCreateProductTool } from './tools/admin/create-product.tool.js';
 import type { Logger } from './utils/logger.js';
 
 interface ServerDependencies {
@@ -32,6 +33,7 @@ export function buildServer({ env, logger, backendApi, authInfo }: ServerDepende
   registerCreateWarrantyClaimTool(server, { env, logger, backendApi });
   registerUpdateWarrantyStatusTool(server, { env, logger, backendApi });
   registerAssignTechnicianTool(server, { env, logger, backendApi });
+  registerCreateProductTool(server, { env, logger, backendApi });
 
   return server;
 }
