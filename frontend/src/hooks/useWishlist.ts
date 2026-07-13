@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../lib/auth';
 import { wishlistService } from '../services/wishlist.service';
 import type { WishlistItem } from '../types/wishlist';
+import type { Product } from '../types/product';
 
 export const useWishlist = () => {
   const { getToken } = useAuth();
@@ -10,6 +11,17 @@ export const useWishlist = () => {
     queryFn: async () => {
       const token = await getToken();
       return wishlistService.getMyWishlist(token!);
+    },
+  });
+};
+
+export const useWishlistSuggestions = () => {
+  const { getToken } = useAuth();
+  return useQuery<Product[], Error>({
+    queryKey: ['wishlist', 'suggestions'],
+    queryFn: async () => {
+      const token = await getToken();
+      return wishlistService.getSuggestions(token!);
     },
   });
 };
