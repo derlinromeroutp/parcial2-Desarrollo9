@@ -3,8 +3,6 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { connectDB } from './db/connection';
 import { errorHandler, notFoundHandler } from './middlewares/error.middleware';
-import { requestIdMiddleware, requestLogger } from './lib/logger';
-import { metricsMiddleware, metricsHandler } from './lib/metrics';
 import healthRoutes from './routes/health.routes';
 import productRoutes from './routes/product.routes';
 import checkoutRoutes from './routes/checkout.routes';
@@ -25,7 +23,6 @@ const app = new Hono();
 app.use('/*', cors());
 app.use('/*', requestIdMiddleware);
 app.use('/*', requestLogger);
-app.use('/*', metricsMiddleware);
 
 // Attempt to connect to DB
 connectDB();
@@ -49,7 +46,7 @@ if (isE2ETestMode) {
   app.route('/api/e2e', e2eRoutes);
 }
 
-// Global error handler
+// Global error handler (must be after routes)
 app.onError(errorHandler);
 app.notFound(notFoundHandler);
 
