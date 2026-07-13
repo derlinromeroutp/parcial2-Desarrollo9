@@ -12,7 +12,7 @@ interface BusinessMetric {
   timestamps: number[];
 }
 
-class MetricsStore {
+export class MetricsStore {
   private requests: MetricBucket = { count: 0, totalDuration: 0, errors: 0, byStatus: {} };
   private routes: Record<string, MetricBucket> = {};
   private business: Record<string, BusinessMetric> = {};
