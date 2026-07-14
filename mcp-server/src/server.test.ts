@@ -12,6 +12,7 @@ import type {
   CreateProductResult,
   CreateWarrantyClaimInput,
   CreateWarrantyClaimResult,
+  DeleteProductResult,
   OrderSummary,
   UpdateProductInput,
   UpdateProductResult,
@@ -78,6 +79,10 @@ class FakeBackendApi extends BackendApiClient {
   shouldRejectUpdateProductForbidden = false;
   shouldRejectUpdateProductInvalid = false;
   shouldRejectUpdateProductNotFound = false;
+  shouldRejectDeleteProductAuth = false;
+  shouldRejectDeleteProductForbidden = false;
+  shouldRejectDeleteProductNotFound = false;
+  shouldRejectDeleteProductBackend = false;
   lastOrdersToken?: string;
   lastWarrantiesToken?: string;
   lastCreateWarrantyToken?: string;
@@ -87,6 +92,8 @@ class FakeBackendApi extends BackendApiClient {
   lastUpdateProductToken?: string;
   lastUpdateProductId?: string;
   lastUpdateProductInput?: UpdateProductInput;
+  lastDeleteProductToken?: string;
+  lastDeleteProductId?: string;
   lastUpdateWarrantyToken?: string;
   lastUpdateWarrantyId?: string;
   lastUpdateWarrantyInput?: UpdateWarrantyStatusInput;
@@ -529,6 +536,59 @@ class FakeBackendApi extends BackendApiClient {
       },
     };
   }
+
+  override async deleteProduct(
+    token: string,
+    productId: string,
+    _requestId: string,
+  ): Promise<{ data: DeleteProductResult }> {
+    this.lastDeleteProductToken = token;
+    this.lastDeleteProductId = productId;
+
+    if (this.shouldRejectDeleteProductAuth) {
+      throw new BackendApiError('Unauthorized', 401, {
+        error: 'Unauthorized',
+      });
+    }
+
+    if (this.shouldRejectDeleteProductForbidden) {
+      throw new BackendApiError('Forbidden', 403, {
+        error: 'Forbidden',
+      });
+    }
+
+    if (this.shouldRejectDeleteProductNotFound) {
+      throw new BackendApiError('Not found', 404, {
+        success: false,
+        message: 'Producto no encontrado',
+      });
+    }
+
+    if (this.shouldRejectDeleteProductBackend) {
+      throw new BackendApiError('Internal error', 500, {
+        success: false,
+        message: 'Unexpected error',
+      });
+    }
+
+    return {
+      data: {
+        success: true,
+        message: 'Producto eliminado correctamente',
+        data: {
+          id: productId,
+          name: 'iPhone 13 Reacondicionado',
+          description: '128GB',
+          price: 699,
+          stock: 4,
+          condition: 'A',
+          category: 'celular',
+          primaryImageUrl: 'https://cdn.test/iphone.jpg',
+          imageUrls: ['https://cdn.test/iphone.jpg', 'https://cdn.test/iphone-back.jpg'],
+        },
+      },
+    };
+  }
 }
 
 test('health endpoint reports backend connectivity', async () => {
@@ -626,10 +686,10 @@ test('mcp handshake works and exposes search_products tool', async () => {
   assert.equal(serverVersion?.name, 'SafeTech MCP Server');
 
   const tools = await client.listTools();
-  assert.equal(tools.tools.length, 9);
+  assert.equal(tools.tools.length, 10);
   assert.deepEqual(
     tools.tools.map((tool) => tool.name).sort(),
-    ['assign_technician', 'create_product', 'create_warranty_claim', 'get_product', 'list_my_orders', 'list_my_warranties', 'search_products', 'update_product', 'update_warranty_status'],
+    ['assign_technician', 'create_product', 'create_warranty_claim', 'delete_product', 'get_product', 'list_my_orders', 'list_my_warranties', 'search_products', 'update_product', 'update_warranty_status'],
   );
 
   const result = await client.callTool({
@@ -1063,6 +1123,185 @@ test('update_product normalizes product not found responses', async () => {
   assert.deepEqual(result.structuredContent, {
     code: 'PRODUCT_NOT_FOUND',
     message: 'Producto no encontrado',
+  });
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('delete_product deletes a product for an admin user', async () => {
+  const backendApi = new FakeBackendApi();
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator('admin'),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'delete_product',
+    arguments: {
+      productId: '6870f1e2a1234567890ab222',
+      reason: 'Producto retirado del catalogo',
+    },
+  });
+
+  assert.equal(result.isError, undefined);
+  assert.equal(backendApi.lastDeleteProductToken, 'test-token');
+  assert.equal(backendApi.lastDeleteProductId, '6870f1e2a1234567890ab222');
+  assert.deepEqual(result.structuredContent, {
+    success: true,
+    message: 'Producto eliminado correctamente',
+    data: {
+      id: '6870f1e2a1234567890ab222',
+      name: 'iPhone 13 Reacondicionado',
+      description: '128GB',
+      price: 699,
+      stock: 4,
+      condition: 'A',
+      category: 'celular',
+      primaryImageUrl: 'https://cdn.test/iphone.jpg',
+      imageUrls: ['https://cdn.test/iphone.jpg', 'https://cdn.test/iphone-back.jpg'],
+    },
+  });
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('delete_product rejects non-admin users before calling the backend', async () => {
+  const backendApi = new FakeBackendApi();
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator('user'),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'delete_product',
+    arguments: {
+      productId: '6870f1e2a1234567890ab222',
+    },
+  });
+
+  assert.equal(result.isError, true);
+  assert.equal(backendApi.lastDeleteProductToken, undefined);
+  assert.deepEqual(result.structuredContent, {
+    code: 'FORBIDDEN',
+    message: 'Solo un administrador puede eliminar productos.',
+  });
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('delete_product normalizes product not found responses', async () => {
+  const backendApi = new FakeBackendApi();
+  backendApi.shouldRejectDeleteProductNotFound = true;
+
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator('admin'),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'delete_product',
+    arguments: {
+      productId: '6870f1e2a1234567890ab999',
+    },
+  });
+
+  assert.equal(result.isError, true);
+  assert.deepEqual(result.structuredContent, {
+    code: 'PRODUCT_NOT_FOUND',
+    message: 'Producto no encontrado',
+  });
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('delete_product normalizes unexpected backend failures', async () => {
+  const backendApi = new FakeBackendApi();
+  backendApi.shouldRejectDeleteProductBackend = true;
+
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator('admin'),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'delete_product',
+    arguments: {
+      productId: '6870f1e2a1234567890ab222',
+    },
+  });
+
+  assert.equal(result.isError, true);
+  assert.deepEqual(result.structuredContent, {
+    code: 'BACKEND_500',
+    message: 'No fue posible eliminar el producto en este momento.',
   });
 
   await transport.terminateSession();

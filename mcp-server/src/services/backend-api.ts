@@ -4,6 +4,7 @@ import type {
   BackendAssignTechnicianResponse,
   CreateWarrantyClaimInput,
   CreateWarrantyClaimResult,
+  DeleteProductResult,
   CreateProductInput,
   CreateProductResult,
   UpdateProductInput,
@@ -13,6 +14,7 @@ import type {
   BackendWarrantyResponse,
   BackendHealth,
   ProductCreateResponse,
+  ProductDeleteResponse,
   OrderSummary,
   ProductDetail,
   ProductDetailResponse,
@@ -178,6 +180,38 @@ export class BackendApiClient {
         category: response.data.category,
         primaryImageUrl: response.data.image_urls?.[0],
         imageUrls: response.data.image_urls ?? [],
+      },
+    };
+  }
+
+  async deleteProduct(
+    token: string,
+    productId: string,
+    requestId: string,
+  ): Promise<{ data: DeleteProductResult }> {
+    const response = await this.request<ProductDeleteResponse>(`/products/${productId}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'x-request-id': requestId,
+      },
+    });
+
+    return {
+      data: {
+        success: response.success,
+        message: response.message,
+        data: {
+          id: response.data._id,
+          name: response.data.name,
+          description: response.data.description,
+          price: response.data.price,
+          stock: response.data.stock,
+          condition: response.data.condition,
+          category: response.data.category,
+          primaryImageUrl: response.data.image_urls?.[0],
+          imageUrls: response.data.image_urls ?? [],
+        },
       },
     };
   }
