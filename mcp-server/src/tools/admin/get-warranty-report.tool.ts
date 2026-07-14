@@ -8,11 +8,8 @@ import type { Logger } from '../../utils/logger.js';
 import { buildToolMeta } from '../access-control.js';
 
 const getWarrantyReportInputSchema = z.object({
-  from: z.string().datetime({ offset: true }),
-  to: z.string().datetime({ offset: true }),
-}).refine(({ from, to }) => new Date(from).getTime() <= new Date(to).getTime(), {
-  message: 'La fecha inicial no puede ser posterior a la fecha final',
-  path: ['from'],
+  from: z.string().min(1),
+  to: z.string().min(1),
 });
 
 const getWarrantyReportOutputSchema = z.object({
@@ -124,7 +121,9 @@ export function registerGetWarrantyReportTool(
           };
         }
 
-        const response = await backendApi.getWarrantyReport(token, input, auditRequestId);
+        const validatedInput = validateWarrantyReportInput(input);
+
+        const response = await backendApi.getWarrantyReport(token, validatedInput, auditRequestId);
         const output = response.data;
 
         logAuditEvent(logger, {
@@ -210,6 +209,27 @@ function normalizeToolError(error: unknown) {
     code: 'INTERNAL_ERROR',
     message: 'Ocurrio un error inesperado al consultar el reporte de garantias.',
   };
+}
+
+function validateWarrantyReportInput(input: { from: string; to: string }) {
+  const fromValidation = z.string().datetime({ offset: true }).safeParse(input.from);
+  const toValidation = z.string().datetime({ offset: true }).safeParse(input.to);
+
+  if (!fromValidation.success || !toValidation.success) {
+    throw new BackendApiError('Invalid query', 400, {
+      success: false,
+      errors: [{ message: 'from y to deben ser fechas ISO 8601 validas con zona horaria' }],
+    });
+  }
+
+  if (new Date(input.from).getTime() > new Date(input.to).getTime()) {
+    throw new BackendApiError('Invalid query', 400, {
+      success: false,
+      errors: [{ message: 'La fecha inicial no puede ser posterior a la fecha final' }],
+    });
+  }
+
+  return input;
 }
 
 function extractBackendMessage(body: unknown) {

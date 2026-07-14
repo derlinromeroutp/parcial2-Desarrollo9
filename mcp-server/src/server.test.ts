@@ -2783,6 +2783,49 @@ test('get_warranty_report rejects non-admin users before calling the backend', a
   await client.close();
 });
 
+test('get_warranty_report rejects non-admin users even with an inverted date range', async () => {
+  const backendApi = new FakeBackendApi();
+
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator('user'),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'get_warranty_report',
+    arguments: {
+      from: '2026-07-14T23:59:59.999Z',
+      to: '2026-07-01T00:00:00.000Z',
+    },
+  });
+
+  assert.equal(result.isError, true);
+  assert.deepEqual(result.structuredContent, {
+    code: 'FORBIDDEN',
+    message: 'Solo un administrador puede consultar reportes de garantias.',
+  });
+  assert.equal(backendApi.lastWarrantyReportToken, undefined);
+
+  await transport.terminateSession();
+  await client.close();
+});
+
 test('get_warranty_report normalizes invalid date range errors from backend', async () => {
   const backendApi = new FakeBackendApi();
   backendApi.shouldRejectWarrantyReportInvalid = true;
