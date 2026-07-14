@@ -10,6 +10,8 @@ import type {
   AssignTechnicianResult,
   CreateProductInput,
   CreateProductResult,
+  CreateSupportTicketInput,
+  CreateSupportTicketResult,
   CreateWarrantyClaimInput,
   CreateWarrantyClaimResult,
   DeleteProductResult,
@@ -68,6 +70,8 @@ class FakeBackendApi extends BackendApiClient {
   shouldRejectCreateWarrantyNotFound = false;
   shouldRejectCreateWarrantyConflict = false;
   shouldRejectCreateWarrantyInvalid = false;
+  shouldRejectCreateSupportAuth = false;
+  shouldRejectCreateSupportInvalid = false;
   shouldRejectUpdateWarrantyAuth = false;
   shouldRejectUpdateWarrantyForbidden = false;
   shouldRejectUpdateWarrantyNotFound = false;
@@ -103,6 +107,8 @@ class FakeBackendApi extends BackendApiClient {
   lastWarrantiesToken?: string;
   lastCreateWarrantyToken?: string;
   lastCreateWarrantyInput?: CreateWarrantyClaimInput;
+  lastCreateSupportToken?: string;
+  lastCreateSupportInput?: CreateSupportTicketInput;
   lastCreateProductToken?: string;
   lastCreateProductInput?: CreateProductInput;
   lastUpdateProductToken?: string;
@@ -598,6 +604,34 @@ class FakeBackendApi extends BackendApiClient {
     };
   }
 
+  override async createSupportTicket(
+    token: string,
+    input: CreateSupportTicketInput,
+    _requestId: string,
+  ): Promise<{ data: CreateSupportTicketResult }> {
+    this.lastCreateSupportToken = token;
+    this.lastCreateSupportInput = input;
+
+    if (this.shouldRejectCreateSupportAuth) {
+      throw new BackendApiError('Unauthorized', 401, {
+        error: 'Unauthorized: User ID not found',
+      });
+    }
+
+    if (this.shouldRejectCreateSupportInvalid) {
+      throw new BackendApiError('Bad request', 400, {
+        error: 'La descripcion debe tener al menos 10 caracteres',
+      });
+    }
+
+    return {
+      data: {
+        ticketId: 'support_new_1',
+        status: 'open',
+      },
+    };
+  }
+
   override async updateWarrantyStatus(
     token: string,
     warrantyId: string,
@@ -863,10 +897,10 @@ test('mcp handshake works and exposes search and catalog tools', async () => {
   assert.equal(serverVersion?.name, 'SafeTech MCP Server');
 
   const tools = await client.listTools();
-  assert.equal(tools.tools.length, 13);
+  assert.equal(tools.tools.length, 14);
   assert.deepEqual(
     tools.tools.map((tool) => tool.name).sort(),
-    ['assign_technician', 'create_product', 'create_warranty_claim', 'delete_product', 'get_product', 'get_sales_report', 'get_warranty_report', 'list_my_orders', 'list_my_warranties', 'search_products', 'search_products_advanced', 'update_product', 'update_warranty_status'],
+    ['assign_technician', 'create_product', 'create_support_ticket', 'create_warranty_claim', 'delete_product', 'get_product', 'get_sales_report', 'get_warranty_report', 'list_my_orders', 'list_my_warranties', 'search_products', 'search_products_advanced', 'update_product', 'update_warranty_status'],
   );
 
   const result = await client.callTool({
@@ -2103,6 +2137,141 @@ test('create_warranty_claim normalizes backend validation failures in a controll
   assert.deepEqual(result.structuredContent, {
     code: 'INVALID_WARRANTY_CLAIM',
     message: 'Garantía Expirada. Plazo Legal agotado',
+  });
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('create_support_ticket creates a support ticket for the authenticated user', async () => {
+  const backendApi = new FakeBackendApi();
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator(),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'create_support_ticket',
+    arguments: {
+      category: 'payments',
+      description: 'Necesito ayuda con un cobro duplicado.',
+      contactChannel: 'email',
+    },
+  });
+
+  assert.equal(result.isError, undefined);
+  assert.equal(backendApi.lastCreateSupportToken, 'test-token');
+  assert.deepEqual(backendApi.lastCreateSupportInput, {
+    category: 'payments',
+    description: 'Necesito ayuda con un cobro duplicado.',
+    contactChannel: 'email',
+  });
+  assert.deepEqual(result.structuredContent, {
+    ticketId: 'support_new_1',
+    status: 'open',
+  });
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('create_support_ticket rejects invalid authenticated sessions in a controlled way', async () => {
+  const backendApi = new FakeBackendApi();
+  backendApi.shouldRejectCreateSupportAuth = true;
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator(),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'create_support_ticket',
+    arguments: {
+      category: 'payments',
+      description: 'Necesito ayuda con un cobro duplicado.',
+      contactChannel: 'email',
+    },
+  });
+
+  assert.equal(result.isError, true);
+  assert.deepEqual(result.structuredContent, {
+    code: 'AUTH_REQUIRED',
+    message: 'La sesion no es valida para crear tickets de soporte.',
+  });
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('create_support_ticket normalizes backend validation failures in a controlled way', async () => {
+  const backendApi = new FakeBackendApi();
+  backendApi.shouldRejectCreateSupportInvalid = true;
+
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator(),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'create_support_ticket',
+    arguments: {
+      category: 'payments',
+      description: 'Necesito ayuda con un cobro duplicado.',
+      contactChannel: 'email',
+    },
+  });
+
+  assert.equal(result.isError, true);
+  assert.deepEqual(result.structuredContent, {
+    code: 'INVALID_SUPPORT_TICKET',
+    message: 'La descripcion debe tener al menos 10 caracteres',
   });
 
   await transport.terminateSession();

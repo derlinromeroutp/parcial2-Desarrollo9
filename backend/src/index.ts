@@ -19,6 +19,7 @@ import addressRoutes from './routes/address.routes';
 import wishlistRoutes from './routes/wishlist.routes';
 import e2eRoutes from './routes/e2e.routes';
 import reportRoutes from './routes/report.routes';
+import supportRoutes from './routes/support.routes';
 import { isE2ETestMode } from './lib/e2e';
 
 const app = new Hono();
@@ -53,6 +54,7 @@ app.route('/api/technicians', technicianRoutes);
 app.route('/api/addresses', addressRoutes);
 app.route('/api/wishlist', wishlistRoutes);
 app.route('/api/reports', reportRoutes);
+app.route('/api/support-tickets', supportRoutes);
 if (isE2ETestMode) {
   app.route('/api/e2e', e2eRoutes);
 }

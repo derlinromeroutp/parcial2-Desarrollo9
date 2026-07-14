@@ -8,6 +8,7 @@ import { registerGetProductTool } from './tools/public/get-product.tool.js';
 import { registerListMyOrdersTool } from './tools/user/list-my-orders.tool.js';
 import { registerListMyWarrantiesTool } from './tools/user/list-my-warranties.tool.js';
 import { registerCreateWarrantyClaimTool } from './tools/user/create-warranty-claim.tool.js';
+import { registerCreateSupportTicketTool } from './tools/user/create-support-ticket.tool.js';
 import { registerUpdateWarrantyStatusTool } from './tools/admin/update-warranty-status.tool.js';
 import { registerAssignTechnicianTool } from './tools/admin/assign-technician.tool.js';
 import { registerCreateProductTool } from './tools/admin/create-product.tool.js';
@@ -37,6 +38,7 @@ export function buildServer({ env, logger, backendApi, authInfo }: ServerDepende
   registerListMyOrdersTool(server, { env, logger, backendApi });
   registerListMyWarrantiesTool(server, { env, logger, backendApi });
   registerCreateWarrantyClaimTool(server, { env, logger, backendApi });
+  registerCreateSupportTicketTool(server, { env, logger, backendApi });
   registerUpdateWarrantyStatusTool(server, { env, logger, backendApi });
   registerAssignTechnicianTool(server, { env, logger, backendApi });
   registerCreateProductTool(server, { env, logger, backendApi });
