@@ -45,6 +45,19 @@ export interface CreateProductInput {
 
 export interface CreateProductResult extends ProductDetail {}
 
+export interface UpdateProductInput {
+  name?: string;
+  description?: string;
+  price?: number;
+  stock?: number;
+  condition?: 'A' | 'B' | 'C';
+  category?: 'celular' | 'laptop' | 'pc' | 'auriculares' | 'tablet';
+  imageUrls?: string[];
+  reason?: string;
+}
+
+export interface UpdateProductResult extends ProductDetail {}
+
 export interface ProductListResponse {
   success: boolean;
   data: Array<{

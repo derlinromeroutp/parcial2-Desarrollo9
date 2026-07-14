@@ -13,6 +13,8 @@ import type {
   CreateWarrantyClaimInput,
   CreateWarrantyClaimResult,
   OrderSummary,
+  UpdateProductInput,
+  UpdateProductResult,
   UpdateWarrantyStatusInput,
   UpdateWarrantyStatusResult,
   WarrantySummary,
@@ -72,12 +74,19 @@ class FakeBackendApi extends BackendApiClient {
   shouldRejectCreateProductAuth = false;
   shouldRejectCreateProductForbidden = false;
   shouldRejectCreateProductInvalid = false;
+  shouldRejectUpdateProductAuth = false;
+  shouldRejectUpdateProductForbidden = false;
+  shouldRejectUpdateProductInvalid = false;
+  shouldRejectUpdateProductNotFound = false;
   lastOrdersToken?: string;
   lastWarrantiesToken?: string;
   lastCreateWarrantyToken?: string;
   lastCreateWarrantyInput?: CreateWarrantyClaimInput;
   lastCreateProductToken?: string;
   lastCreateProductInput?: CreateProductInput;
+  lastUpdateProductToken?: string;
+  lastUpdateProductId?: string;
+  lastUpdateProductInput?: UpdateProductInput;
   lastUpdateWarrantyToken?: string;
   lastUpdateWarrantyId?: string;
   lastUpdateWarrantyInput?: UpdateWarrantyStatusInput;
@@ -207,6 +216,57 @@ class FakeBackendApi extends BackendApiClient {
         category: input.category,
         primaryImageUrl: input.imageUrls?.[0],
         imageUrls: input.imageUrls ?? [],
+      },
+    };
+  }
+
+  override async updateProduct(
+    token: string,
+    productId: string,
+    input: UpdateProductInput,
+    _requestId: string,
+  ): Promise<{ data: UpdateProductResult }> {
+    this.lastUpdateProductToken = token;
+    this.lastUpdateProductId = productId;
+    this.lastUpdateProductInput = input;
+
+    if (this.shouldRejectUpdateProductAuth) {
+      throw new BackendApiError('Unauthorized', 401, {
+        error: 'Unauthorized',
+      });
+    }
+
+    if (this.shouldRejectUpdateProductForbidden) {
+      throw new BackendApiError('Forbidden', 403, {
+        error: 'Forbidden',
+      });
+    }
+
+    if (this.shouldRejectUpdateProductNotFound) {
+      throw new BackendApiError('Not found', 404, {
+        success: false,
+        message: 'Producto no encontrado',
+      });
+    }
+
+    if (this.shouldRejectUpdateProductInvalid) {
+      throw new BackendApiError('Bad request', 400, {
+        success: false,
+        message: 'El precio debe ser un valor positivo',
+      });
+    }
+
+    return {
+      data: {
+        id: productId,
+        name: input.name ?? 'iPhone 13 Reacondicionado',
+        ...(input.description !== undefined ? { description: input.description } : {}),
+        price: input.price ?? 699,
+        stock: input.stock ?? 4,
+        condition: input.condition ?? 'A',
+        category: input.category ?? 'celular',
+        primaryImageUrl: input.imageUrls?.[0] ?? 'https://cdn.test/iphone.jpg',
+        imageUrls: input.imageUrls ?? ['https://cdn.test/iphone.jpg'],
       },
     };
   }
@@ -566,10 +626,10 @@ test('mcp handshake works and exposes search_products tool', async () => {
   assert.equal(serverVersion?.name, 'SafeTech MCP Server');
 
   const tools = await client.listTools();
-  assert.equal(tools.tools.length, 8);
+  assert.equal(tools.tools.length, 9);
   assert.deepEqual(
     tools.tools.map((tool) => tool.name).sort(),
-    ['assign_technician', 'create_product', 'create_warranty_claim', 'get_product', 'list_my_orders', 'list_my_warranties', 'search_products', 'update_warranty_status'],
+    ['assign_technician', 'create_product', 'create_warranty_claim', 'get_product', 'list_my_orders', 'list_my_warranties', 'search_products', 'update_product', 'update_warranty_status'],
   );
 
   const result = await client.callTool({
@@ -726,6 +786,66 @@ test('create_product creates a product for an admin user', async () => {
   await client.close();
 });
 
+test('update_product updates a product for an admin user', async () => {
+  const backendApi = new FakeBackendApi();
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator('admin'),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'update_product',
+    arguments: {
+      productId: '6870f1e2a1234567890ab222',
+      updates: {
+        price: 749,
+        stock: 6,
+        imageUrls: ['https://cdn.test/iphone-new.jpg'],
+        reason: 'Reconteo de inventario',
+      },
+    },
+  });
+
+  assert.equal(result.isError, undefined);
+  assert.equal(backendApi.lastUpdateProductToken, 'test-token');
+  assert.equal(backendApi.lastUpdateProductId, '6870f1e2a1234567890ab222');
+  assert.deepEqual(backendApi.lastUpdateProductInput, {
+    price: 749,
+    stock: 6,
+    imageUrls: ['https://cdn.test/iphone-new.jpg'],
+    reason: 'Reconteo de inventario',
+  });
+  assert.deepEqual(result.structuredContent, {
+    id: '6870f1e2a1234567890ab222',
+    name: 'iPhone 13 Reacondicionado',
+    price: 749,
+    stock: 6,
+    condition: 'A',
+    category: 'celular',
+    primaryImageUrl: 'https://cdn.test/iphone-new.jpg',
+    imageUrls: ['https://cdn.test/iphone-new.jpg'],
+  });
+
+  await transport.terminateSession();
+  await client.close();
+});
+
 test('create_product rejects non-admin users before calling the backend', async () => {
   const backendApi = new FakeBackendApi();
   const { app } = createApp({
@@ -764,6 +884,50 @@ test('create_product rejects non-admin users before calling the backend', async 
   assert.deepEqual(result.structuredContent, {
     code: 'FORBIDDEN',
     message: 'Solo un administrador puede crear productos.',
+  });
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('update_product rejects non-admin users before calling the backend', async () => {
+  const backendApi = new FakeBackendApi();
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator('user'),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'update_product',
+    arguments: {
+      productId: '6870f1e2a1234567890ab222',
+      updates: {
+        price: 749,
+      },
+    },
+  });
+
+  assert.equal(result.isError, true);
+  assert.equal(backendApi.lastUpdateProductToken, undefined);
+  assert.deepEqual(result.structuredContent, {
+    code: 'FORBIDDEN',
+    message: 'Solo un administrador puede actualizar productos.',
   });
 
   await transport.terminateSession();
@@ -809,6 +973,96 @@ test('create_product normalizes backend validation failures', async () => {
   assert.deepEqual(result.structuredContent, {
     code: 'INVALID_PRODUCT_INPUT',
     message: 'La categoría es inválida',
+  });
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('update_product normalizes backend validation failures', async () => {
+  const backendApi = new FakeBackendApi();
+  backendApi.shouldRejectUpdateProductInvalid = true;
+
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator('admin'),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'update_product',
+    arguments: {
+      productId: '6870f1e2a1234567890ab222',
+      updates: {
+        price: 749,
+      },
+    },
+  });
+
+  assert.equal(result.isError, true);
+  assert.deepEqual(result.structuredContent, {
+    code: 'INVALID_PRODUCT_INPUT',
+    message: 'El precio debe ser un valor positivo',
+  });
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('update_product normalizes product not found responses', async () => {
+  const backendApi = new FakeBackendApi();
+  backendApi.shouldRejectUpdateProductNotFound = true;
+
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator('admin'),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'update_product',
+    arguments: {
+      productId: '6870f1e2a1234567890ab999',
+      updates: {
+        stock: 2,
+      },
+    },
+  });
+
+  assert.equal(result.isError, true);
+  assert.deepEqual(result.structuredContent, {
+    code: 'PRODUCT_NOT_FOUND',
+    message: 'Producto no encontrado',
   });
 
   await transport.terminateSession();
