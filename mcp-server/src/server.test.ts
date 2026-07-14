@@ -21,6 +21,8 @@ import type {
   UpdateProductResult,
   UpdateWarrantyStatusInput,
   UpdateWarrantyStatusResult,
+  WarrantyReportInput,
+  WarrantyReportResult,
   WarrantySummary,
 } from './types.js';
 
@@ -90,9 +92,14 @@ class FakeBackendApi extends BackendApiClient {
   shouldRejectSalesReportAuth = false;
   shouldRejectSalesReportForbidden = false;
   shouldRejectSalesReportInvalid = false;
+  shouldRejectWarrantyReportAuth = false;
+  shouldRejectWarrantyReportForbidden = false;
+  shouldRejectWarrantyReportInvalid = false;
   lastOrdersToken?: string;
   lastSalesReportToken?: string;
   lastSalesReportInput?: SalesReportInput;
+  lastWarrantyReportToken?: string;
+  lastWarrantyReportInput?: WarrantyReportInput;
   lastWarrantiesToken?: string;
   lastCreateWarrantyToken?: string;
   lastCreateWarrantyInput?: CreateWarrantyClaimInput;
@@ -465,6 +472,51 @@ class FakeBackendApi extends BackendApiClient {
     };
   }
 
+  override async getWarrantyReport(
+    token: string,
+    input: WarrantyReportInput,
+    _requestId: string,
+  ): Promise<{ data: WarrantyReportResult }> {
+    this.lastWarrantyReportToken = token;
+    this.lastWarrantyReportInput = input;
+
+    if (this.shouldRejectWarrantyReportAuth) {
+      throw new BackendApiError('Unauthorized', 401, { success: false, message: 'Unauthorized' });
+    }
+
+    if (this.shouldRejectWarrantyReportForbidden) {
+      throw new BackendApiError('Forbidden', 403, { success: false, message: 'Forbidden' });
+    }
+
+    if (this.shouldRejectWarrantyReportInvalid) {
+      throw new BackendApiError('Invalid query', 400, {
+        success: false,
+        errors: [{ message: 'La fecha inicial no puede ser posterior a la fecha final' }],
+      });
+    }
+
+    return {
+      data: {
+        summary: {
+          totalCases: 4,
+        },
+        byStatus: [
+          { status: 'pending', count: 2 },
+          { status: 'resolved', count: 1 },
+          { status: 'review', count: 1 },
+        ],
+        byTechnician: [
+          { technicianId: 'tech_1', technicianName: 'Maria Gomez', count: 3 },
+          { technicianName: 'Sin tecnico asignado', count: 1 },
+        ],
+        range: {
+          from: input.from,
+          to: input.to,
+        },
+      },
+    };
+  }
+
   override async getMyWarranties(
     token: string,
     _requestId: string,
@@ -811,10 +863,10 @@ test('mcp handshake works and exposes search and catalog tools', async () => {
   assert.equal(serverVersion?.name, 'SafeTech MCP Server');
 
   const tools = await client.listTools();
-  assert.equal(tools.tools.length, 12);
+  assert.equal(tools.tools.length, 13);
   assert.deepEqual(
     tools.tools.map((tool) => tool.name).sort(),
-    ['assign_technician', 'create_product', 'create_warranty_claim', 'delete_product', 'get_product', 'get_sales_report', 'list_my_orders', 'list_my_warranties', 'search_products', 'search_products_advanced', 'update_product', 'update_warranty_status'],
+    ['assign_technician', 'create_product', 'create_warranty_claim', 'delete_product', 'get_product', 'get_sales_report', 'get_warranty_report', 'list_my_orders', 'list_my_warranties', 'search_products', 'search_products_advanced', 'update_product', 'update_warranty_status'],
   );
 
   const result = await client.callTool({
@@ -2611,6 +2663,153 @@ test('get_sales_report normalizes invalid date range errors from backend', async
 
   const result = await client.callTool({
     name: 'get_sales_report',
+    arguments: {
+      from: '2026-07-01T00:00:00.000Z',
+      to: '2026-07-14T23:59:59.999Z',
+    },
+  });
+
+  assert.equal(result.isError, true);
+  assert.deepEqual(result.structuredContent, {
+    code: 'INVALID_DATE_RANGE',
+    message: 'La fecha inicial no puede ser posterior a la fecha final',
+  });
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('get_warranty_report returns aggregated metrics for admins', async () => {
+  const backendApi = new FakeBackendApi();
+
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator('admin'),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'get_warranty_report',
+    arguments: {
+      from: '2026-07-01T00:00:00.000Z',
+      to: '2026-07-14T23:59:59.999Z',
+    },
+  });
+
+  assert.equal(result.isError, undefined);
+  assert.equal(backendApi.lastWarrantyReportToken, 'test-token');
+  assert.deepEqual(backendApi.lastWarrantyReportInput, {
+    from: '2026-07-01T00:00:00.000Z',
+    to: '2026-07-14T23:59:59.999Z',
+  });
+  assert.deepEqual(result.structuredContent, {
+    summary: {
+      totalCases: 4,
+    },
+    byStatus: [
+      { status: 'pending', count: 2 },
+      { status: 'resolved', count: 1 },
+      { status: 'review', count: 1 },
+    ],
+    byTechnician: [
+      { technicianId: 'tech_1', technicianName: 'Maria Gomez', count: 3 },
+      { technicianName: 'Sin tecnico asignado', count: 1 },
+    ],
+    range: {
+      from: '2026-07-01T00:00:00.000Z',
+      to: '2026-07-14T23:59:59.999Z',
+    },
+  });
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('get_warranty_report rejects non-admin users before calling the backend', async () => {
+  const backendApi = new FakeBackendApi();
+
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator('user'),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'get_warranty_report',
+    arguments: {
+      from: '2026-07-01T00:00:00.000Z',
+      to: '2026-07-14T23:59:59.999Z',
+    },
+  });
+
+  assert.equal(result.isError, true);
+  assert.deepEqual(result.structuredContent, {
+    code: 'FORBIDDEN',
+    message: 'Solo un administrador puede consultar reportes de garantias.',
+  });
+  assert.equal(backendApi.lastWarrantyReportToken, undefined);
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('get_warranty_report normalizes invalid date range errors from backend', async () => {
+  const backendApi = new FakeBackendApi();
+  backendApi.shouldRejectWarrantyReportInvalid = true;
+
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator('admin'),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'get_warranty_report',
     arguments: {
       from: '2026-07-01T00:00:00.000Z',
       to: '2026-07-14T23:59:59.999Z',
