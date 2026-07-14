@@ -1,4 +1,5 @@
 import { Order } from '../models/Order';
+import { WarrantyReport } from '../models/WarrantyReport';
 
 interface GetSalesReportInput {
   from: Date;
@@ -18,6 +19,33 @@ interface SalesReportRange {
 
 export interface SalesReportResult {
   summary: SalesReportSummary;
+  range: SalesReportRange;
+}
+
+interface GetWarrantyReportInput {
+  from: Date;
+  to: Date;
+}
+
+interface WarrantyReportSummary {
+  totalCases: number;
+}
+
+interface WarrantyReportByStatusItem {
+  status: 'pending' | 'review' | 'resolved' | 'rejected' | 'refunded';
+  count: number;
+}
+
+interface WarrantyReportByTechnicianItem {
+  technicianId?: string;
+  technicianName: string;
+  count: number;
+}
+
+export interface WarrantyReportResult {
+  summary: WarrantyReportSummary;
+  byStatus: WarrantyReportByStatusItem[];
+  byTechnician: WarrantyReportByTechnicianItem[];
   range: SalesReportRange;
 }
 
@@ -61,6 +89,99 @@ export async function getSalesReport({ from, to }: GetSalesReportInput): Promise
       grossRevenue,
       averageOrderValue,
     },
+    range: {
+      from: from.toISOString(),
+      to: to.toISOString(),
+    },
+  };
+}
+
+export async function getWarrantyReport({ from, to }: GetWarrantyReportInput): Promise<WarrantyReportResult> {
+  const [totalCasesAggregation, byStatusAggregation, byTechnicianAggregation] = await Promise.all([
+    WarrantyReport.aggregate<{ totalCases: number }>([
+      {
+        $match: {
+          createdAt: {
+            $gte: from,
+            $lte: to,
+          },
+        },
+      },
+      {
+        $count: 'totalCases',
+      },
+    ]),
+    WarrantyReport.aggregate<WarrantyReportByStatusItem>([
+      {
+        $match: {
+          createdAt: {
+            $gte: from,
+            $lte: to,
+          },
+        },
+      },
+      {
+        $group: {
+          _id: '$status',
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          status: '$_id',
+          count: 1,
+        },
+      },
+      {
+        $sort: {
+          status: 1,
+        },
+      },
+    ]),
+    WarrantyReport.aggregate<WarrantyReportByTechnicianItem>([
+      {
+        $match: {
+          createdAt: {
+            $gte: from,
+            $lte: to,
+          },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            technicianId: '$technicianId',
+            technicianName: '$technicianName',
+          },
+          count: { $sum: 1 },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          technicianId: '$_id.technicianId',
+          technicianName: {
+            $ifNull: ['$_id.technicianName', 'Sin tecnico asignado'],
+          },
+          count: 1,
+        },
+      },
+      {
+        $sort: {
+          count: -1,
+          technicianName: 1,
+        },
+      },
+    ]),
+  ]);
+
+  return {
+    summary: {
+      totalCases: totalCasesAggregation[0]?.totalCases ?? 0,
+    },
+    byStatus: byStatusAggregation,
+    byTechnician: byTechnicianAggregation,
     range: {
       from: from.toISOString(),
       to: to.toISOString(),

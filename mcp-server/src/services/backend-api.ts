@@ -13,6 +13,7 @@ import type {
   UpdateProductResult,
   BackendOrderResponse,
   BackendSalesReportResponse,
+  BackendWarrantyReportResponse,
   BackendWarrantyStatusResponse,
   BackendWarrantyResponse,
   BackendHealth,
@@ -27,6 +28,8 @@ import type {
   SalesReportResult,
   UpdateWarrantyStatusInput,
   UpdateWarrantyStatusResult,
+  WarrantyReportInput,
+  WarrantyReportResult,
   WarrantySummary,
 } from '../types.js';
 
@@ -335,6 +338,29 @@ export class BackendApiClient {
     });
 
     const response = await this.request<BackendSalesReportResponse>(`/reports/sales?${search.toString()}`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'x-request-id': requestId,
+      },
+    });
+
+    return {
+      data: response.data,
+    };
+  }
+
+  async getWarrantyReport(
+    token: string,
+    input: WarrantyReportInput,
+    requestId: string,
+  ): Promise<{ data: WarrantyReportResult }> {
+    const search = new URLSearchParams({
+      from: input.from,
+      to: input.to,
+    });
+
+    const response = await this.request<BackendWarrantyReportResponse>(`/reports/warranties?${search.toString()}`, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,

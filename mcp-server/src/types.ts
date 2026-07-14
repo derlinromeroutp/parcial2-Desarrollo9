@@ -283,6 +283,39 @@ export interface BackendSalesReportResponse {
   data: SalesReportResult;
 }
 
+export interface WarrantyReportInput {
+  from: string;
+  to: string;
+}
+
+export interface WarrantyReportSummaryByStatus {
+  status: 'pending' | 'review' | 'resolved' | 'rejected' | 'refunded';
+  count: number;
+}
+
+export interface WarrantyReportSummaryByTechnician {
+  technicianId?: string;
+  technicianName: string;
+  count: number;
+}
+
+export interface WarrantyReportResult {
+  summary: {
+    totalCases: number;
+  };
+  byStatus: WarrantyReportSummaryByStatus[];
+  byTechnician: WarrantyReportSummaryByTechnician[];
+  range: {
+    from: string;
+    to: string;
+  };
+}
+
+export interface BackendWarrantyReportResponse {
+  success: boolean;
+  data: WarrantyReportResult;
+}
+
 export interface UpdateWarrantyStatusInput {
   status: 'review' | 'resolved' | 'rejected' | 'refunded';
   repairNotes?: string;
