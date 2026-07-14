@@ -13,6 +13,7 @@ import { registerAssignTechnicianTool } from './tools/admin/assign-technician.to
 import { registerCreateProductTool } from './tools/admin/create-product.tool.js';
 import { registerUpdateProductTool } from './tools/admin/update-product.tool.js';
 import { registerDeleteProductTool } from './tools/admin/delete-product.tool.js';
+import { registerGetSalesReportTool } from './tools/admin/get-sales-report.tool.js';
 import type { Logger } from './utils/logger.js';
 
 interface ServerDependencies {
@@ -40,6 +41,7 @@ export function buildServer({ env, logger, backendApi, authInfo }: ServerDepende
   registerCreateProductTool(server, { env, logger, backendApi });
   registerUpdateProductTool(server, { env, logger, backendApi });
   registerDeleteProductTool(server, { env, logger, backendApi });
+  registerGetSalesReportTool(server, { env, logger, backendApi });
 
   return server;
 }

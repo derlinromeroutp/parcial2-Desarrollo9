@@ -259,6 +259,30 @@ export interface CreateWarrantyClaimResult {
   status: 'pending' | 'review' | 'resolved' | 'rejected' | 'refunded';
 }
 
+export interface SalesReportInput {
+  from: string;
+  to: string;
+}
+
+export interface SalesReportSummary {
+  ordersCount: number;
+  grossRevenue: number;
+  averageOrderValue: number;
+}
+
+export interface SalesReportResult {
+  summary: SalesReportSummary;
+  range: {
+    from: string;
+    to: string;
+  };
+}
+
+export interface BackendSalesReportResponse {
+  success: boolean;
+  data: SalesReportResult;
+}
+
 export interface UpdateWarrantyStatusInput {
   status: 'review' | 'resolved' | 'rejected' | 'refunded';
   repairNotes?: string;
