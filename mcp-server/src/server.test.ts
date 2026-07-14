@@ -14,6 +14,7 @@ import type {
   CreateWarrantyClaimResult,
   DeleteProductResult,
   OrderSummary,
+  ProductSearchAdvancedInput,
   UpdateProductInput,
   UpdateProductResult,
   UpdateWarrantyStatusInput,
@@ -52,6 +53,7 @@ class FakeAuthenticator implements Authenticator {
 
 class FakeBackendApi extends BackendApiClient {
   shouldFailProducts = false;
+  shouldFailAdvancedProducts = false;
   shouldFailGetProduct = false;
   shouldNotFindProduct = false;
   shouldRejectProductId = false;
@@ -100,6 +102,7 @@ class FakeBackendApi extends BackendApiClient {
   lastAssignTechnicianToken?: string;
   lastAssignTechnicianId?: string;
   lastAssignTechnicianInput?: AssignTechnicianInput;
+  lastAdvancedProductFilters?: ProductSearchAdvancedInput;
 
   constructor() {
     super('http://backend.test/api');
@@ -145,6 +148,83 @@ class FakeBackendApi extends BackendApiClient {
 
     return {
       data: filters.name ? data.filter((product) => product.name.includes(filters.name!)) : data,
+    };
+  }
+
+  override async searchProductsAdvanced(filters: ProductSearchAdvancedInput) {
+    this.lastAdvancedProductFilters = filters;
+
+    if (this.shouldFailAdvancedProducts) {
+      throw new BackendApiError('Bad request', 400, {
+        success: false,
+        errors: [{ message: 'Invalid advanced filters' }],
+      });
+    }
+
+    const data = [
+      {
+        id: 'prod_1',
+        name: 'iPhone 13 Reacondicionado',
+        description: '128GB',
+        price: 699,
+        stock: 4,
+        condition: 'A' as const,
+        category: 'celular' as const,
+        primaryImageUrl: 'https://cdn.test/iphone.jpg',
+      },
+      {
+        id: 'prod_2',
+        name: 'Laptop ThinkPad X1',
+        price: 899,
+        stock: 0,
+        condition: 'B' as const,
+        category: 'laptop' as const,
+        primaryImageUrl: 'https://cdn.test/thinkpad.jpg',
+      },
+      {
+        id: 'prod_3',
+        name: 'Galaxy Tab S8',
+        price: 550,
+        stock: 9,
+        condition: 'A' as const,
+        category: 'tablet' as const,
+      },
+    ];
+
+    const filtered = data.filter((product) => {
+      if (filters.name && !product.name.toLowerCase().includes(filters.name.toLowerCase())) {
+        return false;
+      }
+      if (filters.category && product.category !== filters.category) {
+        return false;
+      }
+      if (filters.condition && product.condition !== filters.condition) {
+        return false;
+      }
+      if (filters.minPrice !== undefined && product.price < filters.minPrice) {
+        return false;
+      }
+      if (filters.maxPrice !== undefined && product.price > filters.maxPrice) {
+        return false;
+      }
+      if (filters.available === true && product.stock <= 0) {
+        return false;
+      }
+      if (filters.available === false && product.stock > 0) {
+        return false;
+      }
+      return true;
+    });
+
+    const limited = filters.limit !== undefined ? filtered.slice(0, filters.limit) : filtered;
+
+    return {
+      data: limited,
+      pagination: {
+        page: 1,
+        limit: filters.limit ?? limited.length,
+        total: filtered.length,
+      },
     };
   }
 
@@ -659,7 +739,7 @@ test('unauthenticated mcp requests advertise oauth discovery', async () => {
   assert.ok(body._meta?.['mcp/www_authenticate']?.[0]?.includes('/.well-known/oauth-protected-resource'));
 });
 
-test('mcp handshake works and exposes search_products tool', async () => {
+test('mcp handshake works and exposes search and catalog tools', async () => {
   const backendApi = new FakeBackendApi();
   const { app } = createApp({
     env,
@@ -686,10 +766,10 @@ test('mcp handshake works and exposes search_products tool', async () => {
   assert.equal(serverVersion?.name, 'SafeTech MCP Server');
 
   const tools = await client.listTools();
-  assert.equal(tools.tools.length, 10);
+  assert.equal(tools.tools.length, 11);
   assert.deepEqual(
     tools.tools.map((tool) => tool.name).sort(),
-    ['assign_technician', 'create_product', 'create_warranty_claim', 'delete_product', 'get_product', 'list_my_orders', 'list_my_warranties', 'search_products', 'update_product', 'update_warranty_status'],
+    ['assign_technician', 'create_product', 'create_warranty_claim', 'delete_product', 'get_product', 'list_my_orders', 'list_my_warranties', 'search_products', 'search_products_advanced', 'update_product', 'update_warranty_status'],
   );
 
   const result = await client.callTool({
@@ -718,6 +798,83 @@ test('mcp handshake works and exposes search_products tool', async () => {
     appliedFilters: {
       name: 'iPhone',
       limit: 5,
+    },
+  });
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('search_products_advanced returns filtered normalized products', async () => {
+  const backendApi = new FakeBackendApi();
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator(),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'search_products_advanced',
+    arguments: {
+      category: 'celular',
+      condition: 'A',
+      minPrice: 600,
+      maxPrice: 800,
+      available: true,
+      limit: 10,
+    },
+  });
+
+  assert.equal(result.isError, undefined);
+  assert.deepEqual(backendApi.lastAdvancedProductFilters, {
+    category: 'celular',
+    condition: 'A',
+    minPrice: 600,
+    maxPrice: 800,
+    available: true,
+    limit: 10,
+  });
+  assert.deepEqual(result.structuredContent, {
+    products: [
+      {
+        id: 'prod_1',
+        name: 'iPhone 13 Reacondicionado',
+        description: '128GB',
+        price: 699,
+        stock: 4,
+        condition: 'A',
+        category: 'celular',
+        primaryImageUrl: 'https://cdn.test/iphone.jpg',
+      },
+    ],
+    count: 1,
+    appliedFilters: {
+      category: 'celular',
+      condition: 'A',
+      minPrice: 600,
+      maxPrice: 800,
+      available: true,
+      limit: 10,
+    },
+    pagination: {
+      page: 1,
+      limit: 10,
+      total: 1,
     },
   });
 
@@ -2192,6 +2349,93 @@ test('search_products normalizes backend validation errors', async () => {
   assert.deepEqual(result.structuredContent, {
     code: 'INVALID_BACKEND_REQUEST',
     message: 'La busqueda no pudo ejecutarse por parametros invalidos.',
+  });
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('search_products_advanced rejects invalid price ranges before calling the backend', async () => {
+  const backendApi = new FakeBackendApi();
+
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator(),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'search_products_advanced',
+    arguments: {
+      minPrice: 900,
+      maxPrice: 100,
+    },
+  });
+
+  assert.equal(result.isError, true);
+  assert.match(
+    String(result.content?.[0] && 'text' in result.content[0] ? result.content[0].text : ''),
+    /minPrice no puede ser mayor que maxPrice/i,
+  );
+  assert.equal(backendApi.lastAdvancedProductFilters, undefined);
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('search_products_advanced normalizes backend validation errors', async () => {
+  const backendApi = new FakeBackendApi();
+  backendApi.shouldFailAdvancedProducts = true;
+
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator(),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'search_products_advanced',
+    arguments: {
+      category: 'tablet',
+      available: true,
+      limit: 5,
+    },
+  });
+
+  assert.equal(result.isError, true);
+  assert.deepEqual(result.structuredContent, {
+    code: 'INVALID_BACKEND_REQUEST',
+    message: 'La busqueda avanzada no pudo ejecutarse por filtros invalidos.',
   });
 
   await transport.terminateSession();

@@ -7,6 +7,8 @@ import type {
   DeleteProductResult,
   CreateProductInput,
   CreateProductResult,
+  ProductPagination,
+  ProductSearchAdvancedInput,
   UpdateProductInput,
   UpdateProductResult,
   BackendOrderResponse,
@@ -80,6 +82,63 @@ export class BackendApiClient {
         category: product.category,
         primaryImageUrl: product.image_urls?.[0],
       })),
+    };
+  }
+
+  async searchProductsAdvanced(
+    filters: ProductSearchAdvancedInput,
+    requestId: string,
+  ): Promise<{ data: ProductSummary[]; pagination?: ProductPagination }> {
+    const search = new URLSearchParams();
+
+    if (filters.name) {
+      search.set('name', filters.name);
+    }
+
+    if (filters.category) {
+      search.set('category', filters.category);
+    }
+
+    if (filters.condition) {
+      search.set('condition', filters.condition);
+    }
+
+    if (filters.minPrice !== undefined) {
+      search.set('minPrice', String(filters.minPrice));
+    }
+
+    if (filters.maxPrice !== undefined) {
+      search.set('maxPrice', String(filters.maxPrice));
+    }
+
+    if (filters.available !== undefined) {
+      search.set('available', String(filters.available));
+    }
+
+    if (filters.limit !== undefined) {
+      search.set('limit', String(filters.limit));
+    }
+
+    const path = search.size > 0 ? `/products?${search.toString()}` : '/products';
+    const response = await this.request<ProductListResponse>(path, {
+      method: 'GET',
+      headers: {
+        'x-request-id': requestId,
+      },
+    });
+
+    return {
+      data: response.data.map((product) => ({
+        id: product._id,
+        name: product.name,
+        description: product.description,
+        price: product.price,
+        stock: product.stock,
+        condition: product.condition,
+        category: product.category,
+        primaryImageUrl: product.image_urls?.[0],
+      })),
+      ...(response.pagination ? { pagination: response.pagination } : {}),
     };
   }
 

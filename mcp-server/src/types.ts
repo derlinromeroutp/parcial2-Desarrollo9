@@ -29,8 +29,24 @@ export interface ProductSummary {
   primaryImageUrl?: string;
 }
 
+export interface ProductSearchAdvancedInput {
+  name?: string;
+  category?: 'celular' | 'laptop' | 'pc' | 'auriculares' | 'tablet';
+  condition?: 'A' | 'B' | 'C';
+  minPrice?: number;
+  maxPrice?: number;
+  available?: boolean;
+  limit?: number;
+}
+
 export interface ProductDetail extends ProductSummary {
   imageUrls: string[];
+}
+
+export interface ProductPagination {
+  page: number;
+  limit: number;
+  total: number;
 }
 
 export interface CreateProductInput {
@@ -83,6 +99,7 @@ export interface ProductListResponse {
     updatedAt?: string;
     __v?: number;
   }>;
+  pagination?: ProductPagination;
 }
 
 export interface ProductDetailResponse {
