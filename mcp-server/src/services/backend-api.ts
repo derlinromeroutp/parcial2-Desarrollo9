@@ -12,6 +12,7 @@ import type {
   UpdateProductInput,
   UpdateProductResult,
   BackendOrderResponse,
+  BackendSalesReportResponse,
   BackendWarrantyStatusResponse,
   BackendWarrantyResponse,
   BackendHealth,
@@ -22,6 +23,8 @@ import type {
   ProductDetailResponse,
   ProductListResponse,
   ProductSummary,
+  SalesReportInput,
+  SalesReportResult,
   UpdateWarrantyStatusInput,
   UpdateWarrantyStatusResult,
   WarrantySummary,
@@ -318,6 +321,29 @@ export class BackendApiClient {
             : {}),
         })),
       })),
+    };
+  }
+
+  async getSalesReport(
+    token: string,
+    input: SalesReportInput,
+    requestId: string,
+  ): Promise<{ data: SalesReportResult }> {
+    const search = new URLSearchParams({
+      from: input.from,
+      to: input.to,
+    });
+
+    const response = await this.request<BackendSalesReportResponse>(`/reports/sales?${search.toString()}`, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'x-request-id': requestId,
+      },
+    });
+
+    return {
+      data: response.data,
     };
   }
 

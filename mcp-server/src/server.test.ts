@@ -15,6 +15,8 @@ import type {
   DeleteProductResult,
   OrderSummary,
   ProductSearchAdvancedInput,
+  SalesReportInput,
+  SalesReportResult,
   UpdateProductInput,
   UpdateProductResult,
   UpdateWarrantyStatusInput,
@@ -85,7 +87,12 @@ class FakeBackendApi extends BackendApiClient {
   shouldRejectDeleteProductForbidden = false;
   shouldRejectDeleteProductNotFound = false;
   shouldRejectDeleteProductBackend = false;
+  shouldRejectSalesReportAuth = false;
+  shouldRejectSalesReportForbidden = false;
+  shouldRejectSalesReportInvalid = false;
   lastOrdersToken?: string;
+  lastSalesReportToken?: string;
+  lastSalesReportInput?: SalesReportInput;
   lastWarrantiesToken?: string;
   lastCreateWarrantyToken?: string;
   lastCreateWarrantyInput?: CreateWarrantyClaimInput;
@@ -417,6 +424,44 @@ class FakeBackendApi extends BackendApiClient {
           ],
         },
       ],
+    };
+  }
+
+  override async getSalesReport(
+    token: string,
+    input: SalesReportInput,
+    _requestId: string,
+  ): Promise<{ data: SalesReportResult }> {
+    this.lastSalesReportToken = token;
+    this.lastSalesReportInput = input;
+
+    if (this.shouldRejectSalesReportAuth) {
+      throw new BackendApiError('Unauthorized', 401, { success: false, message: 'Unauthorized' });
+    }
+
+    if (this.shouldRejectSalesReportForbidden) {
+      throw new BackendApiError('Forbidden', 403, { success: false, message: 'Forbidden' });
+    }
+
+    if (this.shouldRejectSalesReportInvalid) {
+      throw new BackendApiError('Invalid query', 400, {
+        success: false,
+        errors: [{ message: 'La fecha inicial no puede ser posterior a la fecha final' }],
+      });
+    }
+
+    return {
+      data: {
+        summary: {
+          ordersCount: 3,
+          grossRevenue: 1598,
+          averageOrderValue: 532.67,
+        },
+        range: {
+          from: input.from,
+          to: input.to,
+        },
+      },
     };
   }
 
@@ -766,10 +811,10 @@ test('mcp handshake works and exposes search and catalog tools', async () => {
   assert.equal(serverVersion?.name, 'SafeTech MCP Server');
 
   const tools = await client.listTools();
-  assert.equal(tools.tools.length, 11);
+  assert.equal(tools.tools.length, 12);
   assert.deepEqual(
     tools.tools.map((tool) => tool.name).sort(),
-    ['assign_technician', 'create_product', 'create_warranty_claim', 'delete_product', 'get_product', 'list_my_orders', 'list_my_warranties', 'search_products', 'search_products_advanced', 'update_product', 'update_warranty_status'],
+    ['assign_technician', 'create_product', 'create_warranty_claim', 'delete_product', 'get_product', 'get_sales_report', 'list_my_orders', 'list_my_warranties', 'search_products', 'search_products_advanced', 'update_product', 'update_warranty_status'],
   );
 
   const result = await client.callTool({
@@ -2436,6 +2481,146 @@ test('search_products_advanced normalizes backend validation errors', async () =
   assert.deepEqual(result.structuredContent, {
     code: 'INVALID_BACKEND_REQUEST',
     message: 'La busqueda avanzada no pudo ejecutarse por filtros invalidos.',
+  });
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('get_sales_report returns aggregated metrics for admins', async () => {
+  const backendApi = new FakeBackendApi();
+
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator('admin'),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'get_sales_report',
+    arguments: {
+      from: '2026-07-01T00:00:00.000Z',
+      to: '2026-07-14T23:59:59.999Z',
+    },
+  });
+
+  assert.equal(result.isError, undefined);
+  assert.equal(backendApi.lastSalesReportToken, 'test-token');
+  assert.deepEqual(backendApi.lastSalesReportInput, {
+    from: '2026-07-01T00:00:00.000Z',
+    to: '2026-07-14T23:59:59.999Z',
+  });
+  assert.deepEqual(result.structuredContent, {
+    summary: {
+      ordersCount: 3,
+      grossRevenue: 1598,
+      averageOrderValue: 532.67,
+    },
+    range: {
+      from: '2026-07-01T00:00:00.000Z',
+      to: '2026-07-14T23:59:59.999Z',
+    },
+  });
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('get_sales_report rejects non-admin users before calling the backend', async () => {
+  const backendApi = new FakeBackendApi();
+
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator('user'),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'get_sales_report',
+    arguments: {
+      from: '2026-07-01T00:00:00.000Z',
+      to: '2026-07-14T23:59:59.999Z',
+    },
+  });
+
+  assert.equal(result.isError, true);
+  assert.deepEqual(result.structuredContent, {
+    code: 'FORBIDDEN',
+    message: 'Solo un administrador puede consultar reportes de ventas.',
+  });
+  assert.equal(backendApi.lastSalesReportToken, undefined);
+
+  await transport.terminateSession();
+  await client.close();
+});
+
+test('get_sales_report normalizes invalid date range errors from backend', async () => {
+  const backendApi = new FakeBackendApi();
+  backendApi.shouldRejectSalesReportInvalid = true;
+
+  const { app } = createApp({
+    env,
+    logger: createLogger(),
+    authenticator: new FakeAuthenticator('admin'),
+    backendApi,
+  });
+
+  const transport = new StreamableHTTPClientTransport(new URL('http://test.local/mcp'), {
+    fetch: async (url, init) => app.fetch(new Request(url, init)),
+    authProvider: {
+      token: async () => 'test-token',
+    },
+  });
+
+  const client = new Client(
+    { name: 'test-harness', version: '1.0.0' },
+    { versionNegotiation: { mode: 'auto' } },
+  );
+
+  await client.connect(transport);
+
+  const result = await client.callTool({
+    name: 'get_sales_report',
+    arguments: {
+      from: '2026-07-01T00:00:00.000Z',
+      to: '2026-07-14T23:59:59.999Z',
+    },
+  });
+
+  assert.equal(result.isError, true);
+  assert.deepEqual(result.structuredContent, {
+    code: 'INVALID_DATE_RANGE',
+    message: 'La fecha inicial no puede ser posterior a la fecha final',
   });
 
   await transport.terminateSession();
