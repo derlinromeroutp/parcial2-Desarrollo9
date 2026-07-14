@@ -2,8 +2,11 @@ import type {
   AssignTechnicianInput,
   AssignTechnicianResult,
   BackendAssignTechnicianResponse,
+  BackendSupportTicketResponse,
   CreateWarrantyClaimInput,
   CreateWarrantyClaimResult,
+  CreateSupportTicketInput,
+  CreateSupportTicketResult,
   DeleteProductResult,
   CreateProductInput,
   CreateProductResult,
@@ -404,6 +407,29 @@ export class BackendApiClient {
     requestId: string,
   ): Promise<{ data: CreateWarrantyClaimResult }> {
     const response = await this.request<CreateWarrantyClaimResult>('/warranties', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        'x-request-id': requestId,
+      },
+      body: JSON.stringify(input),
+    });
+
+    return {
+      data: {
+        ticketId: response.ticketId,
+        status: response.status,
+      },
+    };
+  }
+
+  async createSupportTicket(
+    token: string,
+    input: CreateSupportTicketInput,
+    requestId: string,
+  ): Promise<{ data: CreateSupportTicketResult }> {
+    const response = await this.request<BackendSupportTicketResponse>('/support-tickets', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

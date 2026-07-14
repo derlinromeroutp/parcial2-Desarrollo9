@@ -259,6 +259,17 @@ export interface CreateWarrantyClaimResult {
   status: 'pending' | 'review' | 'resolved' | 'rejected' | 'refunded';
 }
 
+export interface CreateSupportTicketInput {
+  category: string;
+  description: string;
+  contactChannel: string;
+}
+
+export interface CreateSupportTicketResult {
+  ticketId: string;
+  status: 'open' | 'in_review' | 'closed';
+}
+
 export interface SalesReportInput {
   from: string;
   to: string;
@@ -404,4 +415,9 @@ export interface BackendAssignTechnicianResponse {
   createdAt: string;
   updatedAt?: string;
   resolvedAt?: string;
+}
+
+export interface BackendSupportTicketResponse {
+  ticketId: string;
+  status: 'open' | 'in_review' | 'closed';
 }
