@@ -58,6 +58,16 @@ export interface UpdateProductInput {
 
 export interface UpdateProductResult extends ProductDetail {}
 
+export interface DeleteProductInput {
+  reason?: string;
+}
+
+export interface DeleteProductResult {
+  success: boolean;
+  message: string;
+  data: ProductDetail;
+}
+
 export interface ProductListResponse {
   success: boolean;
   data: Array<{
@@ -94,6 +104,24 @@ export interface ProductDetailResponse {
 
 export interface ProductCreateResponse {
   success: boolean;
+  data: {
+    _id: string;
+    name: string;
+    description?: string;
+    price: number;
+    stock: number;
+    condition: 'A' | 'B' | 'C';
+    category: 'celular' | 'laptop' | 'pc' | 'auriculares' | 'tablet';
+    image_urls?: string[];
+    createdAt?: string;
+    updatedAt?: string;
+    __v?: number;
+  };
+}
+
+export interface ProductDeleteResponse {
+  success: boolean;
+  message: string;
   data: {
     _id: string;
     name: string;

@@ -11,6 +11,7 @@ import { registerUpdateWarrantyStatusTool } from './tools/admin/update-warranty-
 import { registerAssignTechnicianTool } from './tools/admin/assign-technician.tool.js';
 import { registerCreateProductTool } from './tools/admin/create-product.tool.js';
 import { registerUpdateProductTool } from './tools/admin/update-product.tool.js';
+import { registerDeleteProductTool } from './tools/admin/delete-product.tool.js';
 import type { Logger } from './utils/logger.js';
 
 interface ServerDependencies {
@@ -36,6 +37,7 @@ export function buildServer({ env, logger, backendApi, authInfo }: ServerDepende
   registerAssignTechnicianTool(server, { env, logger, backendApi });
   registerCreateProductTool(server, { env, logger, backendApi });
   registerUpdateProductTool(server, { env, logger, backendApi });
+  registerDeleteProductTool(server, { env, logger, backendApi });
 
   return server;
 }

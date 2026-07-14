@@ -235,7 +235,11 @@ export const deleteProduct = async (c: Context) => {
       return c.json({ success: false, message: 'Producto no encontrado' }, 404);
     }
     
-    return c.json({ success: true, message: 'Producto eliminado correctamente' });
+    return c.json({
+      success: true,
+      message: 'Producto eliminado correctamente',
+      data: deletedProduct,
+    });
   } catch (error: any) {
     return c.json({ success: false, message: error.message }, 500);
   }
