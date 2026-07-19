@@ -109,3 +109,14 @@ export async function sendWarrantyStatusChangedEmail(
     `<p>El estado de tu garantia <strong>#${String(warranty._id).slice(-6)}</strong> cambio a: <strong>${label}</strong>.</p>`,
   );
 }
+
+export async function sendPriceDropAlertEmail(
+  to: string,
+  data: { productName: string; oldPrice: number; newPrice: number },
+): Promise<void> {
+  await sendEmail(
+    to,
+    `¡Bajó de precio! ${data.productName}`,
+    `<p>El producto <strong>${data.productName}</strong> de tu lista de deseos bajó de precio.</p><p>Antes: <strong>$${data.oldPrice.toFixed(2)}</strong> &rarr; Ahora: <strong>$${data.newPrice.toFixed(2)}</strong></p>`,
+  );
+}
