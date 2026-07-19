@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useWishlist, useRemoveFromWishlist, useUpdateWishlistNote, useWishlistSuggestions } from '../hooks/useWishlist';
+import { usePriceAlerts, useCreatePriceAlert, useDeactivatePriceAlert } from '../hooks/usePriceAlerts';
 import { useCartStore } from '../store/cart.store';
 import { SignInButton, useAuth } from '../lib/auth';
 import { Skeleton } from '../components/ui/Skeleton';
@@ -17,8 +18,11 @@ const Wishlist: React.FC = () => {
   const { isLoaded, isSignedIn } = useAuth();
   const { data: items, isLoading, isError } = useWishlist();
   const { data: suggestions } = useWishlistSuggestions();
+  const { data: priceAlerts } = usePriceAlerts();
   const removeMutation = useRemoveFromWishlist();
   const updateNoteMutation = useUpdateWishlistNote();
+  const createAlertMutation = useCreatePriceAlert();
+  const deactivateAlertMutation = useDeactivatePriceAlert();
   const addItem = useCartStore(s => s.addItem);
   const toggleDrawer = useCartStore(s => s.toggleDrawer);
   const [editingNote, setEditingNote] = useState<string | null>(null);
@@ -41,6 +45,18 @@ const Wishlist: React.FC = () => {
     toggleDrawer();
     setAddedId(product._id);
     setTimeout(() => setAddedId(null), 1500);
+  };
+
+  const getActiveAlert = (productId: string) =>
+    priceAlerts?.find(alert => alert.product && alert.product._id === productId && alert.active);
+
+  const handleTogglePriceAlert = (productId: string) => {
+    const activeAlert = getActiveAlert(productId);
+    if (activeAlert) {
+      deactivateAlertMutation.mutate(activeAlert._id);
+    } else {
+      createAlertMutation.mutate(productId);
+    }
   };
 
   if (isLoaded && !isSignedIn) {
@@ -126,6 +142,9 @@ const Wishlist: React.FC = () => {
                     <Link to={`/product/${item.product._id}`} className="wl-card-name">{item.product.name}</Link>
                     <p className="wl-card-cat">{CATEGORY_LABEL[item.product.category] ?? item.product.category}</p>
                     <p className="wl-card-price">{fmt(item.product.price)}</p>
+                    {getActiveAlert(item.product._id)?.triggered && (
+                      <p className="wl-price-drop-badge">¡Bajó de precio!</p>
+                    )}
 
                     {editingNote === item.product._id ? (
                       <div className="wl-note-edit">
@@ -155,6 +174,13 @@ const Wishlist: React.FC = () => {
                         onClick={() => handleToggleNote(item.product._id, item.note)}
                       >
                         {editingNote === item.product._id ? 'Guardar nota' : 'Nota'}
+                      </button>
+                      <button
+                        className={`wl-btn wl-btn-alert ${getActiveAlert(item.product._id) ? 'wl-btn-alert-active' : ''}`}
+                        onClick={() => handleTogglePriceAlert(item.product._id)}
+                        title={getActiveAlert(item.product._id) ? 'Desactivar alerta de precio' : 'Avisarme si baja de precio'}
+                      >
+                        {getActiveAlert(item.product._id) ? '🔔' : '🔕'}
                       </button>
                       <button
                         className="wl-btn wl-btn-remove"
@@ -226,8 +252,11 @@ const Wishlist: React.FC = () => {
         .wl-btn-cart:hover { background: #333; }
         .wl-btn-cart:disabled { opacity: .5; cursor: not-allowed; }
         .wl-btn-note { flex: none; width: 36px; flex-shrink: 0; }
+        .wl-btn-alert { flex: none; width: 36px; flex-shrink: 0; }
+        .wl-btn-alert-active { background: rgba(46,125,50,.08); border-color: rgba(46,125,50,.4); }
         .wl-btn-remove { flex: none; width: 36px; flex-shrink: 0; color: #ef4444; border-color: rgba(239,68,68,.3); }
         .wl-btn-remove:hover { background: rgba(239,68,68,.06); border-color: #ef4444; }
+        .wl-price-drop-badge { display: inline-block; margin-top: 2px; padding: 3px 9px; font-family: var(--font-sans); font-size: .68rem; font-weight: 600; color: #2e7d32; background: rgba(46,125,50,.1); border-radius: var(--radius-pill); width: fit-content; }
         .wl-empty { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 6rem 2rem; gap: .625rem; }
         .wl-empty-icon { width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-sm); background: rgba(46,45,43,.05); border: 1px solid var(--line); color: var(--ink3); margin-bottom: 1rem; }
         .wl-empty h3 { font-family: var(--font-display); font-size: 1.35rem; font-weight: 400; color: var(--ink); letter-spacing: -.02em; }

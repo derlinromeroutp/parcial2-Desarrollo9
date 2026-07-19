@@ -17,6 +17,7 @@ import authRoutes from './routes/auth.routes';
 import technicianRoutes from './routes/technician.routes';
 import addressRoutes from './routes/address.routes';
 import wishlistRoutes from './routes/wishlist.routes';
+import priceAlertRoutes from './routes/priceAlert.routes';
 import e2eRoutes from './routes/e2e.routes';
 import reportRoutes from './routes/report.routes';
 import supportRoutes from './routes/support.routes';
@@ -53,6 +54,7 @@ app.route('/api/auth', authRoutes);
 app.route('/api/technicians', technicianRoutes);
 app.route('/api/addresses', addressRoutes);
 app.route('/api/wishlist', wishlistRoutes);
+app.route('/api/price-alerts', priceAlertRoutes);
 app.route('/api/reports', reportRoutes);
 app.route('/api/support-tickets', supportRoutes);
 if (isE2ETestMode) {

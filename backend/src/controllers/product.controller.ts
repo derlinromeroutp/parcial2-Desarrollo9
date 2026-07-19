@@ -4,6 +4,7 @@ import { Product } from '../models/Product';
 import { Order } from '../models/Order';
 import { InventoryMovement } from '../models/InventoryMovement';
 import { recordInventoryMovement } from '../services/inventory.service';
+import { notifyPriceDrop } from '../services/priceAlert.service';
 
 export const getProducts = async (c: Context) => {
   try {
@@ -135,6 +136,10 @@ export const updateProduct = async (c: Context) => {
         reason: reason?.trim() || 'Ajuste manual de stock',
         performedBy: userId ?? 'system',
       });
+    }
+
+    if (data.price !== undefined && data.price < previousProduct.price) {
+      await notifyPriceDrop(updatedProduct._id, updatedProduct.name, updatedProduct.price);
     }
 
     return c.json({ success: true, data: updatedProduct });
