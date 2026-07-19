@@ -5,3 +5,4 @@ playwright-report/
 test-results/
 mcp-server/node_modules/
 mcp-server/dist/
+backups/

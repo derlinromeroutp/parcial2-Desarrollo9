@@ -1,0 +1,78 @@
+name: Database Backup Policy
+
+on:
+  schedule:
+    # Automated daily backup policy at 03:00 UTC. Only fires from the
+    # default branch (GitHub Actions restriction on `schedule`), so this
+    # runs once the workflow lives on main.
+    - cron: '0 3 * * *'
+  workflow_dispatch: {}
+  pull_request:
+    branches: [develop, main]
+    paths:
+      - '.github/workflows/db-backup.yml'
+      - 'backend/scripts/backup-db.sh'
+      - 'backend/scripts/restore-db.sh'
+      - 'backend/scripts/verify-restore.ts'
+
+jobs:
+  backup-and-restore-drill:
+    name: Backup + restore drill
+    runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:6-jammy
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "echo 'db.runCommand(\"ping\").ok' | mongosh localhost:27017/test --quiet"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: bun install
+
+      - name: Seed sample data
+        working-directory: backend
+        run: bun run src/seed.ts
+        env:
+          MONGODB_URI: mongodb://127.0.0.1:27017/safetech
+
+      - name: Run backup
+        working-directory: backend
+        run: bash scripts/backup-db.sh
+        env:
+          MONGODB_URI: mongodb://127.0.0.1:27017/safetech
+          BACKUP_ROOT: ${{ github.workspace }}/backups
+
+      - name: Run restore drill into isolated database
+        working-directory: backend
+        run: |
+          set -euo pipefail
+          LATEST_BACKUP=$(ls -1d "$BACKUP_ROOT"/*/ | sort | tail -n1)
+          bash scripts/restore-db.sh "$LATEST_BACKUP" "$RESTORE_MONGODB_URI"
+        env:
+          BACKUP_ROOT: ${{ github.workspace }}/backups
+          RESTORE_MONGODB_URI: mongodb://127.0.0.1:27017/safetech_restore_test
+
+      - name: Verify restored data integrity
+        working-directory: backend
+        run: bun run scripts/verify-restore.ts
+        env:
+          MONGODB_URI: mongodb://127.0.0.1:27017/safetech_restore_test
+
+      - name: Upload backup artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-${{ github.run_id }}
+          path: ${{ github.workspace }}/backups
+          retention-days: 14
