@@ -5,6 +5,8 @@ export interface WishlistItem {
   userId: string;
   product: Product;
   note: string;
+  priceAtAdded: number;
+  priceDropped: boolean;
   createdAt: string;
   updatedAt: string;
 }

@@ -141,9 +141,17 @@ const Wishlist: React.FC = () => {
                   <div className="wl-card-body">
                     <Link to={`/product/${item.product._id}`} className="wl-card-name">{item.product.name}</Link>
                     <p className="wl-card-cat">{CATEGORY_LABEL[item.product.category] ?? item.product.category}</p>
-                    <p className="wl-card-price">{fmt(item.product.price)}</p>
+                    {item.priceDropped ? (
+                      <p className="wl-card-price">
+                        <span className="wl-card-price-old">{fmt(item.priceAtAdded)}</span>
+                        <span className="wl-card-price-drop">{fmt(item.product.price)}</span>
+                      </p>
+                    ) : (
+                      <p className="wl-card-price">{fmt(item.product.price)}</p>
+                    )}
+                    {item.priceDropped && <p className="wl-price-drop-badge">▼ Bajó de precio desde que lo agregaste</p>}
                     {getActiveAlert(item.product._id)?.triggered && (
-                      <p className="wl-price-drop-badge">¡Bajó de precio!</p>
+                      <p className="wl-price-drop-badge">🔔 Tu alerta de precio se activó</p>
                     )}
 
                     {editingNote === item.product._id ? (
@@ -241,6 +249,8 @@ const Wishlist: React.FC = () => {
         .wl-card-name:hover { text-decoration: underline; }
         .wl-card-cat { font-family: var(--font-mono); font-size: .6rem; font-weight: 500; text-transform: uppercase; letter-spacing: 1.5px; color: var(--ink3); }
         .wl-card-price { font-family: var(--font-display); font-size: 1.15rem; font-weight: 700; color: var(--ink); margin-top: 4px; }
+        .wl-card-price-old { font-size: .8rem; font-weight: 500; color: var(--ink3); text-decoration: line-through; margin-right: 8px; }
+        .wl-card-price-drop { color: #2e7d32; }
         .wl-note-text { font-family: var(--font-sans); font-size: .78rem; font-style: italic; color: var(--ink2); margin-top: 6px; padding: 8px 10px; background: rgba(0,0,0,.025); border-radius: var(--radius-xs); border-left: 3px solid var(--sand); }
         .wl-note-edit { margin-top: 6px; }
         .wl-note-input { width: 100%; padding: 8px 10px; font-family: var(--font-sans); font-size: .82rem; border: 1px solid var(--line); border-radius: var(--radius-xs); resize: vertical; background: var(--white); color: var(--ink); }
