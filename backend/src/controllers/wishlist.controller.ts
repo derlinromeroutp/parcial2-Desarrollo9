@@ -43,7 +43,15 @@ export const getMyWishlist = async (c: Context) => {
       .sort({ createdAt: -1 })
       .lean();
 
-    return c.json(items);
+    const withPriceStatus = items.map((item: any) => {
+      // Items creados antes de HU-52 no tienen priceAtAdded; se asume el
+      // precio actual como referencia, por lo que no se marcan como bajados.
+      const priceAtAdded = item.priceAtAdded ?? item.product?.price;
+      const priceDropped = item.product ? priceAtAdded > item.product.price : false;
+      return { ...item, priceAtAdded, priceDropped };
+    });
+
+    return c.json(withPriceStatus);
   } catch (error) {
     console.error('Error fetching wishlist:', error);
     return c.json({ error: 'Failed to fetch wishlist' }, 500);
@@ -63,7 +71,7 @@ export const addToWishlist = async (c: Context) => {
     const existing = await WishlistItem.findOne({ userId, product: productId });
     if (existing) return c.json({ error: 'El producto ya está en tu lista de deseos' }, 409);
 
-    const item = await WishlistItem.create({ userId, product: productId });
+    const item = await WishlistItem.create({ userId, product: productId, priceAtAdded: product.price });
     const populated = await item.populate('product');
 
     return c.json(populated, 201);
