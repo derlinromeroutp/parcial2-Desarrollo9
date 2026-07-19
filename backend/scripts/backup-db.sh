@@ -14,12 +14,13 @@ DEST="$BACKUP_ROOT/$TIMESTAMP"
 mkdir -p "$DEST"
 
 echo "[backup] Dumping $MONGODB_URI -> $DEST"
-# --user root + `sh -c`: the mongo image's entrypoint auto-drops any
-# mongo*-prefixed command (mongodump included) to the "mongodb" user when
-# started as root, regardless of --user, which then can't write into a host
-# bind mount owned by the invoking user's UID. Routing through `sh -c` keeps
-# the entrypoint from recognizing/re-dropping the command, so it stays root.
-docker run --rm --network host --user root \
+# --user "$(id -u):$(id -g)": run as the invoking host user so dump files
+# are host-owned (not root-owned), which matters for the retention `rm -rf`
+# below -- a root-owned dump can't be pruned by a later non-root run. The
+# mongo image's entrypoint only auto-drops mongo*-prefixed commands to the
+# "mongodb" user when started as uid 0, so running as a non-root uid already
+# avoids that; `sh -c` is kept as belt-and-suspenders.
+docker run --rm --network host --user "$(id -u):$(id -g)" \
   -v "$DEST:/dump" \
   mongo:6-jammy \
   sh -c 'mongodump --uri="$1" --out=/dump --gzip' -- "$MONGODB_URI"

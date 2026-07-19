@@ -28,9 +28,9 @@ if [ -z "$SOURCE_DB_DIR" ]; then
 fi
 
 echo "[restore] Restoring $SOURCE_DB_DIR -> $TARGET_URI"
-# --user root + `sh -c`: see backup-db.sh for why the entrypoint would
-# otherwise silently re-drop to the "mongodb" user and lose write access.
-docker run --rm --network host --user root \
+# --user "$(id -u):$(id -g)": see backup-db.sh -- keeps ownership consistent
+# and avoids the entrypoint's root-only auto-drop to the "mongodb" user.
+docker run --rm --network host --user "$(id -u):$(id -g)" \
   -v "$SOURCE_DB_DIR:/dump" \
   mongo:6-jammy \
   sh -c 'mongorestore --uri="$1" --gzip --drop /dump' -- "$TARGET_URI"
