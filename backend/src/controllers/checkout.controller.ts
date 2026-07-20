@@ -4,8 +4,10 @@ import { Product } from '../models/Product';
 import { Order } from '../models/Order';
 import { OrderItem } from '../models/OrderItem';
 import { Address } from '../models/Address';
+import { Coupon } from '../models/Coupon';
 import { Types } from 'mongoose';
 import { isE2ETestMode } from '../lib/e2e';
+import { resolveCouponDiscount } from '../lib/coupons';
 
 const getStripeClient = () => {
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
@@ -106,6 +108,31 @@ export const createPaymentIntentController = async (c: Context) => {
       validItems.push({ product: dbProduct, quantity: item.quantity });
     }
 
+    // Cupon de descuento (HU-39): se resuelve sobre el subtotal recien
+    // calculado, antes de bifurcar en E2E/real, para que ambos caminos y el
+    // total guardado en la orden reflejen el mismo descuento. Un cupon
+    // invalido/expirado no bloquea el checkout: simplemente no se aplica y
+    // se informa un aviso, para no dejar el pago sin PaymentIntent.
+    const couponCodeInput = typeof body.couponCode === 'string' && body.couponCode.trim()
+      ? body.couponCode.trim().toUpperCase()
+      : undefined;
+    let discountAmount = 0;
+    let appliedCouponCode: string | undefined;
+    let couponWarning: string | undefined;
+
+    if (couponCodeInput) {
+      const coupon = await Coupon.findOne({ code: couponCodeInput });
+      const resolution = resolveCouponDiscount(coupon as any, totalAmount);
+      if (resolution.valid) {
+        discountAmount = resolution.discountAmount;
+        appliedCouponCode = couponCodeInput;
+      } else {
+        couponWarning = resolution.reason;
+      }
+    }
+
+    totalAmount = Math.max(0, totalAmount - discountAmount);
+
     const amountInCents = Math.round(totalAmount * 100);
 
     // Ensure local user exists (mirrors prior behavior).
@@ -171,6 +198,8 @@ export const createPaymentIntentController = async (c: Context) => {
           status: 'pending',
           payment_intent_id: e2ePaymentIntentId,
           shippingAddress,
+          coupon_code: appliedCouponCode,
+          discount_amount: discountAmount,
           items: validItems.map((item) => ({
             product: item.product._id,
             quantity: item.quantity,
@@ -189,6 +218,8 @@ export const createPaymentIntentController = async (c: Context) => {
       } else {
         order.total_amount = totalAmount;
         order.payment_intent_id = e2ePaymentIntentId;
+        order.coupon_code = appliedCouponCode;
+        order.discount_amount = discountAmount;
         if (shippingAddress) order.shippingAddress = shippingAddress;
         await order.save();
       }
@@ -199,6 +230,9 @@ export const createPaymentIntentController = async (c: Context) => {
           paymentIntentId: e2ePaymentIntentId,
           orderId: String(order._id),
           amount: totalAmount,
+          discountAmount,
+          couponCode: appliedCouponCode,
+          couponWarning,
         },
         200,
       );
@@ -255,6 +289,8 @@ export const createPaymentIntentController = async (c: Context) => {
         status: 'pending',
         payment_intent_id: paymentIntent.id,
         shippingAddress,
+        coupon_code: appliedCouponCode,
+        discount_amount: discountAmount,
         items: validItems.map((item) => ({
           product: item.product._id,
           quantity: item.quantity,
@@ -274,6 +310,8 @@ export const createPaymentIntentController = async (c: Context) => {
       // Reusing an existing pending order — keep amount + PI in sync.
       order.total_amount = totalAmount;
       order.payment_intent_id = paymentIntent.id;
+      order.coupon_code = appliedCouponCode;
+      order.discount_amount = discountAmount;
       if (shippingAddress) order.shippingAddress = shippingAddress;
       await order.save();
     }
@@ -296,6 +334,9 @@ export const createPaymentIntentController = async (c: Context) => {
         paymentIntentId: paymentIntent.id,
         orderId: String(order._id),
         amount: totalAmount,
+        discountAmount,
+        couponCode: appliedCouponCode,
+        couponWarning,
       },
       200,
     );

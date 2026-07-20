@@ -9,5 +9,6 @@ export const checkoutSchema = z.object({
       }),
       quantity: z.number().int().positive().min(1)
     })
-  ).min(1, 'Cart items cannot be empty')
+  ).min(1, 'Cart items cannot be empty'),
+  couponCode: z.string().trim().min(1).optional(),
 });

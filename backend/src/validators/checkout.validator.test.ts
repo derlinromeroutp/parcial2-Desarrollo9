@@ -40,4 +40,20 @@ describe('checkoutSchema', () => {
     });
     expect(result.success).toBe(false);
   });
+
+  test('accepts an optional couponCode', () => {
+    const result = checkoutSchema.safeParse({
+      items: [{ productId: validId(), quantity: 1 }],
+      couponCode: 'VERANO10',
+    });
+    expect(result.success).toBe(true);
+  });
+
+  test('rejects an empty couponCode when provided', () => {
+    const result = checkoutSchema.safeParse({
+      items: [{ productId: validId(), quantity: 1 }],
+      couponCode: '',
+    });
+    expect(result.success).toBe(false);
+  });
 });

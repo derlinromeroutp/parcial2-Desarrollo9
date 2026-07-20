@@ -21,6 +21,7 @@ import priceAlertRoutes from './routes/priceAlert.routes';
 import e2eRoutes from './routes/e2e.routes';
 import reportRoutes from './routes/report.routes';
 import supportRoutes from './routes/support.routes';
+import couponRoutes from './routes/coupon.routes';
 import { isE2ETestMode } from './lib/e2e';
 
 const app = new Hono();
@@ -57,6 +58,7 @@ app.route('/api/wishlist', wishlistRoutes);
 app.route('/api/price-alerts', priceAlertRoutes);
 app.route('/api/reports', reportRoutes);
 app.route('/api/support-tickets', supportRoutes);
+app.route('/api/coupons', couponRoutes);
 if (isE2ETestMode) {
   app.route('/api/e2e', e2eRoutes);
 }

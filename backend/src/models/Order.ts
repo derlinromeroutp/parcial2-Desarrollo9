@@ -15,6 +15,10 @@ const orderSchema = new Schema({
   stripe_session_id: { type: String, index: true },
   // New field — used by embedded Payment Element flow.
   payment_intent_id: { type: String, index: true },
+  // Cupon aplicado en el checkout (HU-39): se guarda el codigo y el
+  // descuento resultante para trazabilidad, no una referencia viva a Coupon.
+  coupon_code: { type: String },
+  discount_amount: { type: Number, default: 0 },
   // Snapshot de la direccion de entrega seleccionada al momento del checkout
   // (no una referencia viva a Address, para que la orden no cambie si el
   // usuario despues edita o borra esa direccion guardada).
