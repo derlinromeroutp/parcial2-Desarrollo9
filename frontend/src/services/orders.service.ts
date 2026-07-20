@@ -47,5 +47,13 @@ export const ordersService = {
       }
     });
     return response.data;
+  },
+  refundOrder: async (orderId: string, token: string): Promise<Order> => {
+    const response = await axios.post(`${API_URL}/orders/${orderId}/refund`, {}, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    return response.data;
   }
 };

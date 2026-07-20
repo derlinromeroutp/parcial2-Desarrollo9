@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
-import { getMyOrders, getOrderBySession, getAllOrders, confirmOrderPayment, updateShippingInfo } from '../controllers/order.controller';
+import { getMyOrders, getOrderBySession, getAllOrders, confirmOrderPayment, updateShippingInfo, refundOrder } from '../controllers/order.controller';
 import { clerkAuthMiddleware, adminAuthMiddleware } from '../middlewares/auth.middleware';
 import { updateShippingSchema } from '../validators/order.validator';
 import { confirmPaymentSchema } from '../validators/technician.validator';
@@ -24,5 +24,7 @@ orderRouter.put(
   }),
   updateShippingInfo
 );
+
+orderRouter.post('/:id/refund', adminAuthMiddleware, refundOrder);
 
 export default orderRouter;
