@@ -60,6 +60,7 @@ const ORDER_STATUS_LABEL: Record<string, string> = {
   shipped: 'Enviado',
   delivered: 'Entregado',
   failed: 'Fallido',
+  refunded: 'Reembolsado',
 };
 
 const WARRANTY_STATUS_LABEL: Record<string, string> = {

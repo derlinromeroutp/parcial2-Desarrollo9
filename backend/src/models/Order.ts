@@ -5,7 +5,7 @@ const orderSchema = new Schema({
   total_amount: { type: Number, required: true },
   status: {
     type: String,
-    enum: ['pending', 'paid', 'processing', 'shipped', 'delivered', 'failed'],
+    enum: ['pending', 'paid', 'processing', 'shipped', 'delivered', 'failed', 'refunded'],
     default: 'pending',
   },
   // Info de envio y tracking (HU-33): se completan cuando el admin despacha la orden.
@@ -19,6 +19,12 @@ const orderSchema = new Schema({
   // descuento resultante para trazabilidad, no una referencia viva a Coupon.
   coupon_code: { type: String },
   discount_amount: { type: Number, default: 0 },
+  // Reembolso (HU-40): trazabilidad de quien lo ejecuto y cuando, ademas
+  // del id del Refund en Stripe.
+  refund_id: { type: String },
+  refunded_amount: { type: Number },
+  refunded_by: { type: String },
+  refunded_at: { type: Date },
   // Snapshot de la direccion de entrega seleccionada al momento del checkout
   // (no una referencia viva a Address, para que la orden no cambie si el
   // usuario despues edita o borra esa direccion guardada).

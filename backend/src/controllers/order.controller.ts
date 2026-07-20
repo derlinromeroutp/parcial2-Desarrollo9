@@ -278,6 +278,10 @@ export const updateShippingInfo = async (c: Context) => {
       return c.json({ error: 'Order not found' }, 404);
     }
 
+    if (order.status === 'refunded') {
+      return c.json({ error: 'No se puede modificar el envio de una orden reembolsada' }, 409);
+    }
+
     const statusChanged = data.status !== undefined && data.status !== order.status;
 
     if (data.status !== undefined) order.status = data.status;
@@ -297,5 +301,63 @@ export const updateShippingInfo = async (c: Context) => {
   } catch (error) {
     console.error('Error updating shipping info:', error);
     return c.json({ error: 'Failed to update shipping info' }, 500);
+  }
+};
+
+const REFUNDABLE_STATUSES = ['paid', 'processing', 'shipped', 'delivered'];
+
+export const refundOrder = async (c: Context) => {
+  try {
+    const adminUserId = c.get('userId');
+    const id = c.req.param('id');
+
+    const order = await Order.findById(id);
+    if (!order) {
+      return c.json({ error: 'Order not found' }, 404);
+    }
+
+    if (!REFUNDABLE_STATUSES.includes(order.status)) {
+      return c.json({ error: `No se puede reembolsar una orden en estado: ${order.status}` }, 409);
+    }
+
+    if (!order.payment_intent_id) {
+      return c.json({ error: 'La orden no tiene un pago asociado para reembolsar' }, 400);
+    }
+
+    let refundId: string;
+
+    if (isE2ETestMode && isE2EPaymentIntent(order.payment_intent_id)) {
+      refundId = `e2e_re_${Date.now()}`;
+    } else {
+      const stripe = getStripeClient();
+      const refund = await stripe.refunds.create({ payment_intent: order.payment_intent_id });
+      refundId = refund.id;
+    }
+
+    order.status = 'refunded';
+    order.refund_id = refundId;
+    order.refunded_amount = order.total_amount;
+    order.refunded_by = adminUserId;
+    order.refunded_at = new Date();
+    await order.save();
+
+    const owner = await User.findOne({ clerk_id: order.userId });
+    if (owner?.email) {
+      await sendOrderStatusChangedEmail(owner.email, order);
+    }
+
+    return c.json(order);
+  } catch (error: any) {
+    console.error('Error refunding order:', error);
+
+    if (error?.message?.includes('STRIPE_SECRET_KEY')) {
+      return c.json({ error: 'Stripe is not configured on server. Missing STRIPE_SECRET_KEY.' }, 500);
+    }
+
+    if (error?.type?.startsWith('Stripe')) {
+      return c.json({ error: `Stripe refund error: ${error.message}` }, 502);
+    }
+
+    return c.json({ error: 'Failed to refund order' }, 500);
   }
 };

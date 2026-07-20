@@ -449,6 +449,15 @@ export default function AdminDashboard() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-orders'] }),
   });
 
+  const refundOrderMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      const token = await getToken();
+      if (!token) throw new Error('No token');
+      return ordersService.refundOrder(orderId, token);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-orders'] }),
+  });
+
   const [managingOrderId, setManagingOrderId] = useState<string | null>(null);
   const [shippingForm, setShippingForm] = useState<{ status: '' | 'processing' | 'shipped' | 'delivered'; carrier: string; trackingNumber: string }>({ status: '', carrier: '', trackingNumber: '' });
 
@@ -574,25 +583,54 @@ export default function AdminDashboard() {
                               </Badge>
                             </td>
                             <td>
-                              <button
-                                type="button"
-                                className="btn-outline"
-                                style={{ padding: '4px 10px', fontSize: '0.75rem' }}
-                                onClick={() => {
-                                  if (managingOrderId === order._id) {
-                                    setManagingOrderId(null);
-                                    return;
-                                  }
-                                  setManagingOrderId(order._id);
-                                  setShippingForm({
-                                    status: (['processing', 'shipped', 'delivered'].includes(order.status) ? order.status : '') as '' | 'processing' | 'shipped' | 'delivered',
-                                    carrier: order.carrier ?? '',
-                                    trackingNumber: order.trackingNumber ?? '',
-                                  });
-                                }}
-                              >
-                                {order.carrier || order.trackingNumber ? 'Editar envío' : 'Gestionar envío'}
-                              </button>
+                              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                {order.status !== 'refunded' && (
+                                  <button
+                                    type="button"
+                                    className="btn-outline"
+                                    style={{ padding: '4px 10px', fontSize: '0.75rem' }}
+                                    onClick={() => {
+                                      if (managingOrderId === order._id) {
+                                        setManagingOrderId(null);
+                                        return;
+                                      }
+                                      setManagingOrderId(order._id);
+                                      setShippingForm({
+                                        status: (['processing', 'shipped', 'delivered'].includes(order.status) ? order.status : '') as '' | 'processing' | 'shipped' | 'delivered',
+                                        carrier: order.carrier ?? '',
+                                        trackingNumber: order.trackingNumber ?? '',
+                                      });
+                                    }}
+                                  >
+                                    {order.carrier || order.trackingNumber ? 'Editar envío' : 'Gestionar envío'}
+                                  </button>
+                                )}
+                                {['paid', 'processing', 'shipped', 'delivered'].includes(order.status) && (
+                                  <button
+                                    type="button"
+                                    style={{
+                                      padding: '4px 10px',
+                                      fontSize: '0.75rem',
+                                      border: '1px solid var(--line)',
+                                      borderRadius: 'var(--radius-ui)',
+                                      background: 'var(--white)',
+                                      color: '#b3261e',
+                                      cursor: refundOrderMutation.isPending ? 'not-allowed' : 'pointer',
+                                      opacity: refundOrderMutation.isPending ? 0.6 : 1,
+                                    }}
+                                    disabled={refundOrderMutation.isPending}
+                                    onClick={() => {
+                                      const confirmed = window.confirm(`¿Reembolsar la orden por $${order.total_amount?.toFixed(2)}? Esta acción no se puede deshacer.`);
+                                      if (!confirmed) return;
+                                      refundOrderMutation.mutate(order._id, {
+                                        onSuccess: () => setManagingOrderId((current) => (current === order._id ? null : current)),
+                                      });
+                                    }}
+                                  >
+                                    {refundOrderMutation.isPending ? 'Reembolsando…' : 'Reembolsar'}
+                                  </button>
+                                )}
+                              </div>
                             </td>
                           </tr>
                           {managingOrderId === order._id && (
