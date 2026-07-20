@@ -5,10 +5,12 @@ import { warrantyService } from '../services/warranty.service';
 import { ordersService } from '../services/orders.service';
 import { technicianService } from '../services/technician.service';
 import { couponService } from '../services/coupon.service';
+import { supportTicketService } from '../services/supportTicket.service';
 import type { IWarranty } from '../types/warranty';
 import type { Order } from '../types/order';
 import type { Technician } from '../types/technician';
 import type { Coupon } from '../types/coupon';
+import type { SupportTicket } from '../types/supportTicket';
 import { useState } from 'react';
 import AdminSidebar from '../components/AdminSidebar';
 import StatsCards from '../components/StatsCards';
@@ -17,7 +19,7 @@ import ProductTable from '../components/ProductTable';
 import { Badge } from '../components/ui/Badge';
 import { SkeletonTableRow } from '../components/ui/Skeleton';
 
-type SectionType = 'dashboard' | 'orders' | 'warranties' | 'products' | 'technicians' | 'coupons';
+type SectionType = 'dashboard' | 'orders' | 'warranties' | 'products' | 'technicians' | 'coupons' | 'support';
 
 const PAGE_SIZE = 10;
 
@@ -31,6 +33,9 @@ const statusVariant: Record<string, 'success' | 'warning' | 'error' | 'neutral'>
   processing: 'neutral',
   shipped:    'neutral',
   delivered:  'success',
+  open:       'warning',
+  in_review:  'neutral',
+  closed:     'success',
 };
 const statusLabel: Record<string, string> = {
   paid:       'Pagado',
@@ -42,6 +47,9 @@ const statusLabel: Record<string, string> = {
   processing: 'En preparación',
   shipped:    'Enviado',
   delivered:  'Entregado',
+  open:       'Abierto',
+  in_review:  'En revisión',
+  closed:     'Cerrado',
 };
 
 const formatDate = (d: string | Date) =>
@@ -345,6 +353,7 @@ export default function AdminDashboard() {
   const [warrantiesPage, setWarrantiesPage] = useState(1);
   const [techniciansPage, setTechniciansPage] = useState(1);
   const [couponsPage, setCouponsPage] = useState(1);
+  const [supportPage, setSupportPage] = useState(1);
   const queryClient = useQueryClient();
 
   const { data: orders, isLoading: ordersLoading } = useQuery<Order[]>({
@@ -440,6 +449,25 @@ export default function AdminDashboard() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['coupons'] }),
   });
 
+  const { data: supportTickets, isLoading: supportTicketsLoading } = useQuery<SupportTicket[]>({
+    queryKey: ['admin-support-tickets'],
+    queryFn: async () => {
+      const token = await getToken();
+      if (!token) throw new Error('No token');
+      return supportTicketService.getAllTickets(token);
+    },
+    enabled: isLoaded,
+  });
+
+  const updateTicketStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: 'open' | 'in_review' | 'closed' }) => {
+      const token = await getToken();
+      if (!token) throw new Error('No token');
+      return supportTicketService.updateTicketStatus(id, status, token);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-support-tickets'] }),
+  });
+
   const updateShippingMutation = useMutation({
     mutationFn: async ({ orderId, data }: { orderId: string; data: { status?: 'processing' | 'shipped' | 'delivered'; carrier?: string; trackingNumber?: string } }) => {
       const token = await getToken();
@@ -467,13 +495,15 @@ export default function AdminDashboard() {
     setWarrantiesPage(1);
     setTechniciansPage(1);
     setCouponsPage(1);
+    setSupportPage(1);
     setSidebarOpen(false);
   };
 
-  const pagedOrders      = (orders      ?? []).slice((ordersPage - 1)      * PAGE_SIZE, ordersPage      * PAGE_SIZE);
-  const pagedWarranties  = (warranties  ?? []).slice((warrantiesPage - 1)  * PAGE_SIZE, warrantiesPage  * PAGE_SIZE);
-  const pagedTechnicians = (technicians ?? []).slice((techniciansPage - 1) * PAGE_SIZE, techniciansPage * PAGE_SIZE);
-  const pagedCoupons     = (coupons     ?? []).slice((couponsPage - 1)     * PAGE_SIZE, couponsPage     * PAGE_SIZE);
+  const pagedOrders         = (orders         ?? []).slice((ordersPage - 1)         * PAGE_SIZE, ordersPage         * PAGE_SIZE);
+  const pagedWarranties     = (warranties     ?? []).slice((warrantiesPage - 1)     * PAGE_SIZE, warrantiesPage     * PAGE_SIZE);
+  const pagedTechnicians    = (technicians    ?? []).slice((techniciansPage - 1)    * PAGE_SIZE, techniciansPage    * PAGE_SIZE);
+  const pagedCoupons        = (coupons        ?? []).slice((couponsPage - 1)        * PAGE_SIZE, couponsPage        * PAGE_SIZE);
+  const pagedSupportTickets = (supportTickets ?? []).slice((supportPage - 1)        * PAGE_SIZE, supportPage        * PAGE_SIZE);
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--cream)' }}>
@@ -925,6 +955,71 @@ export default function AdminDashboard() {
                   </tbody>
                 </table>
                 <Pagination total={coupons?.length ?? 0} page={couponsPage} onPage={setCouponsPage} />
+              </div>
+            </div>
+          )}
+
+          {/* ══ SOPORTE ══ */}
+          {activeSection === 'support' && (
+            <div style={{ animation: 'fadeIn 0.3s ease both' }}>
+              <SectionHeader title="Tickets de soporte" count={supportTickets?.length} />
+              <div className="admin-table-wrapper">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Usuario</th>
+                      <th>Categoría</th>
+                      <th>Descripción</th>
+                      <th>Contacto</th>
+                      <th>Estado</th>
+                      <th className="actions">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {supportTicketsLoading
+                      ? Array.from({ length: 6 }).map((_, i) => <SkeletonTableRow key={i} cols={7} />)
+                      : pagedSupportTickets.length === 0
+                        ? (
+                          <tr>
+                            <td colSpan={7} style={{ padding: '3rem', textAlign: 'center', color: 'var(--ink3)', fontSize: '0.9rem' }}>
+                              No hay tickets de soporte registrados.
+                            </td>
+                          </tr>
+                        )
+                        : pagedSupportTickets.map((ticket) => (
+                          <tr key={ticket._id}>
+                            <td style={{ fontWeight: 500 }}>{formatDate(ticket.createdAt)}</td>
+                            <td style={{ color: 'var(--ink2)', fontSize: '0.85rem' }}>{ticket.userId}</td>
+                            <td style={{ color: 'var(--ink2)', fontSize: '0.85rem' }}>{ticket.category}</td>
+                            <td style={{ maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={ticket.description}>
+                              {ticket.description}
+                            </td>
+                            <td style={{ color: 'var(--ink2)', fontSize: '0.85rem' }}>{ticket.contactChannel}</td>
+                            <td>
+                              <Badge variant={statusVariant[ticket.status] ?? 'neutral'}>
+                                {statusLabel[ticket.status] ?? ticket.status}
+                              </Badge>
+                            </td>
+                            <td className="actions">
+                              <select
+                                className="admin-select"
+                                value={ticket.status}
+                                onChange={(e) => updateTicketStatusMutation.mutate({ id: ticket._id, status: e.target.value as 'open' | 'in_review' | 'closed' })}
+                                disabled={updateTicketStatusMutation.isPending}
+                                style={{ minWidth: 140 }}
+                              >
+                                <option value="open">Abierto</option>
+                                <option value="in_review">En revisión</option>
+                                <option value="closed">Cerrado</option>
+                              </select>
+                            </td>
+                          </tr>
+                        ))
+                    }
+                  </tbody>
+                </table>
+                <Pagination total={supportTickets?.length ?? 0} page={supportPage} onPage={setSupportPage} />
               </div>
             </div>
           )}

@@ -71,6 +71,12 @@ const WARRANTY_STATUS_LABEL: Record<string, string> = {
   refunded: 'Reembolsado',
 };
 
+const SUPPORT_STATUS_LABEL: Record<string, string> = {
+  open: 'Abierto',
+  in_review: 'En revisión',
+  closed: 'Cerrado',
+};
+
 export async function sendPurchaseConfirmationEmail(to: string, order: { _id: unknown; total_amount: number }): Promise<void> {
   await sendEmail(
     to,
@@ -108,6 +114,26 @@ export async function sendWarrantyStatusChangedEmail(
     to,
     `Actualizacion de tu garantia SafeTech (#${String(warranty._id).slice(-6)})`,
     `<p>El estado de tu garantia <strong>#${String(warranty._id).slice(-6)}</strong> cambio a: <strong>${label}</strong>.</p>`,
+  );
+}
+
+export async function sendSupportTicketCreatedEmail(to: string, ticket: { _id: unknown }): Promise<void> {
+  await sendEmail(
+    to,
+    `Recibimos tu ticket de soporte (#${String(ticket._id).slice(-6)})`,
+    `<p>Registramos tu ticket de soporte <strong>#${String(ticket._id).slice(-6)}</strong>. Te avisaremos por correo ante cualquier actualizacion.</p>`,
+  );
+}
+
+export async function sendSupportTicketStatusChangedEmail(
+  to: string,
+  ticket: { _id: unknown; status: string },
+): Promise<void> {
+  const label = SUPPORT_STATUS_LABEL[ticket.status] ?? ticket.status;
+  await sendEmail(
+    to,
+    `Actualizacion de tu ticket de soporte SafeTech (#${String(ticket._id).slice(-6)})`,
+    `<p>El estado de tu ticket de soporte <strong>#${String(ticket._id).slice(-6)}</strong> cambio a: <strong>${label}</strong>.</p>`,
   );
 }
 
