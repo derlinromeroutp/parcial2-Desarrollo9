@@ -5,6 +5,7 @@ import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-
 import { loadStripe } from '@stripe/stripe-js';
 import { checkoutService } from '../services/checkout.service';
 import { ordersService } from '../services/orders.service';
+import { couponService } from '../services/coupon.service';
 import { useCartStore } from '../store/cart.store';
 import { useAddresses, useCreateAddress } from '../hooks/useAddresses';
 
@@ -126,6 +127,11 @@ export default function Checkout() {
   const [isCreatingIntent, setIsCreatingIntent] = useState(false);
   const [isConfirmingTestPayment, setIsConfirmingTestPayment] = useState(false);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountAmount: number } | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
+  const [serverDiscount, setServerDiscount] = useState(0);
   const createdSignatureRef = useRef<string | null>(null);
 
   const { data: addresses } = useAddresses();
@@ -145,6 +151,7 @@ export default function Checkout() {
   const cartSignature = [
     cartPayload.map((item) => `${item.productId}:${item.quantity}`).sort().join('|'),
     selectedAddressId ?? '',
+    appliedCoupon?.code ?? '',
   ].join('::');
 
   useEffect(() => {
@@ -159,10 +166,21 @@ export default function Checkout() {
       try {
         const token = await getToken();
         if (!token) throw new Error('No autenticado');
-        const response = await checkoutService.createPaymentIntent(cartPayload, token, selectedAddressId ?? undefined);
+        const response = await checkoutService.createPaymentIntent(
+          cartPayload,
+          token,
+          selectedAddressId ?? undefined,
+          appliedCoupon?.code,
+        );
         setClientSecret(response.clientSecret);
         setPaymentIntentId(response.paymentIntentId ?? null);
         setServerAmount(response.amount);
+        setServerDiscount(response.discountAmount ?? 0);
+
+        if (response.couponWarning) {
+          setCouponError(response.couponWarning);
+          setAppliedCoupon(null);
+        }
       } catch (err: any) {
         createdSignatureRef.current = null;
         setError(err.message || 'No pudimos preparar el pago.');
@@ -172,7 +190,40 @@ export default function Checkout() {
     };
 
     createIntent();
-  }, [cartPayload, cartSignature, getToken, isLoaded, isSignedIn, selectedAddressId]);
+  }, [cartPayload, cartSignature, getToken, isLoaded, isSignedIn, selectedAddressId, appliedCoupon]);
+
+  const handleApplyCoupon = async () => {
+    const code = couponInput.trim();
+    if (!code) return;
+
+    setIsValidatingCoupon(true);
+    setCouponError(null);
+
+    try {
+      const token = await getToken();
+      if (!token) throw new Error('No autenticado');
+      const result = await couponService.validateCoupon(code, clientSubtotal, token);
+
+      if (result.valid) {
+        setAppliedCoupon({ code: code.toUpperCase(), discountAmount: result.discountAmount });
+        setCouponInput('');
+      } else {
+        setCouponError(result.reason || 'Cupón inválido.');
+      }
+    } catch (err) {
+      const axiosMessage = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      const message = err instanceof Error ? err.message : undefined;
+      setCouponError(axiosMessage || message || 'No pudimos validar el cupón.');
+    } finally {
+      setIsValidatingCoupon(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponError(null);
+    setServerDiscount(0);
+  };
 
   const handleTestPayment = async () => {
     if (!paymentIntentId) return;
@@ -343,9 +394,51 @@ export default function Checkout() {
                 </div>
               ))}
             </div>
-            <div style={{ borderTop: '1px solid var(--line)', marginTop: '1rem', paddingTop: '1rem', display: 'flex', justifyContent: 'space-between' }}>
-              <strong>Total</strong>
-              <strong>${(serverAmount ?? clientSubtotal).toFixed(2)}</strong>
+            <div style={{ borderTop: '1px solid var(--line)', marginTop: '1rem', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+              <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: 'var(--ink3)' }}>
+                Cupón de descuento
+              </label>
+              {appliedCoupon ? (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '0.85rem' }}>
+                    <strong>{appliedCoupon.code}</strong> aplicado
+                  </span>
+                  <button type="button" className="btn-outline" style={{ padding: '4px 10px', fontSize: '0.75rem' }} onClick={handleRemoveCoupon}>
+                    Quitar
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <input
+                    className="input"
+                    placeholder="Código de cupón"
+                    value={couponInput}
+                    onChange={(e) => setCouponInput(e.target.value)}
+                    style={{ flex: 1 }}
+                  />
+                  <button
+                    type="button"
+                    className="btn-outline"
+                    onClick={handleApplyCoupon}
+                    disabled={isValidatingCoupon || !couponInput.trim()}
+                  >
+                    {isValidatingCoupon ? 'Validando...' : 'Aplicar'}
+                  </button>
+                </div>
+              )}
+              {couponError && <div className="alert alert-error" style={{ fontSize: '0.8rem' }}>{couponError}</div>}
+            </div>
+            <div style={{ borderTop: '1px solid var(--line)', marginTop: '1rem', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {serverDiscount > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#2e7d32' }}>
+                  <span>Descuento{appliedCoupon ? ` (${appliedCoupon.code})` : ''}</span>
+                  <span>-${serverDiscount.toFixed(2)}</span>
+                </div>
+              )}
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <strong>Total</strong>
+                <strong>${(serverAmount ?? clientSubtotal).toFixed(2)}</strong>
+              </div>
             </div>
             <p style={{ marginTop: '0.75rem', color: 'var(--ink2)', fontSize: '0.78rem', lineHeight: 1.5 }}>
               El total final se recalcula en el servidor con precios y stock actuales.

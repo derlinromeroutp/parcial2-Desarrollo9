@@ -3,6 +3,7 @@ import { Order } from '../models/Order';
 import { OrderItem } from '../models/OrderItem';
 import { Product } from '../models/Product';
 import { User } from '../models/User';
+import { Coupon } from '../models/Coupon';
 import { sendPurchaseConfirmationEmail } from './email.service';
 import { recordInventoryMovement } from './inventory.service';
 
@@ -68,6 +69,24 @@ export const finalizePaidOrder = async (
         performedBy: userId,
         session: session ?? undefined,
       });
+    }
+
+    // Contabiliza el uso del cupon solo al confirmarse el pago (no en cada
+    // intento de checkout), con un incremento atomico condicionado a que
+    // aun no se haya agotado maxUses, para evitar sobre-conteo por carreras.
+    if (lockedOrder.coupon_code) {
+      const couponUpdateQuery = Coupon.findOneAndUpdate(
+        {
+          code: lockedOrder.coupon_code,
+          $or: [{ maxUses: { $exists: false } }, { $expr: { $lt: ['$usedCount', '$maxUses'] } }],
+        },
+        { $inc: { usedCount: 1 } },
+      );
+      if (session) {
+        await couponUpdateQuery.session(session);
+      } else {
+        await couponUpdateQuery;
+      }
     }
 
     lockedOrder.status = 'paid';

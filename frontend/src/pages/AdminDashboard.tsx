@@ -4,9 +4,11 @@ import { useAuth } from '../lib/auth';
 import { warrantyService } from '../services/warranty.service';
 import { ordersService } from '../services/orders.service';
 import { technicianService } from '../services/technician.service';
+import { couponService } from '../services/coupon.service';
 import type { IWarranty } from '../types/warranty';
 import type { Order } from '../types/order';
 import type { Technician } from '../types/technician';
+import type { Coupon } from '../types/coupon';
 import { useState } from 'react';
 import AdminSidebar from '../components/AdminSidebar';
 import StatsCards from '../components/StatsCards';
@@ -15,7 +17,7 @@ import ProductTable from '../components/ProductTable';
 import { Badge } from '../components/ui/Badge';
 import { SkeletonTableRow } from '../components/ui/Skeleton';
 
-type SectionType = 'dashboard' | 'orders' | 'warranties' | 'products' | 'technicians';
+type SectionType = 'dashboard' | 'orders' | 'warranties' | 'products' | 'technicians' | 'coupons';
 
 const PAGE_SIZE = 10;
 
@@ -219,6 +221,121 @@ function TechnicianForm({ onSubmit, isPending }: { onSubmit: (d: { name: string;
   );
 }
 
+/* ── Coupon form ── */
+function CouponForm({
+  onSubmit,
+  isPending,
+}: {
+  onSubmit: (d: {
+    code: string;
+    discountType: 'percentage' | 'fixed';
+    discountValue: number;
+    validFrom: string;
+    validUntil: string;
+    minPurchase?: number;
+    maxUses?: number;
+  }) => void;
+  isPending: boolean;
+}) {
+  const [code, setCode] = useState('');
+  const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>('percentage');
+  const [discountValue, setDiscountValue] = useState('');
+  const [validFrom, setValidFrom] = useState('');
+  const [validUntil, setValidUntil] = useState('');
+  const [minPurchase, setMinPurchase] = useState('');
+  const [maxUses, setMaxUses] = useState('');
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError(null);
+
+    if (!code.trim() || !discountValue || !validFrom || !validUntil) {
+      setFormError('Código, valor de descuento y vigencia son obligatorios.');
+      return;
+    }
+
+    onSubmit({
+      code: code.trim(),
+      discountType,
+      discountValue: Number(discountValue),
+      validFrom: new Date(validFrom).toISOString(),
+      validUntil: new Date(validUntil).toISOString(),
+      minPurchase: minPurchase ? Number(minPurchase) : undefined,
+      maxUses: maxUses ? Number(maxUses) : undefined,
+    });
+
+    setCode(''); setDiscountValue(''); setValidFrom(''); setValidUntil(''); setMinPurchase(''); setMaxUses('');
+  };
+
+  return (
+    <form onSubmit={handleSubmit} style={{
+      background: 'var(--white)',
+      border: '1.5px solid var(--line)',
+      borderRadius: 'var(--radius-card)',
+      padding: '1.75rem',
+      marginBottom: '1.75rem',
+    }}>
+      <p style={{ fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--ink3)', marginBottom: '1.25rem' }}>
+        Crear cupón
+      </p>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
+        <div>
+          <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: 'var(--ink3)', marginBottom: 5 }}>
+            Código
+          </label>
+          <input value={code} onChange={e => setCode(e.target.value)} placeholder="VERANO10" className="input" required style={{ fontSize: '0.875rem' }} />
+        </div>
+        <div>
+          <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: 'var(--ink3)', marginBottom: 5 }}>
+            Tipo
+          </label>
+          <select value={discountType} onChange={e => setDiscountType(e.target.value as 'percentage' | 'fixed')} className="input" style={{ fontSize: '0.875rem' }}>
+            <option value="percentage">Porcentaje</option>
+            <option value="fixed">Monto fijo</option>
+          </select>
+        </div>
+        <div>
+          <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: 'var(--ink3)', marginBottom: 5 }}>
+            Valor
+          </label>
+          <input value={discountValue} onChange={e => setDiscountValue(e.target.value)} type="number" min="0" placeholder={discountType === 'percentage' ? '10' : '15.00'} className="input" required style={{ fontSize: '0.875rem' }} />
+        </div>
+        <div>
+          <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: 'var(--ink3)', marginBottom: 5 }}>
+            Compra mínima
+          </label>
+          <input value={minPurchase} onChange={e => setMinPurchase(e.target.value)} type="number" min="0" placeholder="Opcional" className="input" style={{ fontSize: '0.875rem' }} />
+        </div>
+        <div>
+          <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: 'var(--ink3)', marginBottom: 5 }}>
+            Válido desde
+          </label>
+          <input value={validFrom} onChange={e => setValidFrom(e.target.value)} type="date" className="input" required style={{ fontSize: '0.875rem' }} />
+        </div>
+        <div>
+          <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: 'var(--ink3)', marginBottom: 5 }}>
+            Válido hasta
+          </label>
+          <input value={validUntil} onChange={e => setValidUntil(e.target.value)} type="date" className="input" required style={{ fontSize: '0.875rem' }} />
+        </div>
+        <div>
+          <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', color: 'var(--ink3)', marginBottom: 5 }}>
+            Usos máximos
+          </label>
+          <input value={maxUses} onChange={e => setMaxUses(e.target.value)} type="number" min="1" placeholder="Ilimitado" className="input" style={{ fontSize: '0.875rem' }} />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'end' }}>
+          <button type="submit" disabled={isPending} className="btn-primary" style={{ height: 42, padding: '0 22px', fontSize: '0.85rem', width: '100%' }}>
+            {isPending ? 'Creando…' : 'Crear cupón'}
+          </button>
+        </div>
+      </div>
+      {formError && <div className="alert alert-error">{formError}</div>}
+    </form>
+  );
+}
+
 /* ══════════════════ Main Dashboard ══════════════════ */
 export default function AdminDashboard() {
   const { getToken, isLoaded } = useAuth();
@@ -227,6 +344,7 @@ export default function AdminDashboard() {
   const [ordersPage, setOrdersPage] = useState(1);
   const [warrantiesPage, setWarrantiesPage] = useState(1);
   const [techniciansPage, setTechniciansPage] = useState(1);
+  const [couponsPage, setCouponsPage] = useState(1);
   const queryClient = useQueryClient();
 
   const { data: orders, isLoading: ordersLoading } = useQuery<Order[]>({
@@ -286,6 +404,42 @@ export default function AdminDashboard() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['technicians'] }),
   });
 
+  const { data: coupons, isLoading: couponsLoading } = useQuery<Coupon[]>({
+    queryKey: ['coupons'],
+    queryFn: async () => {
+      const token = await getToken();
+      if (!token) throw new Error('No token');
+      return couponService.getCoupons(token);
+    },
+    enabled: isLoaded,
+  });
+
+  const couponMutation = useMutation({
+    mutationFn: async (data: {
+      code: string;
+      discountType: 'percentage' | 'fixed';
+      discountValue: number;
+      validFrom: string;
+      validUntil: string;
+      minPurchase?: number;
+      maxUses?: number;
+    }) => {
+      const token = await getToken();
+      if (!token) throw new Error('No token');
+      return couponService.createCoupon(data, token);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['coupons'] }),
+  });
+
+  const deactivateCouponMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const token = await getToken();
+      if (!token) throw new Error('No token');
+      return couponService.deactivateCoupon(id, token);
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['coupons'] }),
+  });
+
   const updateShippingMutation = useMutation({
     mutationFn: async ({ orderId, data }: { orderId: string; data: { status?: 'processing' | 'shipped' | 'delivered'; carrier?: string; trackingNumber?: string } }) => {
       const token = await getToken();
@@ -303,12 +457,14 @@ export default function AdminDashboard() {
     setOrdersPage(1);
     setWarrantiesPage(1);
     setTechniciansPage(1);
+    setCouponsPage(1);
     setSidebarOpen(false);
   };
 
   const pagedOrders      = (orders      ?? []).slice((ordersPage - 1)      * PAGE_SIZE, ordersPage      * PAGE_SIZE);
   const pagedWarranties  = (warranties  ?? []).slice((warrantiesPage - 1)  * PAGE_SIZE, warrantiesPage  * PAGE_SIZE);
   const pagedTechnicians = (technicians ?? []).slice((techniciansPage - 1) * PAGE_SIZE, techniciansPage * PAGE_SIZE);
+  const pagedCoupons     = (coupons     ?? []).slice((couponsPage - 1)     * PAGE_SIZE, couponsPage     * PAGE_SIZE);
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--cream)' }}>
@@ -647,6 +803,90 @@ export default function AdminDashboard() {
                   </tbody>
                 </table>
                 <Pagination total={technicians?.length ?? 0} page={techniciansPage} onPage={setTechniciansPage} />
+              </div>
+            </div>
+          )}
+
+          {/* ══ CUPONES ══ */}
+          {activeSection === 'coupons' && (
+            <div style={{ animation: 'fadeIn 0.3s ease both' }}>
+              <SectionHeader title="Cupones" count={coupons?.length} />
+              <CouponForm
+                onSubmit={(d) => couponMutation.mutate(d)}
+                isPending={couponMutation.isPending}
+              />
+              <div className="admin-table-wrapper">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Código</th>
+                      <th>Descuento</th>
+                      <th>Vigencia</th>
+                      <th>Usos</th>
+                      <th>Estado</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {couponsLoading
+                      ? Array.from({ length: 4 }).map((_, i) => <SkeletonTableRow key={i} cols={6} />)
+                      : pagedCoupons.length === 0
+                        ? (
+                          <tr>
+                            <td colSpan={6} style={{ padding: '3rem', textAlign: 'center', color: 'var(--ink3)', fontSize: '0.9rem' }}>
+                              No hay cupones registrados.
+                            </td>
+                          </tr>
+                        )
+                        : pagedCoupons.map((coupon) => (
+                          <tr key={coupon._id}>
+                            <td style={{ fontWeight: 600 }}>{coupon.code}</td>
+                            <td style={{ color: 'var(--ink2)', fontSize: '0.875rem' }}>
+                              {coupon.discountType === 'percentage' ? `${coupon.discountValue}%` : `$${coupon.discountValue.toFixed(2)}`}
+                            </td>
+                            <td style={{ color: 'var(--ink2)', fontSize: '0.8rem' }}>
+                              {formatDate(coupon.validFrom)} – {formatDate(coupon.validUntil)}
+                            </td>
+                            <td style={{ color: 'var(--ink2)', fontSize: '0.875rem' }}>
+                              {coupon.usedCount}{coupon.maxUses ? ` / ${coupon.maxUses}` : ''}
+                            </td>
+                            <td>
+                              <Badge variant={coupon.active ? 'success' : 'neutral'}>
+                                {coupon.active ? 'Activo' : 'Inactivo'}
+                              </Badge>
+                            </td>
+                            <td className="actions">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const confirmed = window.confirm(`¿Desactivar el cupón ${coupon.code}?`);
+                                  if (!confirmed) return;
+                                  deactivateCouponMutation.mutate(coupon._id);
+                                }}
+                                disabled={!coupon.active || deactivateCouponMutation.isPending}
+                                style={{
+                                  padding: '7px 12px',
+                                  border: '1px solid var(--line)',
+                                  borderRadius: 'var(--radius-ui)',
+                                  background: 'var(--white)',
+                                  color: 'var(--ink)',
+                                  fontSize: '0.78rem',
+                                  fontWeight: 500,
+                                  fontFamily: 'var(--font-sans)',
+                                  cursor: (!coupon.active || deactivateCouponMutation.isPending) ? 'not-allowed' : 'pointer',
+                                  opacity: (!coupon.active || deactivateCouponMutation.isPending) ? 0.6 : 1,
+                                }}
+                                title={`Desactivar ${coupon.code}`}
+                              >
+                                {deactivateCouponMutation.isPending ? 'Desactivando…' : 'Desactivar'}
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                    }
+                  </tbody>
+                </table>
+                <Pagination total={coupons?.length ?? 0} page={couponsPage} onPage={setCouponsPage} />
               </div>
             </div>
           )}

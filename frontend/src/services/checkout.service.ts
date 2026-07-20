@@ -5,6 +5,9 @@ export interface CreatePaymentIntentResponse {
   paymentIntentId?: string;
   orderId: string;
   amount: number;
+  discountAmount?: number;
+  couponCode?: string;
+  couponWarning?: string;
 }
 
 export const checkoutService = {
@@ -12,6 +15,7 @@ export const checkoutService = {
     items: { productId: string; quantity: number }[],
     token: string,
     addressId?: string,
+    couponCode?: string,
   ): Promise<CreatePaymentIntentResponse> => {
     const response = await fetch(`${API_URL}/checkout`, {
       method: 'POST',
@@ -19,7 +23,11 @@ export const checkoutService = {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ items, ...(addressId ? { addressId } : {}) }),
+      body: JSON.stringify({
+        items,
+        ...(addressId ? { addressId } : {}),
+        ...(couponCode ? { couponCode } : {}),
+      }),
     });
 
     if (!response.ok) {
