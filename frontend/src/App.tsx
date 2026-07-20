@@ -17,6 +17,7 @@ import Nosotros from './pages/Nosotros';
 import Contacto from './pages/Contacto';
 import MyWarranties from './pages/MyWarranties';
 import Wishlist from './pages/Wishlist';
+import Support from './pages/Support';
 import { ProtectedAdminRoute, ProtectedTechnicianRoute } from './components/AdminRoute';
 import TechnicianDashboard from './pages/TechnicianDashboard';
 
@@ -60,6 +61,10 @@ function App() {
           <Route
             path="/mis-garantias"
             element={<WithNav><MyWarranties /></WithNav>}
+          />
+          <Route
+            path="/soporte"
+            element={<WithNav><Support /></WithNav>}
           />
           <Route
             path="/warranties/new"
