@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useProduct, useRelatedProducts } from '../hooks/useProducts';
 import { useProductInspection } from '../hooks/useInspection';
@@ -8,6 +8,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { useWishlistCheck, useAddToWishlist, useRemoveFromWishlist } from '../hooks/useWishlist';
 import { useAuth } from '../lib/auth';
 import { useCompareStore, MAX_COMPARE_ITEMS } from '../store/compare.store';
+import { useRecentlyViewedStore } from '../store/recentlyViewed.store';
 
 const CATEGORY_LABEL: Record<string, string> = {
   celular: 'Celular',
@@ -52,6 +53,11 @@ const ProductDetail: React.FC = () => {
   const [activeImg, setActiveImg] = useState(0);
   const [added, setAdded] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  const recordView = useRecentlyViewedStore((s) => s.recordView);
+  useEffect(() => {
+    if (product) recordView(product._id);
+  }, [product, recordView]);
 
   if (isLoading) {
     return (

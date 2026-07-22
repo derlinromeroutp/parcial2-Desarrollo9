@@ -1,5 +1,6 @@
 import { ProductList } from '../components/ProductList';
 import { BestSellersSection } from '../components/BestSellersSection';
+import { RecentlyViewedSection } from '../components/RecentlyViewedSection';
 
 export default function Home() {
   return (
@@ -40,6 +41,8 @@ export default function Home() {
       </section>
 
       <BestSellersSection />
+
+      <RecentlyViewedSection />
 
       {/* Productos */}
       <section style={{ padding: '3rem 0 5rem', background: 'var(--white)' }}>
