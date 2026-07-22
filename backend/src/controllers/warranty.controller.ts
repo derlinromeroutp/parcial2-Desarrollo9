@@ -4,6 +4,7 @@ import { Order } from '../models/Order';
 import { User } from '../models/User';
 import { Technician } from '../models/Technician';
 import { sendWarrantyCreatedEmail, sendWarrantyStatusChangedEmail } from '../services/email.service';
+import { recordAuditLog } from '../services/audit.service';
 
 export const createWarrantyReport = async (c: Context) => {
   try {
@@ -98,6 +99,7 @@ export const updateWarrantyStatus = async (c: Context) => {
   try {
     const { id } = c.req.param();
     const body = await c.req.json();
+    const adminUserId = c.get('userId');
 
     const report = await WarrantyReport.findById(id);
 
@@ -127,6 +129,14 @@ export const updateWarrantyStatus = async (c: Context) => {
         await sendWarrantyStatusChangedEmail(owner.email, report);
       }
     }
+
+    await recordAuditLog({
+      userId: adminUserId ?? 'system',
+      action: 'warranty.status_change',
+      resourceType: 'WarrantyReport',
+      resourceId: id,
+      metadata: { status: report.status, repairNotes: body.repairNotes },
+    });
 
     return c.json(report);
   } catch (error: any) {

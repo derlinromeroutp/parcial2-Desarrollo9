@@ -6,6 +6,7 @@ import { User } from '../models/User';
 import { finalizePaidOrder, notifyPurchaseConfirmed } from '../services/order.service';
 import { isE2EPaymentIntent, isE2ETestMode } from '../lib/e2e';
 import { sendOrderStatusChangedEmail } from '../services/email.service';
+import { recordAuditLog } from '../services/audit.service';
 
 const getStripeClient = () => {
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
@@ -345,6 +346,14 @@ export const refundOrder = async (c: Context) => {
     if (owner?.email) {
       await sendOrderStatusChangedEmail(owner.email, order);
     }
+
+    await recordAuditLog({
+      userId: adminUserId ?? 'system',
+      action: 'order.refund',
+      resourceType: 'Order',
+      resourceId: id,
+      metadata: { refundId, refundedAmount: order.refunded_amount },
+    });
 
     return c.json(order);
   } catch (error: any) {
