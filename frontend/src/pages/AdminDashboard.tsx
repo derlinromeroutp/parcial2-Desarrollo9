@@ -6,11 +6,13 @@ import { ordersService } from '../services/orders.service';
 import { technicianService } from '../services/technician.service';
 import { couponService } from '../services/coupon.service';
 import { supportTicketService } from '../services/supportTicket.service';
+import { auditLogService } from '../services/auditLog.service';
 import type { IWarranty } from '../types/warranty';
 import type { Order } from '../types/order';
 import type { Technician } from '../types/technician';
 import type { Coupon } from '../types/coupon';
 import type { SupportTicket } from '../types/supportTicket';
+import type { AuditLog } from '../types/auditLog';
 import { useState } from 'react';
 import AdminSidebar from '../components/AdminSidebar';
 import StatsCards from '../components/StatsCards';
@@ -19,7 +21,7 @@ import ProductTable from '../components/ProductTable';
 import { Badge } from '../components/ui/Badge';
 import { SkeletonTableRow } from '../components/ui/Skeleton';
 
-type SectionType = 'dashboard' | 'orders' | 'warranties' | 'products' | 'technicians' | 'coupons' | 'support';
+type SectionType = 'dashboard' | 'orders' | 'warranties' | 'products' | 'technicians' | 'coupons' | 'support' | 'audit';
 
 const PAGE_SIZE = 10;
 
@@ -354,6 +356,7 @@ export default function AdminDashboard() {
   const [techniciansPage, setTechniciansPage] = useState(1);
   const [couponsPage, setCouponsPage] = useState(1);
   const [supportPage, setSupportPage] = useState(1);
+  const [auditPage, setAuditPage] = useState(1);
   const queryClient = useQueryClient();
 
   const { data: orders, isLoading: ordersLoading } = useQuery<Order[]>({
@@ -468,6 +471,16 @@ export default function AdminDashboard() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-support-tickets'] }),
   });
 
+  const { data: auditLogs, isLoading: auditLogsLoading } = useQuery<AuditLog[]>({
+    queryKey: ['admin-audit-logs'],
+    queryFn: async () => {
+      const token = await getToken();
+      if (!token) throw new Error('No token');
+      return auditLogService.getAll(token);
+    },
+    enabled: isLoaded,
+  });
+
   const updateShippingMutation = useMutation({
     mutationFn: async ({ orderId, data }: { orderId: string; data: { status?: 'processing' | 'shipped' | 'delivered'; carrier?: string; trackingNumber?: string } }) => {
       const token = await getToken();
@@ -496,6 +509,7 @@ export default function AdminDashboard() {
     setTechniciansPage(1);
     setCouponsPage(1);
     setSupportPage(1);
+    setAuditPage(1);
     setSidebarOpen(false);
   };
 
@@ -504,6 +518,7 @@ export default function AdminDashboard() {
   const pagedTechnicians    = (technicians    ?? []).slice((techniciansPage - 1)    * PAGE_SIZE, techniciansPage    * PAGE_SIZE);
   const pagedCoupons        = (coupons        ?? []).slice((couponsPage - 1)        * PAGE_SIZE, couponsPage        * PAGE_SIZE);
   const pagedSupportTickets = (supportTickets ?? []).slice((supportPage - 1)        * PAGE_SIZE, supportPage        * PAGE_SIZE);
+  const pagedAuditLogs      = (auditLogs      ?? []).slice((auditPage - 1)          * PAGE_SIZE, auditPage          * PAGE_SIZE);
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--cream)' }}>
@@ -1020,6 +1035,54 @@ export default function AdminDashboard() {
                   </tbody>
                 </table>
                 <Pagination total={supportTickets?.length ?? 0} page={supportPage} onPage={setSupportPage} />
+              </div>
+            </div>
+          )}
+
+          {/* ══ AUDITORÍA ══ */}
+          {activeSection === 'audit' && (
+            <div style={{ animation: 'fadeIn 0.3s ease both' }}>
+              <SectionHeader title="Auditoría de acciones administrativas" count={auditLogs?.length} />
+              <div className="admin-table-wrapper">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Usuario</th>
+                      <th>Acción</th>
+                      <th>Recurso</th>
+                      <th>Detalle</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {auditLogsLoading
+                      ? Array.from({ length: 6 }).map((_, i) => <SkeletonTableRow key={i} cols={5} />)
+                      : pagedAuditLogs.length === 0
+                        ? (
+                          <tr>
+                            <td colSpan={5} style={{ padding: '3rem', textAlign: 'center', color: 'var(--ink3)', fontSize: '0.9rem' }}>
+                              No hay acciones auditadas todavía.
+                            </td>
+                          </tr>
+                        )
+                        : pagedAuditLogs.map((log) => (
+                          <tr key={log._id}>
+                            <td style={{ fontWeight: 500 }}>{formatDate(log.createdAt)}</td>
+                            <td style={{ color: 'var(--ink2)', fontSize: '0.85rem' }}>{log.userId}</td>
+                            <td style={{ color: 'var(--ink2)', fontSize: '0.85rem' }}>{log.action}</td>
+                            <td style={{ color: 'var(--ink2)', fontSize: '0.85rem' }}>{log.resourceType} · {log.resourceId}</td>
+                            <td
+                              style={{ maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--ink3)', fontSize: '0.8rem' }}
+                              title={log.metadata ? JSON.stringify(log.metadata) : undefined}
+                            >
+                              {log.metadata ? JSON.stringify(log.metadata) : '—'}
+                            </td>
+                          </tr>
+                        ))
+                    }
+                  </tbody>
+                </table>
+                <Pagination total={auditLogs?.length ?? 0} page={auditPage} onPage={setAuditPage} />
               </div>
             </div>
           )}

@@ -5,6 +5,7 @@ import { Order } from '../models/Order';
 import { InventoryMovement } from '../models/InventoryMovement';
 import { recordInventoryMovement } from '../services/inventory.service';
 import { notifyPriceDrop } from '../services/priceAlert.service';
+import { recordAuditLog } from '../services/audit.service';
 
 export const getProducts = async (c: Context) => {
   try {
@@ -111,6 +112,14 @@ export const createProduct = async (c: Context) => {
       });
     }
 
+    await recordAuditLog({
+      userId: userId ?? 'system',
+      action: 'product.create',
+      resourceType: 'Product',
+      resourceId: String(newProduct._id),
+      metadata: { name: (data as { name?: string }).name },
+    });
+
     return c.json({ success: true, data: newProduct }, 201);
   } catch (error: any) {
     return c.json({ success: false, message: error.message }, 500);
@@ -154,6 +163,14 @@ export const updateProduct = async (c: Context) => {
     if (data.price !== undefined && data.price < previousProduct.price) {
       await notifyPriceDrop(updatedProduct._id, updatedProduct.name, updatedProduct.price);
     }
+
+    await recordAuditLog({
+      userId: userId ?? 'system',
+      action: 'product.update',
+      resourceType: 'Product',
+      resourceId: String(updatedProduct._id),
+      metadata: { changes: updateData },
+    });
 
     return c.json({ success: true, data: updatedProduct });
   } catch (error: any) {
@@ -290,12 +307,21 @@ export const getRecentProducts = async (c: Context) => {
 export const deleteProduct = async (c: Context) => {
   try {
     const id = c.req.param('id');
+    const userId = c.get('userId');
     const deletedProduct = await Product.findByIdAndDelete(id);
-    
+
     if (!deletedProduct) {
       return c.json({ success: false, message: 'Producto no encontrado' }, 404);
     }
-    
+
+    await recordAuditLog({
+      userId: userId ?? 'system',
+      action: 'product.delete',
+      resourceType: 'Product',
+      resourceId: id,
+      metadata: { name: (deletedProduct as { name?: string }).name },
+    });
+
     return c.json({
       success: true,
       message: 'Producto eliminado correctamente',

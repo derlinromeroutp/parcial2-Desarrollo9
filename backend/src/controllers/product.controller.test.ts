@@ -1,8 +1,22 @@
 import { afterEach, describe, expect, mock, test } from 'bun:test';
-import { deleteProduct, getProductsForComparison, getRecentProducts, getRelatedProducts } from './product.controller';
+import {
+  createProduct,
+  deleteProduct,
+  getProductsForComparison,
+  getRecentProducts,
+  getRelatedProducts,
+  updateProduct,
+} from './product.controller';
 import { Product } from '../models/Product';
+import { AuditLog } from '../models/AuditLog';
 
-function createContext(id = 'prod_1') {
+function mockAuditLog() {
+  const create = mock(() => Promise.resolve({ _id: 'log_1' }));
+  AuditLog.create = create as unknown as typeof AuditLog.create;
+  return create;
+}
+
+function createContext(id = 'prod_1', userId?: string) {
   let statusCode = 200;
   let payload: unknown;
 
@@ -10,6 +24,7 @@ function createContext(id = 'prod_1') {
     req: {
       param: () => id,
     },
+    get: (key: string) => (key === 'userId' ? userId : undefined),
     json: (value: unknown, status?: number) => {
       payload = value;
       statusCode = status ?? 200;
@@ -54,7 +69,7 @@ function createQueryContext(query: Record<string, unknown>) {
   };
 }
 
-function createParamAndQueryContext(id: string, query: Record<string, unknown>) {
+function createParamAndQueryContext(id: string, query: Record<string, unknown>, userId?: string) {
   let statusCode = 200;
   let payload: unknown;
 
@@ -63,6 +78,34 @@ function createParamAndQueryContext(id: string, query: Record<string, unknown>) 
       param: () => id,
       valid: (_key: string) => query,
     },
+    get: (key: string) => (key === 'userId' ? userId : undefined),
+    json: (value: unknown, status?: number) => {
+      payload = value;
+      statusCode = status ?? 200;
+      return { payload: value, status: statusCode };
+    },
+  };
+
+  return {
+    context,
+    get statusCode() {
+      return statusCode;
+    },
+    get payload() {
+      return payload;
+    },
+  };
+}
+
+function createJsonContext(json: Record<string, unknown>, userId?: string) {
+  let statusCode = 200;
+  let payload: unknown;
+
+  const context = {
+    req: {
+      valid: (_key: string) => json,
+    },
+    get: (key: string) => (key === 'userId' ? userId : undefined),
     json: (value: unknown, status?: number) => {
       payload = value;
       statusCode = status ?? 200;
@@ -86,7 +129,7 @@ afterEach(() => {
 });
 
 describe('deleteProduct controller', () => {
-  test('returns deleted product data when the product exists', async () => {
+  test('returns deleted product data and records an audit log when the product exists', async () => {
     const deletedProduct = {
       _id: 'prod_1',
       name: 'iPhone 13 Reacondicionado',
@@ -100,12 +143,19 @@ describe('deleteProduct controller', () => {
 
     const deleteById = mock(() => Promise.resolve(deletedProduct));
     Product.findByIdAndDelete = deleteById as typeof Product.findByIdAndDelete;
+    const auditCreate = mockAuditLog();
 
-    const harness = createContext('prod_1');
+    const harness = createContext('prod_1', 'admin_1');
 
     await deleteProduct(harness.context as never);
 
     expect(deleteById).toHaveBeenCalledWith('prod_1');
+    expect(auditCreate).toHaveBeenCalledWith(expect.objectContaining({
+      userId: 'admin_1',
+      action: 'product.delete',
+      resourceType: 'Product',
+      resourceId: 'prod_1',
+    }));
     expect(harness.statusCode).toBe(200);
     expect(harness.payload).toEqual({
       success: true,
@@ -269,5 +319,51 @@ describe('getRecentProducts controller', () => {
 
     expect(harness.statusCode).toBe(500);
     expect(harness.payload).toEqual({ success: false, message: 'db down' });
+  });
+});
+
+describe('createProduct controller', () => {
+  test('creates the product and records an audit log, skipping stock movement when stock is 0', async () => {
+    const created = { _id: 'prod_new', name: 'iPad Air', stock: 0 };
+    Product.create = mock(() => Promise.resolve(created)) as unknown as typeof Product.create;
+    const auditCreate = mockAuditLog();
+
+    const harness = createJsonContext({ name: 'iPad Air', stock: 0 }, 'admin_1');
+
+    await createProduct(harness.context as never);
+
+    expect(auditCreate).toHaveBeenCalledWith(expect.objectContaining({
+      userId: 'admin_1',
+      action: 'product.create',
+      resourceType: 'Product',
+      resourceId: 'prod_new',
+    }));
+    expect(harness.statusCode).toBe(201);
+    expect(harness.payload).toEqual({ success: true, data: created });
+  });
+});
+
+describe('updateProduct controller', () => {
+  test('updates the product and records an audit log', async () => {
+    const previousProduct = { _id: 'prod_1', price: 500, stock: 4 };
+    const updatedProduct = { _id: 'prod_1', name: 'Nuevo nombre', price: 500, stock: 4 };
+
+    Product.findById = mock(() => Promise.resolve(previousProduct)) as typeof Product.findById;
+    Product.findByIdAndUpdate = mock(() => Promise.resolve(updatedProduct)) as typeof Product.findByIdAndUpdate;
+    const auditCreate = mockAuditLog();
+
+    const harness = createParamAndQueryContext('prod_1', { name: 'Nuevo nombre' }, 'admin_1');
+
+    await updateProduct(harness.context as never);
+
+    expect(auditCreate).toHaveBeenCalledWith(expect.objectContaining({
+      userId: 'admin_1',
+      action: 'product.update',
+      resourceType: 'Product',
+      resourceId: 'prod_1',
+      metadata: { changes: { name: 'Nuevo nombre' } },
+    }));
+    expect(harness.statusCode).toBe(200);
+    expect(harness.payload).toEqual({ success: true, data: updatedProduct });
   });
 });
