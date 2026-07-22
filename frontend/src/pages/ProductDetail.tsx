@@ -6,6 +6,7 @@ import { SkeletonCard } from '../components/ui/Skeleton';
 import { EmptyState } from '../components/ui/EmptyState';
 import { useWishlistCheck, useAddToWishlist, useRemoveFromWishlist } from '../hooks/useWishlist';
 import { useAuth } from '../lib/auth';
+import { useCompareStore, MAX_COMPARE_ITEMS } from '../store/compare.store';
 
 const CATEGORY_LABEL: Record<string, string> = {
   celular: 'Celular',
@@ -39,6 +40,11 @@ const ProductDetail: React.FC = () => {
   const { data: isWishlisted } = useWishlistCheck(id);
   const addWishlist = useAddToWishlist();
   const removeWishlist = useRemoveFromWishlist();
+
+  const isComparing = useCompareStore((s) => (id ? s.productIds.includes(id) : false));
+  const compareCount = useCompareStore((s) => s.productIds.length);
+  const toggleCompare = useCompareStore((s) => s.toggleProduct);
+  const compareDisabled = !isComparing && compareCount >= MAX_COMPARE_ITEMS;
 
   const [activeImg, setActiveImg] = useState(0);
   const [added, setAdded] = useState(false);
@@ -402,6 +408,29 @@ const ProductDetail: React.FC = () => {
                   {isWishlisted ? 'En mi lista de deseos' : 'Agregar a mi lista'}
                 </button>
               )}
+
+              <button
+                type="button"
+                onClick={() => id && toggleCompare(id)}
+                disabled={compareDisabled}
+                className="btn-outline"
+                style={{
+                  width: '100%',
+                  padding: '13px 24px',
+                  fontSize: '0.875rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  cursor: compareDisabled ? 'not-allowed' : 'pointer',
+                  opacity: compareDisabled ? 0.5 : 1,
+                }}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 3v18M15 3v18M4 8h5m6 0h5M4 16h5m6 0h5" />
+                </svg>
+                {isComparing ? 'Quitar de comparación' : 'Comparar'}
+              </button>
 
               <Link
                 to="/home"

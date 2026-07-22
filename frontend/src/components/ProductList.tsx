@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useProductsPaginated } from '../hooks/useProducts';
 import { useCartStore } from '../store/cart.store';
+import { useCompareStore, MAX_COMPARE_ITEMS } from '../store/compare.store';
 import { SkeletonCard } from './ui/Skeleton';
 import { EmptyState } from './ui/EmptyState';
 
@@ -212,6 +213,10 @@ interface ProductCardProps {
 const ProductCard: React.FC<ProductCardProps> = ({ product, onAdd, featured }) => {
   const [hovered, setHovered] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
+  const isComparing = useCompareStore((s) => s.productIds.includes(product._id));
+  const compareCount = useCompareStore((s) => s.productIds.length);
+  const toggleCompare = useCompareStore((s) => s.toggleProduct);
+  const compareDisabled = !isComparing && compareCount >= MAX_COMPARE_ITEMS;
 
   const badgeColor = product.condition === 'A' ? 'var(--ink)' : product.condition === 'B' ? '#D97706' : 'var(--line)';
   const badgeText = product.condition === 'A' ? 'var(--white)' : product.condition === 'B' ? 'var(--white)' : 'var(--ink2)';
@@ -296,6 +301,19 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAdd, featured }) =
             <span style={{ width: 6, height: 6, borderRadius: '50%', background: isLowStock ? '#DC2626' : 'var(--gray)' }} />
             {isLowStock ? `Solo ${product.stock} disponibles` : `${product.stock} en stock`}
           </p>
+          <label
+            onClick={(e) => e.stopPropagation()}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: '0.75rem', fontSize: '0.72rem', color: 'var(--gray)', fontFamily: 'var(--font-sans)', cursor: compareDisabled ? 'not-allowed' : 'pointer', opacity: compareDisabled ? 0.5 : 1 }}
+          >
+            <input
+              type="checkbox"
+              checked={isComparing}
+              disabled={compareDisabled}
+              onChange={() => toggleCompare(product._id)}
+              onClick={(e) => e.stopPropagation()}
+            />
+            Comparar
+          </label>
           <button
             onClick={handleAddClick}
             disabled={product.stock === 0}

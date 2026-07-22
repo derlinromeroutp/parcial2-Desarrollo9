@@ -17,6 +17,7 @@ import Nosotros from './pages/Nosotros';
 import Contacto from './pages/Contacto';
 import MyWarranties from './pages/MyWarranties';
 import Wishlist from './pages/Wishlist';
+import Compare from './pages/Compare';
 import Support from './pages/Support';
 import { ProtectedAdminRoute, ProtectedTechnicianRoute } from './components/AdminRoute';
 import TechnicianDashboard from './pages/TechnicianDashboard';
@@ -56,6 +57,12 @@ function App() {
             path="/wishlist"
             element={
               <WithNav><Wishlist /></WithNav>
+            }
+          />
+          <Route
+            path="/compare"
+            element={
+              <WithNav><Compare /></WithNav>
             }
           />
           <Route

@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'bun:test';
 import {
   bestSellersQuerySchema,
+  compareQuerySchema,
   createProductSchema,
   lowStockQuerySchema,
   productFilterSchema,
@@ -118,6 +119,36 @@ describe('bestSellersQuerySchema', () => {
 
   test('rejects a limit above 12', () => {
     const result = bestSellersQuerySchema.safeParse({ limit: '13' });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe('compareQuerySchema', () => {
+  test('accepts two to four valid ObjectIds', () => {
+    const result = compareQuerySchema.safeParse({
+      ids: '507f1f77bcf86cd799439011,507f1f77bcf86cd799439012',
+    });
+    expect(result.success).toBe(true);
+  });
+
+  test('rejects a single id', () => {
+    const result = compareQuerySchema.safeParse({ ids: '507f1f77bcf86cd799439011' });
+    expect(result.success).toBe(false);
+  });
+
+  test('rejects more than four ids', () => {
+    const ids = Array.from({ length: 5 }, (_, i) => `507f1f77bcf86cd79943901${i}`).join(',');
+    const result = compareQuerySchema.safeParse({ ids });
+    expect(result.success).toBe(false);
+  });
+
+  test('rejects an invalid ObjectId in the list', () => {
+    const result = compareQuerySchema.safeParse({ ids: '507f1f77bcf86cd799439011,not-an-id' });
+    expect(result.success).toBe(false);
+  });
+
+  test('rejects a missing ids param', () => {
+    const result = compareQuerySchema.safeParse({});
     expect(result.success).toBe(false);
   });
 });

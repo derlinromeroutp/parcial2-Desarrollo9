@@ -8,11 +8,13 @@ import {
   getProductById,
   getProductInventoryMovements,
   getProducts,
+  getProductsForComparison,
   updateProduct,
 } from '../controllers/product.controller';
 import {
   createProductSchema,
   bestSellersQuerySchema,
+  compareQuerySchema,
   lowStockQuerySchema,
   productFilterSchema,
   updateProductSchema,
@@ -54,6 +56,18 @@ productRoutes.get(
     }
   }),
   getBestSellingProducts
+);
+
+// Productos a comparar lado a lado (HU-43). Registrada antes de '/:id' para
+// que "compare" no se interprete como un id.
+productRoutes.get(
+  '/compare',
+  zValidator('query', compareQuerySchema, (result, c) => {
+    if (!result.success) {
+      return c.json({ success: false, errors: result.error.errors }, 400);
+    }
+  }),
+  getProductsForComparison
 );
 
 // Obtener un producto por ID
