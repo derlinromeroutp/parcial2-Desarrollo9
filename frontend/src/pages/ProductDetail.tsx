@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useProduct } from '../hooks/useProducts';
+import { useProduct, useRelatedProducts } from '../hooks/useProducts';
 import { useCartStore } from '../store/cart.store';
 import { SkeletonCard } from '../components/ui/Skeleton';
 import { EmptyState } from '../components/ui/EmptyState';
@@ -32,6 +32,7 @@ const ProductDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: product, isLoading, isError, error } = useProduct(id);
+  const { data: relatedProducts } = useRelatedProducts(id);
 
   const addItem = useCartStore((s) => s.addItem);
   const toggleDrawer = useCartStore((s) => s.toggleDrawer);
@@ -497,6 +498,62 @@ const ProductDetail: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Productos relacionados (HU-44) */}
+      {relatedProducts && relatedProducts.length > 0 && (
+        <div className="page-container" style={{ padding: '0 2.5rem 3.5rem' }}>
+          <h2
+            style={{
+              fontSize: '1.15rem',
+              fontWeight: 500,
+              color: 'var(--ink)',
+              fontFamily: 'var(--font-display)',
+              letterSpacing: '-0.01em',
+              marginBottom: '1.25rem',
+              paddingTop: '2rem',
+              borderTop: '1px solid var(--line)',
+            }}
+          >
+            También te puede interesar
+          </h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+            {relatedProducts.map((related) => (
+              <Link
+                key={related._id}
+                to={`/product/${related._id}`}
+                style={{ display: 'block', color: 'inherit', textDecoration: 'none' }}
+                aria-label={`Ver detalles de ${related.name}`}
+              >
+                <article
+                  style={{
+                    border: '1px solid var(--line)',
+                    borderRadius: 'var(--radius-md)',
+                    overflow: 'hidden',
+                    background: 'var(--white)',
+                    transition: 'box-shadow 180ms ease, transform 180ms ease',
+                  }}
+                >
+                  <div style={{ aspectRatio: '4/3', background: 'var(--cream)', overflow: 'hidden' }}>
+                    <img
+                      src={related.image_urls?.[0] || `https://picsum.photos/seed/${related._id}/400/300`}
+                      alt={related.name}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  </div>
+                  <div style={{ padding: '0.9rem 1rem' }}>
+                    <h3 style={{ fontSize: '0.9rem', fontWeight: 500, color: 'var(--ink)', marginBottom: '0.4rem', fontFamily: 'var(--font-display)', lineHeight: 1.3 }}>
+                      {related.name}
+                    </h3>
+                    <p style={{ fontSize: '1rem', fontWeight: 300, color: 'var(--ink)', fontFamily: 'var(--font-display)' }}>
+                      ${related.price.toFixed(2)}
+                    </p>
+                  </div>
+                </article>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Responsive */}
       <style>{`

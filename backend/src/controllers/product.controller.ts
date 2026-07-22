@@ -161,6 +161,34 @@ export const updateProduct = async (c: Context) => {
   }
 };
 
+const DEFAULT_RELATED_LIMIT = 4;
+
+export const getRelatedProducts = async (c: Context) => {
+  try {
+    const id = c.req.param('id');
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return c.json({ success: false, message: 'ID de producto invalido' }, 400);
+    }
+
+    const product = await Product.findById(id);
+    if (!product) {
+      return c.json({ success: false, message: 'Producto no encontrado' }, 404);
+    }
+
+    const { limit } = c.req.valid('query' as any) as { limit?: number };
+    const effectiveLimit = limit ?? DEFAULT_RELATED_LIMIT;
+
+    const related = await Product.find({
+      _id: { $ne: product._id },
+      category: product.category,
+    }).limit(effectiveLimit);
+
+    return c.json({ success: true, data: related });
+  } catch (error: any) {
+    return c.json({ success: false, message: error.message }, 500);
+  }
+};
+
 export const getProductInventoryMovements = async (c: Context) => {
   try {
     const id = c.req.param('id');

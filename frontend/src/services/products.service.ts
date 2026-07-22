@@ -151,6 +151,17 @@ export const productsService = {
     return result.data || [];
   },
 
+  async getRelated(id: string, limit?: number): Promise<Product[]> {
+    const qs = limit !== undefined ? `?limit=${limit}` : '';
+    const response = await fetch(`${API_URL}/products/${id}/related${qs}`);
+    if (!response.ok) {
+      const result = await response.json().catch(() => ({}));
+      throw new Error(result?.message || result?.errors?.[0]?.message || 'Failed to fetch related products');
+    }
+    const result = await response.json();
+    return result.data || [];
+  },
+
   async getBestSellers(limit = 4): Promise<BestSellerProduct[]> {
     const response = await fetch(`${API_URL}/products/best-sellers?limit=${limit}`);
     if (!response.ok) {

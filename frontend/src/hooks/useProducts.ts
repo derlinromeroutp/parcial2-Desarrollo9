@@ -33,3 +33,11 @@ export const useProductsCompare = (ids: string[]) => {
     enabled: ids.length >= 2,
   });
 };
+
+export const useRelatedProducts = (id: string | undefined) => {
+  return useQuery<Product[], Error>({
+    queryKey: ['product', id, 'related'],
+    queryFn: () => productsService.getRelated(id as string),
+    enabled: Boolean(id),
+  });
+};
