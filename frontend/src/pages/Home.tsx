@@ -1,5 +1,6 @@
 import { ProductList } from '../components/ProductList';
 import { BestSellersSection } from '../components/BestSellersSection';
+import { RecentProductsSection } from '../components/RecentProductsSection';
 import { RecentlyViewedSection } from '../components/RecentlyViewedSection';
 
 export default function Home() {
@@ -41,6 +42,8 @@ export default function Home() {
       </section>
 
       <BestSellersSection />
+
+      <RecentProductsSection />
 
       <RecentlyViewedSection />
 

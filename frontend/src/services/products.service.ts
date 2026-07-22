@@ -174,6 +174,16 @@ export const productsService = {
     return result.data || [];
   },
 
+  async getRecent(limit = 8): Promise<Product[]> {
+    const response = await fetch(`${API_URL}/products/recent?limit=${limit}`);
+    if (!response.ok) {
+      const result = await response.json().catch(() => ({}));
+      throw new Error(result?.message || result?.errors?.[0]?.message || 'Failed to fetch recent products');
+    }
+    const result = await response.json();
+    return result.data || [];
+  },
+
   async create(data: CreateProductDTO, token: string): Promise<Product> {
     const response = await fetch(`${API_URL}/products`, {
       method: 'POST',

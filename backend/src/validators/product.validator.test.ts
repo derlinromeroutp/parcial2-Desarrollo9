@@ -5,6 +5,7 @@ import {
   createProductSchema,
   lowStockQuerySchema,
   productFilterSchema,
+  recentProductsQuerySchema,
   relatedProductsQuerySchema,
   updateProductSchema,
 } from './product.validator';
@@ -193,6 +194,26 @@ describe('relatedProductsQuerySchema', () => {
 
   test('rejects a limit above 12', () => {
     const result = relatedProductsQuerySchema.safeParse({ limit: '13' });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe('recentProductsQuerySchema', () => {
+  test('accepts a missing limit', () => {
+    const result = recentProductsQuerySchema.safeParse({});
+    expect(result.success).toBe(true);
+  });
+
+  test('coerces a valid limit from a string', () => {
+    const result = recentProductsQuerySchema.safeParse({ limit: '5' });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.limit).toBe(5);
+    }
+  });
+
+  test('rejects a limit above 12', () => {
+    const result = recentProductsQuerySchema.safeParse({ limit: '13' });
     expect(result.success).toBe(false);
   });
 });
