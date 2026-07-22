@@ -7,6 +7,7 @@ export interface Product {
   condition: 'A' | 'B' | 'C';
   category: 'celular' | 'laptop' | 'pc' | 'auriculares' | 'tablet';
   image_urls: string[];
+  battery_health?: number;
   createdAt: string;
   updatedAt: string;
 }

@@ -25,6 +25,10 @@ const CATEGORIES = [
   { value: 'tablet', label: 'Tablet' },
 ];
 
+// Categorias cuyos productos suelen tener bateria (HU-47); las PC de
+// escritorio no, asi que no tiene sentido pedir ese dato para esa categoria.
+const BATTERY_CATEGORIES = new Set(['celular', 'laptop', 'auriculares', 'tablet']);
+
 const inputStyle: React.CSSProperties = {
   width: '100%',
   padding: '11px 14px',
@@ -57,6 +61,7 @@ export default function ProductModal({ isOpen, onClose, onSubmit, product, isLoa
   const [condition,   setCondition]   = useState<'A' | 'B' | 'C'>('A');
   const [category,    setCategory]    = useState<'celular' | 'laptop' | 'pc' | 'auriculares' | 'tablet'>('celular');
   const [imageUrls,   setImageUrls]   = useState('');
+  const [batteryHealth, setBatteryHealth] = useState('');
   const [stockReason, setStockReason] = useState('');
   const [error,       setError]       = useState('');
 
@@ -69,9 +74,11 @@ export default function ProductModal({ isOpen, onClose, onSubmit, product, isLoa
       setCondition(product.condition);
       setCategory(product.category);
       setImageUrls(product.image_urls.join(', '));
+      setBatteryHealth(product.battery_health !== undefined ? product.battery_health.toString() : '');
     } else {
       setName(''); setDescription(''); setPrice('');
       setStock(''); setCondition('A'); setCategory('celular'); setImageUrls('');
+      setBatteryHealth('');
     }
     setStockReason('');
     setError('');
@@ -96,6 +103,13 @@ export default function ProductModal({ isOpen, onClose, onSubmit, product, isLoa
     if (isNaN(priceNum) || priceNum <= 0)   { setError('El precio debe ser mayor a 0'); return; }
     if (isNaN(stockNum) || stockNum < 0)    { setError('El stock debe ser 0 o mayor'); return; }
 
+    const batteryApplies = BATTERY_CATEGORIES.has(category);
+    const batteryHealthNum = batteryApplies && batteryHealth.trim() !== '' ? parseFloat(batteryHealth) : undefined;
+    if (batteryHealthNum !== undefined && (isNaN(batteryHealthNum) || batteryHealthNum < 0 || batteryHealthNum > 100)) {
+      setError('La salud de batería debe estar entre 0 y 100');
+      return;
+    }
+
     const image_urls = imageUrls.split(',').map(u => u.trim()).filter(Boolean);
     const stockChanged = Boolean(product) && stockNum !== product?.stock;
 
@@ -108,6 +122,7 @@ export default function ProductModal({ isOpen, onClose, onSubmit, product, isLoa
         condition,
         category,
         image_urls,
+        battery_health: batteryHealthNum,
         ...(stockChanged ? { reason: stockReason.trim() || undefined } : {}),
       });
       onClose();
@@ -343,6 +358,24 @@ export default function ProductModal({ isOpen, onClose, onSubmit, product, isLoa
               ))}
             </select>
           </div>
+
+          {/* Salud de batería (solo categorías con batería) */}
+          {BATTERY_CATEGORIES.has(category) && (
+            <div>
+              <label style={labelStyle}>Salud de batería (%)</label>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={batteryHealth}
+                onChange={e => setBatteryHealth(e.target.value)}
+                placeholder="Ej: 92 (dejar vacío si no se midió)"
+                style={inputStyle}
+                onFocus={e => { e.target.style.borderColor = 'var(--accent)'; e.target.style.boxShadow = '0 0 0 3px var(--accent-light)'; }}
+                onBlur={e  => { e.target.style.borderColor = 'var(--line)'; e.target.style.boxShadow = 'none'; }}
+              />
+            </div>
+          )}
 
           {/* URLs de imágenes */}
           <div>

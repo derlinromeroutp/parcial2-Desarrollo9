@@ -320,6 +320,39 @@ const ProductDetail: React.FC = () => {
                 : `${product.stock} disponibles en stock`}
             </div>
 
+            {/* Salud de bateria (HU-47): solo se muestra si hay un dato registrado */}
+            {product.battery_health !== undefined && (
+              <div style={{ marginBottom: '2rem' }}>
+                <p
+                  style={{
+                    fontSize: '0.65rem',
+                    fontWeight: 600,
+                    letterSpacing: '2px',
+                    textTransform: 'uppercase',
+                    color: 'var(--ink3)',
+                    fontFamily: 'var(--font-sans)',
+                    marginBottom: '0.625rem',
+                  }}
+                >
+                  Salud de batería
+                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ flex: 1, maxWidth: 180, height: 8, borderRadius: 4, background: 'var(--line)', overflow: 'hidden' }}>
+                    <div
+                      style={{
+                        width: `${product.battery_health}%`,
+                        height: '100%',
+                        background: product.battery_health >= 80 ? '#22c55e' : product.battery_health >= 50 ? '#D97706' : '#DC2626',
+                      }}
+                    />
+                  </div>
+                  <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--ink)', fontFamily: 'var(--font-sans)' }}>
+                    {product.battery_health}%
+                  </span>
+                </div>
+              </div>
+            )}
+
             {/* Description */}
             {product.description && (
               <div style={{ marginBottom: '2rem' }}>

@@ -12,6 +12,9 @@ const productFields = {
     errorMap: () => ({ message: 'Categoría inválida' }),
   }),
   image_urls: z.array(z.string().url('Debe ser una URL válida')).optional(),
+  // HU-47: solo aplica a productos con bateria; se omite en vez de forzar 0
+  // para no registrar un dato falso en productos que no la tienen.
+  battery_health: z.number().min(0, 'La salud de batería debe ser 0 o mayor').max(100, 'La salud de batería no puede superar 100').optional(),
 };
 
 export const createProductSchema = z.object({

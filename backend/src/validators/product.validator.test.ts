@@ -52,6 +52,29 @@ describe('createProductSchema', () => {
     const result = createProductSchema.safeParse({ ...validProduct, image_urls: ['not-a-url'] });
     expect(result.success).toBe(false);
   });
+
+  test('accepts an omitted battery_health', () => {
+    const result = createProductSchema.safeParse(validProduct);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.battery_health).toBeUndefined();
+    }
+  });
+
+  test('accepts a battery_health within range', () => {
+    const result = createProductSchema.safeParse({ ...validProduct, battery_health: 92 });
+    expect(result.success).toBe(true);
+  });
+
+  test('rejects a battery_health above 100', () => {
+    const result = createProductSchema.safeParse({ ...validProduct, battery_health: 101 });
+    expect(result.success).toBe(false);
+  });
+
+  test('rejects a negative battery_health', () => {
+    const result = createProductSchema.safeParse({ ...validProduct, battery_health: -1 });
+    expect(result.success).toBe(false);
+  });
 });
 
 describe('updateProductSchema', () => {

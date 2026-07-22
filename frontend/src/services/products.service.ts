@@ -10,6 +10,7 @@ export interface CreateProductDTO {
   condition: 'A' | 'B' | 'C';
   category: 'celular' | 'laptop' | 'pc' | 'auriculares' | 'tablet';
   image_urls: string[];
+  battery_health?: number;
 }
 
 export interface UpdateProductDTO {
@@ -20,6 +21,7 @@ export interface UpdateProductDTO {
   condition?: 'A' | 'B' | 'C';
   category?: 'celular' | 'laptop' | 'pc' | 'auriculares' | 'tablet';
   image_urls?: string[];
+  battery_health?: number;
   // Motivo del ajuste de stock (HU-36), para el historial de movimientos de inventario.
   reason?: string;
 }
