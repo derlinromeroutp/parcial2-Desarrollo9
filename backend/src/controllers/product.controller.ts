@@ -272,6 +272,21 @@ export const getBestSellingProducts = async (c: Context) => {
   }
 };
 
+const DEFAULT_RECENT_LIMIT = 8;
+
+export const getRecentProducts = async (c: Context) => {
+  try {
+    const { limit } = c.req.valid('query' as any) as { limit?: number };
+    const effectiveLimit = limit ?? DEFAULT_RECENT_LIMIT;
+
+    const products = await Product.find().sort({ createdAt: -1 }).limit(effectiveLimit);
+
+    return c.json({ success: true, data: products });
+  } catch (error: any) {
+    return c.json({ success: false, message: error.message }, 500);
+  }
+};
+
 export const deleteProduct = async (c: Context) => {
   try {
     const id = c.req.param('id');

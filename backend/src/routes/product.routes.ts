@@ -9,6 +9,7 @@ import {
   getProductInventoryMovements,
   getProducts,
   getProductsForComparison,
+  getRecentProducts,
   getRelatedProducts,
   updateProduct,
 } from '../controllers/product.controller';
@@ -19,6 +20,7 @@ import {
   compareQuerySchema,
   lowStockQuerySchema,
   productFilterSchema,
+  recentProductsQuerySchema,
   relatedProductsQuerySchema,
   updateProductSchema,
 } from '../validators/product.validator';
@@ -60,6 +62,17 @@ productRoutes.get(
     }
   }),
   getBestSellingProducts
+);
+
+// Productos mas recientes por fecha de registro (HU-50)
+productRoutes.get(
+  '/recent',
+  zValidator('query', recentProductsQuerySchema, (result, c) => {
+    if (!result.success) {
+      return c.json({ success: false, errors: result.error.errors }, 400);
+    }
+  }),
+  getRecentProducts
 );
 
 // Productos a comparar lado a lado (HU-43). Registrada antes de '/:id' para

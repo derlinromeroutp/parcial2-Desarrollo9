@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, mock, test } from 'bun:test';
-import { deleteProduct, getProductsForComparison, getRelatedProducts } from './product.controller';
+import { deleteProduct, getProductsForComparison, getRecentProducts, getRelatedProducts } from './product.controller';
 import { Product } from '../models/Product';
 
 function createContext(id = 'prod_1') {
@@ -222,5 +222,52 @@ describe('getRelatedProducts controller', () => {
     await getRelatedProducts(harness.context as never);
 
     expect(limitSpy).toHaveBeenCalledWith(8);
+  });
+});
+
+function createSortLimitQuery(result: unknown) {
+  const limitSpy = mock(() => Promise.resolve(result));
+  const sortSpy = mock(() => ({ limit: limitSpy }));
+  return { sortSpy, limitSpy, query: { sort: sortSpy } };
+}
+
+describe('getRecentProducts controller', () => {
+  test('sorts by createdAt descending and applies the default limit', async () => {
+    const products = [{ _id: '1', createdAt: '2026-02-01' }, { _id: '2', createdAt: '2026-01-01' }];
+    const { sortSpy, limitSpy, query } = createSortLimitQuery(products);
+    Product.find = mock(() => query) as unknown as typeof Product.find;
+
+    const harness = createQueryContext({});
+
+    await getRecentProducts(harness.context as never);
+
+    expect(sortSpy).toHaveBeenCalledWith({ createdAt: -1 });
+    expect(limitSpy).toHaveBeenCalledWith(8);
+    expect(harness.statusCode).toBe(200);
+    expect(harness.payload).toEqual({ success: true, data: products });
+  });
+
+  test('honors a custom limit', async () => {
+    const { limitSpy, query } = createSortLimitQuery([]);
+    Product.find = mock(() => query) as unknown as typeof Product.find;
+
+    const harness = createQueryContext({ limit: 3 });
+
+    await getRecentProducts(harness.context as never);
+
+    expect(limitSpy).toHaveBeenCalledWith(3);
+  });
+
+  test('returns a 500 when the lookup fails', async () => {
+    Product.find = mock(() => {
+      throw new Error('db down');
+    }) as unknown as typeof Product.find;
+
+    const harness = createQueryContext({});
+
+    await getRecentProducts(harness.context as never);
+
+    expect(harness.statusCode).toBe(500);
+    expect(harness.payload).toEqual({ success: false, message: 'db down' });
   });
 });
