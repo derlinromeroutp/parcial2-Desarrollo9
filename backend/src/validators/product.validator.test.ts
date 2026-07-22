@@ -5,6 +5,7 @@ import {
   createProductSchema,
   lowStockQuerySchema,
   productFilterSchema,
+  relatedProductsQuerySchema,
   updateProductSchema,
 } from './product.validator';
 
@@ -149,6 +150,26 @@ describe('compareQuerySchema', () => {
 
   test('rejects a missing ids param', () => {
     const result = compareQuerySchema.safeParse({});
+    expect(result.success).toBe(false);
+  });
+});
+
+describe('relatedProductsQuerySchema', () => {
+  test('accepts a missing limit', () => {
+    const result = relatedProductsQuerySchema.safeParse({});
+    expect(result.success).toBe(true);
+  });
+
+  test('coerces a valid limit from a string', () => {
+    const result = relatedProductsQuerySchema.safeParse({ limit: '6' });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.limit).toBe(6);
+    }
+  });
+
+  test('rejects a limit above 12', () => {
+    const result = relatedProductsQuerySchema.safeParse({ limit: '13' });
     expect(result.success).toBe(false);
   });
 });

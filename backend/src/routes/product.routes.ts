@@ -9,6 +9,7 @@ import {
   getProductInventoryMovements,
   getProducts,
   getProductsForComparison,
+  getRelatedProducts,
   updateProduct,
 } from '../controllers/product.controller';
 import {
@@ -17,6 +18,7 @@ import {
   compareQuerySchema,
   lowStockQuerySchema,
   productFilterSchema,
+  relatedProductsQuerySchema,
   updateProductSchema,
 } from '../validators/product.validator';
 import { adminAuthMiddleware } from '../middlewares/auth.middleware';
@@ -75,6 +77,17 @@ productRoutes.get('/:id', getProductById);
 
 // Historial de movimientos de inventario de un producto (solo admin)
 productRoutes.get('/:id/inventory-movements', adminAuthMiddleware, getProductInventoryMovements);
+
+// Productos relacionados (misma categoria, excluyendo el actual) (HU-44)
+productRoutes.get(
+  '/:id/related',
+  zValidator('query', relatedProductsQuerySchema, (result, c) => {
+    if (!result.success) {
+      return c.json({ success: false, errors: result.error.errors }, 400);
+    }
+  }),
+  getRelatedProducts
+);
 
 // Crear un producto con validación de Zod (solo admin)
 productRoutes.post(

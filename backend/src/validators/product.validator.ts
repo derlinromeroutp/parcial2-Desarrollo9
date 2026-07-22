@@ -52,6 +52,11 @@ export const bestSellersQuerySchema = z.object({
   limit: z.coerce.number().int().min(1, 'limit debe ser al menos 1').max(12, 'limit no puede superar 12').optional(),
 });
 
+// HU-44: cantidad de productos relacionados (misma categoria) a devolver.
+export const relatedProductsQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1, 'limit debe ser al menos 1').max(12, 'limit no puede superar 12').optional(),
+});
+
 const objectIdRegex = /^[0-9a-fA-F]{24}$/;
 
 // HU-43: ids llega como query string separado por comas (?ids=a,b,c). Se
