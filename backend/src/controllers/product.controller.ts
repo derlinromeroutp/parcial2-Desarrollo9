@@ -60,6 +60,19 @@ export const getProducts = async (c: Context) => {
   }
 };
 
+export const getProductsForComparison = async (c: Context) => {
+  try {
+    const { ids } = c.req.valid('query' as any) as { ids: string };
+    const productIds = [...new Set(ids.split(',').map((id) => id.trim()).filter(Boolean))];
+
+    const products = await Product.find({ _id: { $in: productIds } });
+
+    return c.json({ success: true, data: products });
+  } catch (error: any) {
+    return c.json({ success: false, message: error.message }, 500);
+  }
+};
+
 export const getProductById = async (c: Context) => {
   try {
     const id = c.req.param('id');

@@ -141,6 +141,16 @@ export const productsService = {
     return (result?.data ?? result) as Product;
   },
 
+  async compare(ids: string[]): Promise<Product[]> {
+    const response = await fetch(`${API_URL}/products/compare?ids=${ids.map(encodeURIComponent).join(',')}`);
+    if (!response.ok) {
+      const result = await response.json().catch(() => ({}));
+      throw new Error(result?.message || result?.errors?.[0]?.message || 'Failed to fetch products for comparison');
+    }
+    const result = await response.json();
+    return result.data || [];
+  },
+
   async getBestSellers(limit = 4): Promise<BestSellerProduct[]> {
     const response = await fetch(`${API_URL}/products/best-sellers?limit=${limit}`);
     if (!response.ok) {
