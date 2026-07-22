@@ -43,15 +43,26 @@ const RecentlyViewedCard: React.FC<{ productId: string }> = ({ productId }) => {
 
 export const RecentlyViewedSection: React.FC = () => {
   const productIds = useRecentlyViewedStore((s) => s.productIds);
+  const clearRecentlyViewed = useRecentlyViewedStore((s) => s.clearRecentlyViewed);
 
   if (productIds.length === 0) return null;
 
   return (
     <section style={{ padding: '3rem 0 0', background: 'var(--white)' }}>
       <div className="page-container">
-        <h2 style={{ fontSize: 'clamp(1.25rem, 3vw, 1.75rem)', fontWeight: 600, color: 'var(--ink)', fontFamily: 'var(--font-display)', marginBottom: '1.5rem' }}>
-          Vistos recientemente
-        </h2>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+          <h2 style={{ fontSize: 'clamp(1.25rem, 3vw, 1.75rem)', fontWeight: 600, color: 'var(--ink)', fontFamily: 'var(--font-display)' }}>
+            Vistos recientemente
+          </h2>
+          <button
+            type="button"
+            onClick={clearRecentlyViewed}
+            className="btn-outline"
+            style={{ fontSize: '0.78rem', padding: '8px 16px' }}
+          >
+            Limpiar historial
+          </button>
+        </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem' }}>
           {productIds.map((productId) => (
             <RecentlyViewedCard key={productId} productId={productId} />

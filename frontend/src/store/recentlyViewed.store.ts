@@ -6,6 +6,7 @@ export const MAX_RECENTLY_VIEWED = 12;
 interface RecentlyViewedState {
   productIds: string[];
   recordView: (productId: string) => void;
+  clearRecentlyViewed: () => void;
 }
 
 export const useRecentlyViewedStore = create<RecentlyViewedState>()(
@@ -18,6 +19,8 @@ export const useRecentlyViewedStore = create<RecentlyViewedState>()(
       recordView: (productId: string) => set((state) => ({
         productIds: [productId, ...state.productIds.filter((id) => id !== productId)].slice(0, MAX_RECENTLY_VIEWED),
       })),
+
+      clearRecentlyViewed: () => set({ productIds: [] }),
     }),
     {
       name: 'safetech-recently-viewed-storage',
