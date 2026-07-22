@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useProduct, useRelatedProducts } from '../hooks/useProducts';
+import { useProductInspection } from '../hooks/useInspection';
 import { useCartStore } from '../store/cart.store';
 import { SkeletonCard } from '../components/ui/Skeleton';
 import { EmptyState } from '../components/ui/EmptyState';
@@ -33,6 +34,7 @@ const ProductDetail: React.FC = () => {
   const navigate = useNavigate();
   const { data: product, isLoading, isError, error } = useProduct(id);
   const { data: relatedProducts } = useRelatedProducts(id);
+  const { data: inspectionReport, isLoading: isInspectionLoading } = useProductInspection(id);
 
   const addItem = useCartStore((s) => s.addItem);
   const toggleDrawer = useCartStore((s) => s.toggleDrawer);
@@ -498,6 +500,67 @@ const ProductDetail: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Ficha de inspeccion tecnica (HU-46) */}
+      {!isInspectionLoading && (
+        <div className="page-container" style={{ padding: '2rem 2.5rem 0' }}>
+          <h2
+            style={{
+              fontSize: '1.15rem',
+              fontWeight: 500,
+              color: 'var(--ink)',
+              fontFamily: 'var(--font-display)',
+              letterSpacing: '-0.01em',
+              marginBottom: '1.25rem',
+              paddingTop: '2rem',
+              borderTop: '1px solid var(--line)',
+            }}
+          >
+            Ficha de inspección técnica
+          </h2>
+          {inspectionReport ? (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem' }}>
+              {inspectionReport.checklist.map((item, i) => (
+                <div
+                  key={i}
+                  style={{
+                    padding: '0.9rem 1rem',
+                    background: 'var(--white)',
+                    border: '1px solid var(--line)',
+                    borderRadius: 'var(--radius-sm)',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 10,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 18, height: 18, borderRadius: '50%', flexShrink: 0, marginTop: 2,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: item.passed ? '#22c55e' : '#DC2626', color: '#fff', fontSize: '0.65rem',
+                    }}
+                    aria-hidden="true"
+                  >
+                    {item.passed ? '✓' : '✕'}
+                  </span>
+                  <div>
+                    <p style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--ink)', fontFamily: 'var(--font-sans)', marginBottom: 2 }}>
+                      {item.aspect}
+                    </p>
+                    <p style={{ fontSize: '0.78rem', color: 'var(--ink2)', fontFamily: 'var(--font-sans)' }}>
+                      {item.result}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p style={{ fontSize: '0.85rem', color: 'var(--ink3)', fontFamily: 'var(--font-sans)' }}>
+              Este producto todavía no tiene una ficha de inspección técnica registrada.
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Productos relacionados (HU-44) */}
       {relatedProducts && relatedProducts.length > 0 && (
