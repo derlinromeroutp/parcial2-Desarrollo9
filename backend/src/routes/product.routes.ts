@@ -12,6 +12,7 @@ import {
   getRelatedProducts,
   updateProduct,
 } from '../controllers/product.controller';
+import { getProductInspection, upsertProductInspection } from '../controllers/inspection.controller';
 import {
   createProductSchema,
   bestSellersQuerySchema,
@@ -21,7 +22,8 @@ import {
   relatedProductsQuerySchema,
   updateProductSchema,
 } from '../validators/product.validator';
-import { adminAuthMiddleware } from '../middlewares/auth.middleware';
+import { upsertInspectionSchema } from '../validators/inspection.validator';
+import { adminAuthMiddleware, technicianAuthMiddleware } from '../middlewares/auth.middleware';
 
 const productRoutes = new Hono();
 
@@ -87,6 +89,20 @@ productRoutes.get(
     }
   }),
   getRelatedProducts
+);
+
+// Ficha de inspeccion tecnica de un producto (HU-46). Lectura publica;
+// solo un tecnico autenticado puede registrarla/actualizarla.
+productRoutes.get('/:id/inspection', getProductInspection);
+productRoutes.put(
+  '/:id/inspection',
+  technicianAuthMiddleware,
+  zValidator('json', upsertInspectionSchema, (result, c) => {
+    if (!result.success) {
+      return c.json({ success: false, errors: result.error.errors }, 400);
+    }
+  }),
+  upsertProductInspection
 );
 
 // Crear un producto con validación de Zod (solo admin)
